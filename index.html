@@ -1,19 +1,42 @@
 <!DOCTYPE html>
-<html>
-<head>
-<title>2LOD Credit Digest</title>
+<html><head><meta charset="UTF-8"><title>Morning Credit Digest</title>
 <style>
-body { font-family: Arial, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background: #f5f5f5; }
-.box { background: #8B0000; color: white; padding: 40px 60px; border-radius: 12px; text-align: center; }
-h1 { font-size: 24px; margin: 0 0 10px; }
-p { margin: 0; opacity: 0.8; font-size: 14px; }
-</style>
-</head>
+body{font-family:Arial,Helvetica,sans-serif;margin:0;background:#f5f5f5;color:#222}
+.hdr{background:#8B0000;color:#fff;padding:16px 20px}
+.hdr h1{margin:0;font-size:20px;letter-spacing:1px}
+.sub{font-size:11px;margin-top:4px}
+.pill{display:inline-block;padding:3px 10px;border-radius:10px;font-size:11px;margin-right:5px;color:#fff}
+.g-b{background:#2e7d32}.a-b{background:#e6a700}.r-b{background:#cc0000}
+.ctr{padding:12px 20px;background:#fff;border-bottom:1px solid #ddd}
+.ctr button{padding:6px 12px;margin-right:5px;border:1px solid #ccc;background:#fff;cursor:pointer;font-size:12px;border-radius:4px}
+.ctr button.active{background:#8B0000;color:#fff;border-color:#8B0000}
+.ctr input,.ctr select{padding:6px;font-size:12px;margin-left:8px;border:1px solid #ccc;border-radius:4px}
+table{width:100%;border-collapse:collapse;font-size:11px;background:#fff}
+th{background:#f0f0f0;padding:8px;text-align:left;border:1px solid #ddd}
+td{padding:7px;border:1px solid #ddd;vertical-align:top}
+.red{color:#cc0000;font-weight:bold}.amber{color:#e6a700;font-weight:bold}.green{color:#2e7d32;font-weight:bold}
+.ftr{background:#8B0000;color:#fff;padding:14px 20px}
+.ftr h3{margin:0 0 8px 0;font-size:14px}
+.ftr ol{margin:0;padding-left:20px;font-size:12px}
+</style></head>
 <body>
-<div class="box">
-<h1>Morning Credit Digest</h1>
-<p>2LOD Credit Intelligence</p>
-<p style="margin-top:16px;">Dashboard updates every weekday at 8am ET</p>
+
+<div class="hdr">
+<h1>MORNING CREDIT DIGEST</h1>
+<div class="sub">05/09/26 : 06:45 PM ET : Santander CIB : 2LOD Credit Intelligence</div>
+<div style="margin-top:8px">
+<span class="pill g-b">GREEN: 18</span>
+<span class="pill a-b">AMBER: 8</span>
+<span class="pill r-b">RED: 4</span>
 </div>
-</body>
-</html>
+</div>
+
+<div class="ctr">
+<button class="active" onclick="f('all',this)">All</button>
+<button onclick="f('red',this)">Red</button>
+<button onclick="f('amber',this)">Amber</button>
+<button onclick="f('green',this)">Green</button>
+<input type="text" id="srch" placeholder="Search company..." onkeyup="s()">
+<select id="sec" onchange="s()">
+<option value="">All Sectors</option>
+<option>Telecom</option><option>Media</option>
