@@ -2,38 +2,47 @@
 <html lang="en"><head><meta charset="UTF-8"><title>Morning Credit Digest</title>
 <style>
 body{font-family:Arial,Helvetica,sans-serif;margin:0;background:#f5f5f5;color:#222}
-.hdr{background:#8B0000;color:#fff;padding:18px 22px}
-.hdr h1{margin:0;font-size:24px;letter-spacing:1px;font-weight:bold}
+.hdr{background:#8B0000;color:#fff;padding:16px 22px;display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px}
+.hdr h1{margin:0;font-size:24px;font-weight:bold;letter-spacing:1px}
 .sub{font-size:12px;margin-top:6px}
-.pillrow{margin-top:10px}
+.pillrow{margin-top:8px}
 .pill{display:inline-block;padding:4px 12px;border-radius:12px;font-size:11px;margin-right:6px;color:#fff;font-weight:bold}
 .g-b{background:#2e7d32}.a-b{background:#e6a700}.r-b{background:#cc0000}
-.ctr{padding:12px 22px;background:#fff;border-bottom:1px solid #ddd;display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.refresh{font-size:11px;text-align:right;align-self:flex-end}
+.ctr{padding:10px 22px;background:#fff;border-bottom:1px solid #ddd;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .ctr button{padding:6px 14px;border:1px solid #ccc;background:#fff;cursor:pointer;font-size:12px;border-radius:4px}
 .ctr button.active{background:#8B0000;color:#fff;border-color:#8B0000}
 .ctr input,.ctr select{padding:6px 8px;font-size:12px;border:1px solid #ccc;border-radius:4px}
-.wrap{overflow-x:auto}
+.wrap{overflow-x:auto;padding:0 8px}
 table{width:100%;border-collapse:collapse;font-size:11px;background:#fff}
-th{background:#f0f0f0;padding:9px;text-align:left;border:1px solid #ddd;position:sticky;top:0}
-td{padding:7px;border:1px solid #ddd;vertical-align:top}
+th{background:#f0f0f0;padding:8px;text-align:left;border:1px solid #ddd;cursor:pointer;user-select:none;white-space:nowrap;position:sticky;top:0}
+th:hover{background:#e5e5e5}
+th.sorted::after{content:" \25B2";font-size:9px}
+th.sorted.desc::after{content:" \25BC"}
+td{padding:6px 8px;border:1px solid #ddd;vertical-align:top}
 .red{color:#cc0000;font-weight:bold}
 .amber{color:#e6a700;font-weight:bold}
 .green{color:#2e7d32;font-weight:bold}
-.ftr{background:#8B0000;color:#fff;padding:16px 22px}
-.ftr h3{margin:0 0 10px 0;font-size:15px}
-.ftr ol{margin:0;padding-left:22px;font-size:12px;line-height:1.6}
+.up{color:#2e7d32;font-weight:bold}
+.dn{color:#cc0000;font-weight:bold}
 .act{color:#0645ad;cursor:pointer;text-decoration:underline}
+.ftr{background:#8B0000;color:#fff;padding:14px 22px}
+.ftr h3{margin:0 0 8px 0;font-size:14px}
+.ftr ol{margin:0;padding-left:20px;font-size:12px;line-height:1.6}
 </style></head>
 <body>
 
 <div class="hdr">
+<div>
 <h1>MORNING CREDIT DIGEST</h1>
 <div class="sub">05/07/26 : 01:50 AM ET</div>
 <div class="pillrow">
-<span class="pill g-b">GREEN: 38</span>
-<span class="pill a-b">AMBER: 9</span>
-<span class="pill r-b">RED: 4</span>
+<span class="pill g-b" id="pg">GREEN: 0</span>
+<span class="pill a-b" id="pa">AMBER: 0</span>
+<span class="pill r-b" id="pr">RED: 0</span>
 </div>
+</div>
+<div class="refresh">Last refresh: 05/07/26 01:50 AM ET</div>
 </div>
 
 <div class="ctr">
@@ -44,59 +53,51 @@ td{padding:7px;border:1px solid #ddd;vertical-align:top}
 <input type="text" id="srch" placeholder="Search company..." oninput="run()">
 <select id="sect" onchange="run()">
 <option value="all">All Sectors</option>
-<option>Telecom</option>
-<option>Media</option>
-<option>Tech</option>
-<option>Consumer</option>
-<option>Auto</option>
-<option>Energy</option>
-<option>Utilities</option>
-<option>Retail</option>
-<option>Packaging</option>
-<option>Tobacco</option>
-<option>REIT</option>
-<option>Industrials</option>
-<option>Payments</option>
+<option>Telecom</option><option>Media</option><option>Tech</option><option>Hardware</option>
+<option>EMS</option><option>Distribution</option><option>IT Services</option><option>Datacenter</option>
+<option>Towers</option><option>Payments</option><option>Travel</option><option>Auto</option>
+<option>Retail</option><option>Beverage</option><option>Tobacco</option><option>Consumer</option>
+<option>Packaging</option><option>Energy</option><option>Utilities</option>
 </select>
 </div>
 
 <div class="wrap">
 <table id="tbl">
-<thead><tr><th>Company</th><th>Status</th><th>Moody's</th><th>S&amp;P</th><th>Fitch</th><th>Outlook</th><th>Last Action</th><th>Next Earnings</th><th>Key Development</th><th>Action</th></tr></thead>
-<tbody>
+<thead><tr>
+<th data-c="0">Company</th><th data-c="1">Sector</th><th data-c="2">Status</th>
+<th data-c="3">Moody's</th><th data-c="4">M Outlook</th>
+<th data-c="5">S&amp;P</th><th data-c="6">S&amp;P Outlook</th>
+<th data-c="7">Fitch</th><th data-c="8">F Outlook</th>
+<th data-c="9">Last Action</th><th data-c="10">Next Earnings</th>
+<th data-c="11" data-num="1">1D Stock %</th>
+<th data-c="12">Key Development</th><th data-c="13">Action</th>
+</tr></thead>
+<tbody id="tb">
 
-<tr data-s="red" data-sec="Media"><td>Warner Bros. Discovery</td><td class="red">RED</td><td>Ba2</td><td>BB+</td><td>BB+</td><td>Negative</td><td>Apr 2026</td><td>Aug 7</td><td>Q1 results showed continued linear ad weakness with subscriber miss at DTC. Management trimmed full year FCF guidance citing studio slate timing.</td><td><span class="act">Review spreads</span></td></tr>
+<tr data-s="amber"><td>AT&amp;T</td><td>Telecom</td><td class="amber">AMBER</td><td>Baa2</td><td>Stable</td><td>BBB</td><td>Stable</td><td>BBB+</td><td>Stable</td><td>03/15/25</td><td>07/23/26</td><td data-v="-1.2">-1.2%</td><td>Spectrum auction commentary lifts capex outlook. Fiber subs healthy but wireline drag persists.</td><td><span class="act">Hold</span></td></tr>
 
-<tr data-s="red" data-sec="Auto"><td>Tesla</td><td class="red">RED</td><td>Baa3</td><td>BBB</td><td>BBB</td><td>Stable</td><td>May 2026</td><td>Jul 23</td><td>Shares fell roughly 11% on weaker April delivery readthrough and renewed China price cuts. Credit watchers flagged margin compression risk into 2H.</td><td><span class="act">Monitor CDS</span></td></tr>
+<tr data-s="green"><td>Verizon</td><td>Telecom</td><td class="green">GREEN</td><td>Baa1</td><td>Stable</td><td>BBB+</td><td>Stable</td><td>A-</td><td>Stable</td><td>11/02/24</td><td>07/22/26</td><td data-v="0.4">+0.4%</td><td>No material news.</td><td><span class="act">Hold</span></td></tr>
 
-<tr data-s="red" data-sec="Consumer"><td>Kimberly-Clark</td><td class="red">RED</td><td>A2</td><td>A</td><td>A</td><td>Negative</td><td>May 2026</td><td>Jul 22</td><td>S&amp;P revised outlook to Negative citing leverage from the Kenvue personal care deal close. Pro forma debt load weighs on near term metrics.</td><td><span class="act">Review</span></td></tr>
+<tr data-s="green"><td>Comcast</td><td>Telecom</td><td class="green">GREEN</td><td>A3</td><td>Stable</td><td>A-</td><td>Stable</td><td>A-</td><td>Stable</td><td>06/10/25</td><td>07/24/26</td><td data-v="-0.6">-0.6%</td><td>No material news.</td><td><span class="act">Hold</span></td></tr>
 
-<tr data-s="red" data-sec="Tech"><td>HP Inc</td><td class="red">RED</td><td>Baa2</td><td>BBB</td><td>BBB</td><td>Negative</td><td>Apr 2026</td><td>May 28</td><td>Preannounced PC margin pressure tied to component cost spikes and tariff exposure. Fitch placed outlook on Negative within last 48 hours.</td><td><span class="act">Reduce</span></td></tr>
+<tr data-s="amber"><td>Disney</td><td>Media</td><td class="amber">AMBER</td><td>A2</td><td>Stable</td><td>A-</td><td>Stable</td><td>A-</td><td>Stable</td><td>02/20/25</td><td>05/13/26</td><td data-v="-2.1">-2.1%</td><td>Earnings next week with Parks consumer trends in focus. DTC profitability remains key driver.</td><td><span class="act">Watch</span></td></tr>
 
-<tr data-s="amber" data-sec="Telecom"><td>AT&amp;T</td><td class="amber">AMBER</td><td>Baa2</td><td>BBB</td><td>BBB+</td><td>Stable</td><td>Mar 2026</td><td>Jul 23</td><td>Spectrum auction headlines and elevated capex commentary keep leverage trajectory in focus. Wireline weakness offset by fiber additions.</td><td><span class="act">Hold</span></td></tr>
+<tr data-s="red"><td>Warner Bros. Discovery</td><td>Media</td><td class="red">RED</td><td>Ba2</td><td>Negative</td><td>BB+</td><td>Negative</td><td>BB+</td><td>Negative</td><td>04/28/26</td><td>08/07/26</td><td data-v="-12.4"  class="dn">-12.4%</td><td>Q1 miss on linear ad and DTC subs. FCF guide trimmed on slate timing.</td><td><span class="act">Reduce</span></td></tr>
 
-<tr data-s="amber" data-sec="Telecom"><td>Verizon</td><td class="amber">AMBER</td><td>Baa1</td><td>BBB+</td><td>A-</td><td>Stable</td><td>Mar 2026</td><td>Jul 22</td><td>Postpaid net add commentary at sector conference came in soft versus peers. Watching FCF conversion ahead of dividend coverage review.</td><td><span class="act">Hold</span></td></tr>
+<tr data-s="green"><td>Netflix</td><td>Media</td><td class="green">GREEN</td><td>Baa1</td><td>Stable</td><td>BBB+</td><td>Stable</td><td>NR</td><td>-</td><td>10/12/24</td><td>07/16/26</td><td data-v="1.1">+1.1%</td><td>No material news.</td><td><span class="act">Hold</span></td></tr>
 
-<tr data-s="amber" data-sec="Media"><td>Disney</td><td class="amber">AMBER</td><td>A2</td><td>A-</td><td>A-</td><td>Stable</td><td>Feb 2026</td><td>May 13</td><td>Earnings due next week with Parks segment under scrutiny on consumer slowdown signs. Streaming profitability path remains key credit driver.</td><td><span class="act">Watch</span></td></tr>
+<tr data-s="green"><td>Amazon</td><td>Tech</td><td class="green">GREEN</td><td>A1</td><td>Stable</td><td>AA</td><td>Stable</td><td>AA-</td><td>Stable</td><td>03/18/24</td><td>07/31/26</td><td data-v="0.8">+0.8%</td><td>No material news.</td><td><span class="act">Hold</span></td></tr>
 
-<tr data-s="amber" data-sec="Auto"><td>General Motors</td><td class="amber">AMBER</td><td>Baa2</td><td>BBB</td><td>BBB</td><td>Stable</td><td>Apr 2026</td><td>Jul 22</td><td>Tariff overhang on Mexico and Canada production lines persists. EV ramp and GMF receivables quality flagged by sector analysts.</td><td><span class="act">Watch</span></td></tr>
+<tr data-s="green"><td>Alphabet</td><td>Tech</td><td class="green">GREEN</td><td>Aa2</td><td>Stable</td><td>AA+</td><td>Stable</td><td>NR</td><td>-</td><td>09/14/22</td><td>07/28/26</td><td data-v="0.3">+0.3%</td><td>No material news.</td><td><span class="act">Hold</span></td></tr>
 
-<tr data-s="amber" data-sec="Consumer"><td>Nike</td><td class="amber">AMBER</td><td>A1</td><td>AA-</td><td>NR</td><td>Negative</td><td>Mar 2026</td><td>Jun 26</td><td>China demand and inventory normalization commentary remain cautious. Credit metrics still strong but trending negative on EBITDA decline.</td><td><span class="act">Hold</span></td></tr>
+<tr data-s="green"><td>Microsoft</td><td>Tech</td><td class="green">GREEN</td><td>Aaa</td><td>Stable</td><td>AAA</td><td>Stable</td><td>NR</td><td>-</td><td>05/02/22</td><td>07/29/26</td><td data-v="0.5">+0.5%</td><td>No material news.</td><td><span class="act">Hold</span></td></tr>
 
-<tr data-s="amber" data-sec="Consumer"><td>Anheuser-Busch InBev</td><td class="amber">AMBER</td><td>A3</td><td>A-</td><td>BBB+</td><td>Stable</td><td>Feb 2026</td><td>May 8</td><td>Earnings tomorrow with FX and US volume trends in focus. Deleveraging path on track but pace of progress key for any upgrade thesis.</td><td><span class="act">Watch</span></td></tr>
+<tr data-s="amber"><td>Oracle</td><td>Tech</td><td class="amber">AMBER</td><td>Baa2</td><td>Stable</td><td>BBB</td><td>Stable</td><td>BBB</td><td>Stable</td><td>06/22/22</td><td>06/10/26</td><td data-v="-1.8">-1.8%</td><td>Capex commitments for AI infra elevate funding needs. Watching leverage trajectory.</td><td><span class="act">Watch</span></td></tr>
 
-<tr data-s="amber" data-sec="REIT"><td>Digital Realty</td><td class="amber">AMBER</td><td>Baa2</td><td>BBB</td><td>BBB</td><td>Stable</td><td>Feb 2026</td><td>Jul 31</td><td>Hyperscale leasing remains strong but funding needs for development pipeline keep issuance cadence elevated. Watch upcoming maturity wall.</td><td><span class="act">Hold</span></td></tr>
+<tr data-s="green"><td>Salesforce</td><td>Tech</td><td class="green">GREEN</td><td>A2</td><td>Stable</td><td>A+</td><td>Stable</td><td>NR</td><td>-</td><td>03/05/24</td><td>05/28/26</td><td data-v="0.2">+0.2%</td><td>No material news.</td><td><span class="act">Hold</span></td></tr>
 
-<tr data-s="amber" data-sec="Tech"><td>PayPal</td><td class="amber">AMBER</td><td>A3</td><td>A-</td><td>NR</td><td>Stable</td><td>Apr 2026</td><td>Jul 29</td><td>Branded checkout growth deceleration noted at recent investor day. Buyback pace versus FCF generation flagged for monitoring.</td><td><span class="act">Hold</span></td></tr>
+<tr data-s="green"><td>IBM</td><td>Tech</td><td class="green">GREEN</td><td>A3</td><td>Stable</td><td>A-</td><td>Stable</td><td>A-</td><td>Stable</td><td>11/15/24</td><td>07/22/26</td><td data-v="-0.4">-0.4%</td><td>No material news.</td><td><span class="act">Hold</span></td></tr>
 
-<tr data-s="amber" data-sec="Industrials"><td>International Paper</td><td class="amber">AMBER</td><td>Baa2</td><td>BBB</td><td>BBB</td><td>Negative</td><td>Mar 2026</td><td>Jul 31</td><td>DS Smith integration costs running higher than initial guide. Containerboard pricing commentary mixed across the sector.</td><td><span class="act">Watch</span></td></tr>
+<tr data-s="red"><td>HP Inc</td><td>Hardware</td><td class="red">RED</td><td>Baa2</td><td>Negative</td><td>BBB</td><td>Stable</td><td>BBB</td><td>Negative</td><td>05/06/26</td><td>05/28/26</td><td data-v="-7.8" class="dn">-7.8%</td><td>Fitch revised outlook to Negative on PC margin pressure and tariff exposure.</td><td><span class="act">Reduce</span></td></tr>
 
-<tr data-s="amber" data-sec="Tech"><td>TD Synnex</td><td class="amber">AMBER</td><td>Baa3</td><td>BBB-</td><td>BBB-</td><td>Stable</td><td>Mar 2026</td><td>Jun 24</td><td>Distribution margins thin amid PC and networking destocking. Working capital seasonality bears watching into Q2 print.</td><td><span class="act">Watch</span></td></tr>
-
-<tr data-s="green" data-sec="Tech"><td>Amazon</td><td class="green">GREEN</td><td>A1</td><td>AA</td><td>AA-</td><td>Stable</td><td>Feb 2026</td><td>Jul 31</td><td>No material news.</td><td><span class="act">Hold</span></td></tr>
-
-<tr data-s="green" data-sec="Media"><td>Comcast</td><td class="green">GREEN</td><td>A3</td><td>A-</td><td>A-</td><td>Stable</td><td>Jan 2026</td><td>Jul 24</td><td>No material news.</td><td><span class="act">Hold</span></td></tr>
-
-<tr data-s="green" data-sec="Retail"><td>Walmart</td><td class="green">GREEN</td><td>Aa2</td><td>AA</td><td>AA</td><td>Stable</td><td>Feb 2026</td><td>May 21</td><td>No material news.</td><td><span class="act">Hold</span></td></tr>
-
-<tr data-s="green" data-sec="REIT"><td>American
+<tr data-s="amber"><td>HPE</td><td>Hardware</td><td class="amber">AMBER</td><td>Baa2</td><td>Negative</td><td>BBB</td><td>Negative</td><td>BBB</td><td>Negative</td><td>01/30/25</td><td>06/03/26</td><td data-v="-2.3">-2.3
