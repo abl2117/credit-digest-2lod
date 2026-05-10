@@ -4,35 +4,40 @@
 <meta charset="UTF-8">
 <title>Morning Credit Digest</title>
 <style>
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: 'Segoe UI', Arial, sans-serif; background: #f4f4f4; color: #222; font-size: 13px; }
-.header { background: #8B0000; color: white; padding: 18px 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
-.header-left h1 { font-size: 26px; font-weight: 800; letter-spacing: 1px; }
-.header-left .timestamp { font-size: 13px; margin-top: 4px; opacity: 0.95; }
-.pills { display: flex; gap: 8px; }
-.pill { padding: 6px 14px; border-radius: 20px; font-weight: 700; font-size: 13px; background: white; }
-.pill.red { color: #cc0000; }
-.pill.amber { color: #e6a700; }
-.pill.green { color: #2e7d32; }
-.controls { display: flex; gap: 10px; padding: 14px 24px; background: white; border-bottom: 1px solid #ddd; flex-wrap: wrap; align-items: center; }
-.controls button { padding: 7px 16px; border: 1px solid #ccc; background: white; cursor: pointer; border-radius: 4px; font-weight: 600; font-size: 12px; }
-.controls button.active { background: #8B0000; color: white; border-color: #8B0000; }
-.controls input, .controls select { padding: 7px 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 12px; }
-.controls input { width: 240px; }
-table { width: 100%; border-collapse: collapse; background: white; font-size: 12px; }
-th { background: #2b2b2b; color: white; padding: 10px 8px; text-align: left; font-weight: 600; position: sticky; top: 0; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
-td { padding: 9px 8px; border-bottom: 1px solid #eee; vertical-align: top; }
-tbody tr:hover { background: #fafafa; }
-.status-red { color: #cc0000; font-weight: 800; }
-.status-amber { color: #e6a700; font-weight: 800; }
-.status-green { color: #2e7d32; font-weight: 800; }
-.company { font-weight: 700; }
-.action-btn { padding: 5px 10px; background: #8B0000; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 11px; font-weight: 600; }
-.footer { background: #8B0000; color: white; padding: 18px 24px; margin-top: 20px; }
-.footer h3 { margin-bottom: 10px; font-size: 15px; }
-.footer ol { padding-left: 22px; }
-.footer li { margin: 5px 0; font-size: 13px; }
-.table-wrap { overflow-x: auto; }
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Arial,sans-serif;background:#f4f4f4;color:#222;font-size:12px}
+.header{background:#8B0000;color:#fff;padding:16px 24px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap}
+.header-left h1{font-size:24px;font-weight:800;letter-spacing:1px}
+.header-left .timestamp{font-size:13px;margin-top:4px;opacity:.95}
+.header-right{display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+.pills{display:flex;gap:8px}
+.pill{padding:6px 14px;border-radius:20px;font-weight:700;font-size:12px;background:#fff}
+.pill.red{color:#cc0000}.pill.amber{color:#e6a700}.pill.green{color:#2e7d32}
+.refresh{font-size:11px;opacity:.9}
+.controls{display:flex;gap:10px;padding:12px 24px;background:#fff;border-bottom:1px solid #ddd;flex-wrap:wrap;align-items:center}
+.controls button{padding:7px 14px;border:1px solid #ccc;background:#fff;cursor:pointer;border-radius:4px;font-weight:600;font-size:12px}
+.controls button.active{background:#8B0000;color:#fff;border-color:#8B0000}
+.controls input,.controls select{padding:7px 10px;border:1px solid #ccc;border-radius:4px;font-size:12px}
+.controls input{width:220px}
+.table-wrap{overflow-x:auto;background:#fff}
+table{width:100%;border-collapse:collapse;font-size:11.5px;min-width:1700px}
+th{background:#2b2b2b;color:#fff;padding:9px 7px;text-align:left;font-weight:600;font-size:10.5px;text-transform:uppercase;letter-spacing:.3px;cursor:pointer;position:sticky;top:0;white-space:nowrap}
+th:hover{background:#444}
+td{padding:8px 7px;border-bottom:1px solid #eee;vertical-align:top}
+tbody tr:hover{background:#fafafa}
+.status-red{color:#cc0000;font-weight:800}
+.status-amber{color:#e6a700;font-weight:800}
+.status-green{color:#2e7d32;font-weight:800}
+.company{font-weight:700;white-space:nowrap}
+.up{color:#2e7d32;font-weight:700}
+.down{color:#cc0000;font-weight:700}
+.neutral{color:#555}
+.action-btn{padding:5px 10px;background:#8B0000;color:#fff;border:none;border-radius:3px;cursor:pointer;font-size:10.5px;font-weight:600}
+.footer{background:#8B0000;color:#fff;padding:18px 24px;margin-top:20px}
+.footer h3{margin-bottom:10px;font-size:15px}
+.footer ol{padding-left:22px}
+.footer li{margin:5px 0;font-size:12.5px}
+.keydev{max-width:340px;line-height:1.35}
 </style>
 </head>
 <body>
@@ -42,10 +47,13 @@ tbody tr:hover { background: #fafafa; }
     <h1>MORNING CREDIT DIGEST</h1>
     <div class="timestamp">05/07/26 : 01:50 AM ET</div>
   </div>
-  <div class="pills">
-    <span class="pill green" id="pillGreen">GREEN: 0</span>
-    <span class="pill amber" id="pillAmber">AMBER: 0</span>
-    <span class="pill red" id="pillRed">RED: 0</span>
+  <div class="header-right">
+    <div class="pills">
+      <span class="pill green" id="pillGreen">GREEN: 0</span>
+      <span class="pill amber" id="pillAmber">AMBER: 0</span>
+      <span class="pill red" id="pillRed">RED: 0</span>
+    </div>
+    <div class="refresh">Last refresh: 05/07/26 01:50 AM ET</div>
   </div>
 </div>
 
@@ -55,70 +63,208 @@ tbody tr:hover { background: #fafafa; }
   <button data-filter="amber">Amber</button>
   <button data-filter="green">Green</button>
   <input type="text" id="search" placeholder="Search company...">
-  <select id="sectorFilter">
-    <option value="all">All Sectors</option>
-    <option>Telecom</option>
-    <option>Media</option>
-    <option>Tech</option>
-    <option>Auto</option>
-    <option>Retail</option>
-    <option>REIT</option>
-    <option>Consumer</option>
-    <option>Energy</option>
-    <option>Utility</option>
-    <option>Tobacco</option>
-    <option>Packaging</option>
-    <option>IT Services</option>
-    <option>Distribution</option>
-    <option>Industrial</option>
-  </select>
+  <select id="sectorFilter"><option value="all">All Sectors</option></select>
 </div>
 
 <div class="table-wrap">
 <table id="creditTable">
 <thead>
 <tr>
-  <th>Company</th><th>Status</th><th>Moody's</th><th>S&P</th><th>Fitch</th>
-  <th>Outlook</th><th>Last Action</th><th>Next Earnings</th><th>Key Development</th><th>Action</th>
+<th data-col="0">Company</th>
+<th data-col="1">Sector</th>
+<th data-col="2">Status</th>
+<th data-col="3">Moody's</th>
+<th data-col="4">Moody's Outlook</th>
+<th data-col="5">S&P</th>
+<th data-col="6">S&P Outlook</th>
+<th data-col="7">Fitch</th>
+<th data-col="8">Fitch Outlook</th>
+<th data-col="9">Last Action</th>
+<th data-col="10">Next Earnings</th>
+<th data-col="11" data-type="num">1D Stock %</th>
+<th data-col="12" data-type="num">1M Stock %</th>
+<th data-col="13" data-type="num">YTD Stock %</th>
+<th data-col="14">Key Development</th>
+<th data-col="15">Action</th>
 </tr>
 </thead>
-<tbody>
-</tbody>
+<tbody id="tbody"></tbody>
 </table>
 </div>
 
 <div class="footer">
   <h3>TOP 3 NAMES REQUIRING ATTENTION</h3>
   <ol>
-    <li><b>Warner Bros. Discovery:</b> Ongoing strategic split execution risk and elevated leverage keep spreads wide.</li>
-    <li><b>Kyndryl:</b> Watch for revenue stabilization commentary into FY27; refinancing visibility remains a credit focus.</li>
-    <li><b>Walgreens / Whirlpool:</b> Whirlpool faces continued housing weakness and tariff exposure pressuring margins.</li>
+    <li><b>Warner Bros. Discovery:</b> Strategic split execution and elevated leverage keep spreads wide ahead of Q1 print.</li>
+    <li><b>Whirlpool:</b> Sub investment grade at S&P with negative outlook as housing weakness and tariffs pressure margins.</li>
+    <li><b>Walgreens peers / Kyndryl:</b> Kyndryl FY27 guide and signings momentum remain the key credit catalyst into May 28 print.</li>
   </ol>
 </div>
 
 <script>
 const data = [
- {c:"AT&T",s:"green",sec:"Telecom",m:"Baa2",sp:"BBB",f:"BBB+",o:"Stable",la:"Feb 2025",ne:"Jul 23 2026",k:"No material news."},
- {c:"Verizon",s:"green",sec:"Telecom",m:"Baa1",sp:"BBB+",f:"A-",o:"Stable",la:"2024",ne:"Jul 21 2026",k:"No material news."},
- {c:"Comcast",s:"amber",sec:"Media",m:"A3",sp:"A-",f:"A-",o:"Stable",la:"2024",ne:"Jul 24 2026",k:"Broadband subscriber losses continue to pressure top line. Spinoff of cable networks unit progressing with leverage neutral framing."},
- {c:"Amazon",s:"green",sec:"Tech",m:"A1",sp:"AA",f:"AA-",o:"Stable",la:"2023",ne:"Jul 31 2026",k:"No material news."},
- {c:"Disney",s:"green",sec:"Media",m:"A2",sp:"A-",f:"A-",o:"Stable",la:"2024",ne:"Aug 6 2026",k:"No material news."},
- {c:"General Motors",s:"amber",sec:"Auto",m:"Baa2",sp:"BBB",f:"BBB",o:"Stable",la:"2024",ne:"Jul 22 2026",k:"Tariff headwinds and EV demand softness continue to weigh on guidance. Buyback pace under monitoring."},
- {c:"Walmart",s:"green",sec:"Retail",m:"Aa2",sp:"AA",f:"AA",o:"Stable",la:"2024",ne:"May 15 2026",k:"No material news."},
- {c:"American Tower",s:"amber",sec:"REIT",m:"Baa3",sp:"BBB-",f:"BBB+",o:"Stable",la:"2024",ne:"Jul 29 2026",k:"Rate sensitivity and India divestiture proceeds deployment in focus. Leverage trending toward target range."},
- {c:"Nike",s:"amber",sec:"Consumer",m:"A1",sp:"AA-",f:"A+",o:"Negative",la:"2025",ne:"Jun 26 2026",k:"China weakness and inventory normalization continue. Turnaround under new CEO progressing slowly."},
- {c:"IBM",s:"green",sec:"Tech",m:"A3",sp:"A-",f:"A-",o:"Stable",la:"2024",ne:"Jul 22 2026",k:"No material news."},
- {c:"Kimberly-Clark",s:"green",sec:"Consumer",m:"A2",sp:"A",f:"A",o:"Stable",la:"2023",ne:"Jul 22 2026",k:"No material news."},
- {c:"Chevron",s:"green",sec:"Energy",m:"Aa2",sp:"AA-",f:"NR",o:"Stable",la:"2024",ne:"Aug 1 2026",k:"No material news."},
- {c:"NextEra Energy",s:"green",sec:"Utility",m:"Baa1",sp:"A-",f:"A-",o:"Stable",la:"2024",ne:"Jul 23 2026",k:"No material news."},
- {c:"Duke Energy",s:"green",sec:"Utility",m:"Baa2",sp:"BBB+",f:"BBB+",o:"Stable",la:"2024",ne:"Aug 6 2026",k:"No material news."},
- {c:"Salesforce",s:"green",sec:"Tech",m:"A2",sp:"A+",f:"A+",o:"Stable",la:"2024",ne:"May 28 2026",k:"No material news."},
- {c:"Anheuser-Busch InBev",s:"green",sec:"Consumer",m:"A3",sp:"A-",f:"BBB+",o:"Stable",la:"2024",ne:"Jul 31 2026",k:"No material news."},
- {c:"Sempra Energy",s:"amber",sec:"Utility",m:"Baa2",sp:"BBB+",f:"BBB+",o:"Stable",la:"2024",ne:"Aug 6 2026",k:"Heavy capex plan for Texas grid and LNG drives funding needs. Equity issuance and asset sales in focus."},
- {c:"Genuine Parts",s:"green",sec:"Distribution",m:"A2",sp:"A",f:"NR",o:"Stable",la:"2023",ne:"Jul 23 2026",k:"No material news."},
- {c:"Coca-Cola",s:"green",sec:"Consumer",m:"A1",sp:"A+",f:"A",o:"Stable",la:"2023",ne:"Jul 23 2026",k:"No material news."},
- {c:"AutoZone",s:"green",sec:"Retail",m:"Baa1",sp:"BBB",f:"BBB+",o:"Stable",la:"2024",ne:"May 26 2026",k:"No material news."},
- {c:"Whirlpool",s:"red",sec:"Consumer",m:"Baa3",sp:"BB+",f:"BBB-",o:"Negative",la:"Apr 2025",ne:"Jul 23 2026",k:"Continued housing market weakness and tariff cost pressure weighing on margins. S&P maintains sub investment grade with negative outlook keeping refinancing risk elevated."},
- {c:"Kyndryl",s:"amber",sec:"IT Services",m:"Baa3",sp:"BBB-",f:"BBB-",o:"Stable",la:"2024",ne:"May 28 2026",k:"FY27 guide and revenue inflection commentary remain key catalysts. Free cash flow trajectory improving but signings momentum closely watched."},
- {c:"Alphabet",s:"green",sec:"Tech",m:"Aa2",sp:"AA+",f:"AA+",o:"Stable",la:"2023",ne:"Jul 28 2026",k:"No material news."},
- {c:"Equinix",s:"green",sec:"REIT",m:"Baa2",sp:"BBB",f:"
+ {c:"AT&T",sec:"Telecom",s:"green",m:"Baa2",mo:"Stable",sp:"BBB",spo:"Stable",f:"BBB+",fo:"Stable",la:"Feb 2025",ne:"Jul 23 2026",d1:0.3,d30:2.1,ytd:6.4,k:"No material news."},
+ {c:"Verizon",sec:"Telecom",s:"green",m:"Baa1",mo:"Stable",sp:"BBB+",spo:"Stable",f:"A-",fo:"Stable",la:"2024",ne:"Jul 21 2026",d1:0.1,d30:1.4,ytd:3.2,k:"No material news."},
+ {c:"Comcast",sec:"Telecom",s:"amber",m:"A3",mo:"Stable",sp:"A-",spo:"Stable",f:"A-",fo:"Stable",la:"2024",ne:"Jul 24 2026",d1:-1.2,d30:-3.8,ytd:-7.5,k:"Broadband subscriber losses continue to pressure top line. Cable networks spinoff execution risk under monitoring."},
+ {c:"Disney",sec:"Media",s:"green",m:"A2",mo:"Stable",sp:"A-",spo:"Stable",f:"A-",fo:"Stable",la:"2024",ne:"Aug 6 2026",d1:0.5,d30:3.1,ytd:4.2,k:"No material news."},
+ {c:"Warner Bros. Discovery",sec:"Media",s:"red",m:"Ba2",mo:"Negative",sp:"BB",spo:"Negative",f:"BB+",fo:"Negative",la:"Apr 2026",ne:"May 8 2026",d1:-4.5,d30:-12.3,ytd:-22.1,k:"Strategic separation of streaming and cable networks progressing with leverage concerns at SpinCo. Q1 print expected May 8 with focus on cash flow and debt allocation."},
+ {c:"Netflix",sec:"Media",s:"green",m:"Baa1",mo:"Positive",sp:"BBB+",spo:"Positive",f:"BBB+",fo:"Stable",la:"2024",ne:"Jul 17 2026",d1:1.2,d30:6.8,ytd:14.3,k:"No material news."},
+ {c:"Amazon",sec:"Tech",s:"green",m:"A1",mo:"Stable",sp:"AA",spo:"Stable",f:"AA-",fo:"Stable",la:"2023",ne:"Jul 31 2026",d1:0.4,d30:2.9,ytd:5.1,k:"No material news."},
+ {c:"Alphabet",sec:"Tech",s:"green",m:"Aa2",mo:"Stable",sp:"AA+",spo:"Stable",f:"AA+",fo:"Stable",la:"2023",ne:"Jul 28 2026",d1:0.8,d30:4.2,ytd:8.6,k:"No material news."},
+ {c:"Microsoft",sec:"Tech",s:"green",m:"Aaa",mo:"Stable",sp:"AAA",spo:"Stable",f:"AAA",fo:"Stable",la:"2023",ne:"Jul 28 2026",d1:0.6,d30:3.7,ytd:7.2,k:"No material news."},
+ {c:"Oracle",sec:"Tech",s:"amber",m:"Baa2",mo:"Stable",sp:"BBB",spo:"Stable",f:"BBB",fo:"Stable",la:"2024",ne:"Jun 11 2026",d1:-1.8,d30:-5.4,ytd:-3.2,k:"AI capex and datacenter buildout driving elevated debt funding needs. Leverage trajectory in focus as cloud growth accelerates."},
+ {c:"Salesforce",sec:"Tech",s:"green",m:"A2",mo:"Stable",sp:"A+",spo:"Stable",f:"A+",fo:"Stable",la:"2024",ne:"May 28 2026",d1:0.2,d30:1.9,ytd:2.8,k:"No material news."},
+ {c:"IBM",sec:"Tech",s:"green",m:"A3",mo:"Stable",sp:"A-",spo:"Stable",f:"A-",fo:"Stable",la:"2024",ne:"Jul 22 2026",d1:0.5,d30:3.4,ytd:9.7,k:"No material news."},
+ {c:"HP Inc",sec:"Hardware",s:"amber",m:"Baa2",mo:"Stable",sp:"BBB",spo:"Stable",f:"BBB",fo:"Stable",la:"2024",ne:"May 28 2026",d1:-2.4,d30:-7.1,ytd:-11.3,k:"PC demand softness and tariff exposure into Q2 print. Margin guidance and shareholder return pace remain in focus."},
+ {c:"HPE",sec:"Hardware",s:"amber",m:"Baa2",mo:"Negative",sp:"BBB",spo:"Negative",f:"BBB",fo:"Negative",la:"Sep 2024",ne:"Jun 2 2026",d1:-1.5,d30:-4.2,ytd:-8.6,k:"Juniper integration synergies and debt paydown trajectory under watch. Negative outlooks reflect leverage from acquisition financing."},
+ {c:"Dell",sec:"Hardware",s:"green",m:"Baa2",mo:"Stable",sp:"BBB",spo:"Stable",f:"BBB",fo:"Stable",la:"2024",ne:"May 28 2026",d1:1.1,d30:5.8,ytd:12.4,k:"No material news."},
+ {c:"Nextracker",sec:"Hardware",s:"amber",m:"Ba1",mo:"Stable",sp:"BB+",spo:"Stable",f:"NR",fo:"-",la:"2024",ne:"May 14 2026",d1:-3.2,d30:-8.7,ytd:-15.2,k:"Solar tracker demand softening amid US utility scale project delays. Earnings May 14 with focus on backlog conversion and tariff exposure."},
+ {c:"Sanmina",sec:"EMS",s:"green",m:"Ba1",mo:"Positive",sp:"BB+",spo:"Stable",f:"BBB-",fo:"Stable",la:"2024",ne:"Jul 28 2026",d1:0.7,d30:2.3,ytd:4.8,k:"No material news."},
+ {c:"Flex Ltd",sec:"EMS",s:"green",m:"Baa3",mo:"Stable",sp:"BBB-",spo:"Stable",f:"BBB-",fo:"Stable",la:"2024",ne:"Jul 23 2026",d1:0.4,d30:3.1,ytd:6.7,k:"No material news."},
+ {c:"Jabil",sec:"EMS",s:"green",m:"Baa3",mo:"Stable",sp:"BBB-",spo:"Stable",f:"BBB-",fo:"Stable",la:"2024",ne:"Jun 18 2026",d1:0.2,d30:2.8,ytd:5.4,k:"No material news."},
+ {c:"Arrow Electronics",sec:"Distribution",s:"amber",m:"Baa2",mo:"Stable",sp:"BBB",spo:"Stable",f:"BBB-",fo:"Stable",la:"2024",ne:"Aug 4 2026",d1:-1.3,d30:-4.6,ytd:-6.8,k:"Electronic components distribution cycle remains soft. Working capital efficiency and cash conversion under watch."},
+ {c:"TD Synnex",sec:"Distribution",s:"green",m:"Baa3",mo:"Stable",sp:"BBB-",spo:"Stable",f:"BBB-",fo:"Stable",la:"2024",ne:"Jun 24 2026",d1:0.6,d30:2.1,ytd:3.9,k:"No material news."},
+ {c:"Ingram Micro",sec:"Distribution",s:"amber",m:"Ba1",mo:"Stable",sp:"BB+",spo:"Stable",f:"BB+",fo:"Stable",la:"2024",ne:"May 19 2026",d1:-1.8,d30:-5.2,ytd:-9.4,k:"Post IPO leverage paydown trajectory in focus into Q1 print. Channel inventory normalization continues."},
+ {c:"Kyndryl",sec:"IT Services",s:"amber",m:"Baa3",mo:"Stable",sp:"BBB-",spo:"Stable",f:"BBB-",fo:"Stable",la:"2024",ne:"May 28 2026",d1:-0.9,d30:-3.4,ytd:-7.2,k:"FY27 guide and revenue inflection commentary remain key catalysts. Free cash flow improving but signings momentum closely watched."},
+ {c:"Cognizant",sec:"IT Services",s:"green",m:"A3",mo:"Stable",sp:"NR",spo:"-",f:"NR",fo:"-",la:"2023",ne:"Jul 30 2026",d1:0.3,d30:1.8,ytd:2.4,k:"No material news."},
+ {c:"Equinix",sec:"Datacenter",s:"green",m:"Baa2",mo:"Stable",sp:"BBB",spo:"Stable",f:"BBB+",fo:"Stable",la:"2024",ne:"May 7 2026",d1:1.4,d30:6.2,ytd:11.8,k:"No material news."},
+ {c:"Digital Realty",sec:"Datacenter",s:"amber",m:"Baa2",mo:"Stable",sp:"BBB",spo:"Stable",f:"BBB",fo:"Stable",la:"2024",ne:"Jul 31 2026",d1:-0.6,d30:-2.4,ytd:-4.1,k:"AI driven leasing demand strong but capex and equity funding cadence in focus. Power constraints in key markets ongoing."},
+ {c:"American Tower",sec:"Towers",s:"amber",m:"Baa3",mo:"Stable",sp:"BBB-",spo:"Stable",f:"BBB+",fo:"Stable",la:"2024",ne:"Jul 29 2026",d1:-0.4,d30:-1.8,ytd:-2.6,k:"Rate sensitivity and India divestiture proceeds deployment in focus. Leverage trending toward target range."},
+ {c:"PayPal",sec:"Payments",s:"amber",m:"A3",mo:"Stable",sp:"A-",spo:"Stable",f:"A-",fo:"Stable",la:"2024",ne:"Jul 28 2026",d1:-2.1,d30:-6.8,ytd:-12.4,k:"Branded checkout momentum and take rate trends under scrutiny. Buyback pace and credit portfolio growth in focus."},
+ {c:"Corpay",sec:"Payments",s:"green",m:"Baa2",mo:"Stable",sp:"BBB",spo:"Stable",f:"NR",fo:"-",la:"2024",ne:"May 7 2026",d1:0.8,d30:3.4,ytd:5.2,k:"No material news."},
+ {c:"Booking Holdings",sec:"Travel",s:"green",m:"A3",mo:"Stable",sp:"A-",spo:"Stable",f:"A",fo:"Stable",la:"2024",ne:"May 7 2026",d1:1.6,d30:4.8,ytd:9.3,k:"No material news."},
+ {c:"Uber",sec:"Travel",s:"green",m:"Baa2",mo:"Positive",sp:"BBB-",spo:"Positive",f:"BBB",fo:"Stable",la:"Mar 2025",ne:"May 7 2026",d1:2.3,d30:7.4,ytd:13.6,k:"No material news."},
+ {c:"General Motors",sec:"Auto",s:"amber",m:"Baa2",mo:"Stable",sp:"BBB",spo:"Stable",f:"BBB",fo:"Stable",la:"2024",ne:"Jul 22 2026",d1:-1.4,d30:-5.8,ytd:-9.7,k:"Tariff headwinds and EV demand softness continue to pressure guidance. Buyback pace and GMF leverage under monitoring."},
+ {c:"Tesla",sec:"Auto",s:"red",m:"Baa3",mo:"Stable",sp:"BBB",spo:"Stable",f:"BBB",fo:"Stable",la:"2024",ne:"Jul 23 2026",d1:-11.2,d30:-18.4,ytd:-31.2,k:"Stock down sharply on weak April delivery data and softening China demand. Margin pressure and autonomy capex in focus."},
+ {c:"Walmart",sec:"Retail",s:"green",m:"Aa2",mo:"Stable",sp:"AA",spo:"Stable",f:"AA",fo:"Stable",la:"2024",ne:"May 15 2026",d1:0.4,d30:2.6,ytd:6.8,k:"No material news."},
+ {c:"AutoZone",sec:"Retail",s:"green",m:"Baa1",mo:"Stable",sp:"BBB",spo:"Stable",f:"BBB+",fo:"Stable",la:"2024",ne:"May 26 2026",d1:0.7,d30:3.2,ytd:8.4,k:"No material news."},
+ {c:"Genuine Parts",sec:"Retail",s:"green",m:"A2",mo:"Stable",sp:"A",spo:"Stable",f:"NR",fo:"-",la:"2023",ne:"Jul 23 2026",d1:0.3,d30:1.8,ytd:3.6,k:"No material news."},
+ {c:"Coca-Cola",sec:"Beverage",s:"green",m:"A1",mo:"Stable",sp:"A+",spo:"Stable",f:"A",fo:"Stable",la:"2023",ne:"Jul 23 2026",d1:0.2,d30:2.4,ytd:7.1,k:"No material news."},
+ {c:"Anheuser-Busch InBev",sec:"Beverage",s:"green",m:"A3",mo:"Stable",sp:"A-",spo:"Stable",f:"BBB+",fo:"Positive",la:"2024",ne:"Jul 31 2026",d1:0.5,d30:3.1,ytd:6.4,k:"No material news."},
+ {c:"Philip Morris",sec:"Tobacco",s:"green",m:"A2",mo:"Stable",sp:"A-",spo:"Stable",f:"A",fo:"Stable",la:"2024",ne:"Jul 22 2026",d1:0.8,d30:4.2,ytd:11.3,k:"No material news."},
+ {c:"Altria",sec:"Tobacco",s:"green",m:"A3",mo:"Stable",sp:"BBB",spo:"Stable",f:"BBB",fo:"Stable",la:"2024",ne:"Jul 30 2026",d1:0.3,d30:1.6,ytd:4.2,k:"No material news."},
+ {c:"Imperial Brands",sec:"Tobacco",s:"green",m:"Baa2",mo:"Stable",sp:"BBB",spo:"Stable",f:"BBB",fo:"Stable",la:"2024",ne:"May 19 2026",d1:0.4,d30:2.3,ytd:5.8,k:"No material news."},
+ {c:"Universal Corporation",sec:"Tobacco",s:"amber",m:"NR",mo:"-",sp:"BBB-",spo:"Stable",f:"NR",fo:"-",la:"2023",ne:"May 28 2026",d1:-0.6,d30:-2.8,ytd:-4.3,k:"Leaf tobacco pricing and working capital cycle remain key credit considerations. Smaller scale name with concentrated customer base."},
+ {c:"Nike",sec:"Consumer",s:"amber",m:"A1",mo:"Negative",sp:"AA-",spo:"Negative",f:"A+",fo:"Negative",la:"Jun 2025",ne:"Jun 26 2026",d1:-2.6,d30:-7.8,ytd:-14.2,k:"China weakness and inventory normalization continue. Turnaround under new CEO progressing slowly with margin pressure persisting."},
+ {c:"Kimberly-Clark",sec:"Consumer",s:"green",m:"A2",mo:"Stable",sp:"A",spo:"Stable",f:"A",fo:"Stable",la:"2023",ne:"Jul 22 2026",d1:0.3,d30:1.4,ytd:2.8,k:"No material news."},
+ {c:"Whirlpool",sec:"Consumer",s:"red",m:"Baa3",mo:"Negative",sp:"BB+",spo:"Negative",f:"BBB-",fo:"Negative",la:"Apr 2025",ne:"Jul 23 2026",d1:-3.8,d30:-14.6,ytd:-28.4,k:"Continued housing weakness and tariff cost pressure weighing on margins. S&P sub investment grade with negative outlooks across agencies keeping refinancing risk elevated."},
+ {c:"Ball Corp",sec:"Packaging",s:"green",m:"Ba1",mo:"Stable",sp:"BB+",spo:"Stable",f:"BB+",fo:"Stable",la:"2024",ne:"May 7 2026",d1:0.9,d30:3.6,ytd:7.2,k:"No material news."},
+ {c:"Crown Holdings",sec:"Packaging",s:"green",m:"Ba2",mo:"Stable",sp:"BB+",spo:"Stable",f:"BB+",fo:"Positive",la:"2024",ne:"Jul 21 2026",d1:0.5,d30:2.8,ytd:5.4,k:"No material news."},
+ {c:"International Paper",sec:"Packaging",s:"amber",m:"Baa2",mo:"Negative",sp:"BBB",spo:"Negative",f:"BBB",fo:"Negative",la:"2025",ne:"Jul 30 2026",d1:-1.2,d30:-4.8,ytd:-8.6,k:"DS Smith integration execution and synergy delivery in focus. Containerboard pricing and demand recovery pace under watch."},
+ {c:"Chevron",sec:"Energy",s:"green",m:"Aa2",mo:"Stable",sp:"AA-",spo:"Stable",f:"NR",fo:"-",la:"2024",ne:"Aug 1 2026",d1:0.4,d30:2.1,ytd:4.6,k:"No material news."},
+ {c:"NextEra Energy",sec:"Utilities",s:"green",m:"Baa1",mo:"Stable",sp:"A-",spo:"Stable",f:"A-",fo:"Stable",la:"2024",ne:"Jul 23 2026",d1:0.6,d30:3.2,ytd:6.8,k:"No material news."},
+ {c:"Duke Energy",sec:"Utilities",s:"green",m:"Baa2",mo:"Stable",sp:"BBB+",spo:"Stable",f:"BBB+",fo:"Stable",la:"2024",ne:"Aug 6 2026",d1:0.3,d30:1.8,ytd:4.2,k:"No material news."},
+ {c:"Sempra Energy",sec:"Utilities",s:"amber",m:"Baa2",mo:"Stable",sp:"BBB+",spo:"Negative",f:"BBB+",fo:"Stable",la:"2024",ne:"Aug 6 2026",d1:-0.8,d30:-3.2,ytd:-5.8,k:"Heavy capex plan for Texas grid and LNG drives funding needs. Equity issuance and asset sales in focus to manage leverage."}
+];
+
+function fmtPct(v){
+  if(v===null||v===undefined||isNaN(v))return {t:"n/a",c:"neutral"};
+  if(v===0)return {t:"flat",c:"neutral"};
+  const sign=v>0?"+":"";
+  const cls=v>5?"up":v<-5?"down":"neutral";
+  return {t:sign+v.toFixed(1)+"%",c:cls};
+}
+
+const tbody=document.getElementById("tbody");
+const sectors=new Set();
+data.forEach(r=>{
+  sectors.add(r.sec);
+  const d1=fmtPct(r.d1),d30=fmtPct(r.d30),ytd=fmtPct(r.ytd);
+  const stCls="status-"+r.s;
+  const stTxt=r.s.toUpperCase();
+  const tr=document.createElement("tr");
+  tr.setAttribute("data-status",r.s);
+  tr.setAttribute("data-sector",r.sec);
+  tr.setAttribute("data-company",r.c.toLowerCase());
+  tr.innerHTML=`
+    <td class="company">${r.c}</td>
+    <td>${r.sec}</td>
+    <td class="${stCls}">${stTxt}</td>
+    <td>${r.m}</td><td>${r.mo}</td>
+    <td>${r.sp}</td><td>${r.spo}</td>
+    <td>${r.f}</td><td>${r.fo}</td>
+    <td>${r.la}</td>
+    <td>${r.ne}</td>
+    <td class="${d1.c}" data-num="${r.d1}">${d1.t}</td>
+    <td class="${d30.c}" data-num="${r.d30}">${d30.t}</td>
+    <td class="${ytd.c}" data-num="${r.ytd}">${ytd.t}</td>
+    <td class="keydev">${r.k}</td>
+    <td><button class="action-btn">Review</button></td>`;
+  tbody.appendChild(tr);
+});
+
+// Sector dropdown
+const sectorSel=document.getElementById("sectorFilter");
+[...sectors].sort().forEach(s=>{
+  const o=document.createElement("option");o.value=s;o.textContent=s;sectorSel.appendChild(o);
+});
+
+// Pill counts
+function updatePills(){
+  const rows=[...tbody.querySelectorAll("tr")];
+  const g=rows.filter(r=>r.dataset.status==="green").length;
+  const a=rows.filter(r=>r.dataset.status==="amber").length;
+  const rd=rows.filter(r=>r.dataset.status==="red").length;
+  document.getElementById("pillGreen").textContent="GREEN: "+g;
+  document.getElementById("pillAmber").textContent="AMBER: "+a;
+  document.getElementById("pillRed").textContent="RED: "+rd;
+}
+updatePills();
+
+// Filter state
+let curStatus="all";
+function applyFilters(){
+  const q=document.getElementById("search").value.toLowerCase();
+  const sec=sectorSel.value;
+  tbody.querySelectorAll("tr").forEach(tr=>{
+    const okS=curStatus==="all"||tr.dataset.status===curStatus;
+    const okQ=!q||tr.dataset.company.includes(q);
+    const okSec=sec==="all"||tr.dataset.sector===sec;
+    tr.style.display=(okS&&okQ&&okSec)?"":"none";
+  });
+}
+
+document.querySelectorAll(".controls button[data-filter]").forEach(b=>{
+  b.addEventListener("click",()=>{
+    document.querySelectorAll(".controls button[data-filter]").forEach(x=>x.classList.remove("active"));
+    b.classList.add("active");
+    curStatus=b.dataset.filter;
+    applyFilters();
+  });
+});
+document.getElementById("search").addEventListener("input",applyFilters);
+sectorSel.addEventListener("change",applyFilters);
+
+// Sorting
+const headers=document.querySelectorAll("th[data-col]");
+const sortState={};
+headers.forEach(th=>{
+  th.addEventListener("click",()=>{
+    const col=+th.dataset.col;
+    const type=th.dataset.type||"str";
+    const dir=sortState[col]==="asc"?"desc":"asc";
+    sortState={};sortState[col]=dir;
+    const rows=[...tbody.querySelectorAll("tr")];
+    rows.sort((a,b)=>{
+      let av,bv;
+      if(type==="num"){
+        av=parseFloat(a.children[col].dataset.num);
+        bv=parseFloat(b.children[col].dataset.num);
+        if(isNaN(av))av=-9999;if(isNaN(bv))bv=-9999;
+      }else if(col===10||col===9){
+        av=Date.parse(a.children[col].textContent)||0;
+        bv=Date.parse(b.children[col].textContent)||0;
+      }else{
+        av=a.children[col].textContent.toLowerCase();
+        bv=b.children[col].textContent.toLowerCase();
+      }
+      if(av<bv)return dir==="asc"?-1:1;
+      if(av>bv)return dir==="asc"?1:-1;
+      return 0;
+    });
+    rows.forEach(r=>tbody.appendChild(r));
+  });
+});
+</script>
+</body>
+</html>
