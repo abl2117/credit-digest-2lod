@@ -30,7 +30,7 @@ tbody tr:hover { background: #fafafa; }
 .footer h3 { font-size: 15px; margin-bottom: 10px; letter-spacing: 0.5px; }
 .footer ul { list-style: none; }
 .footer li { padding: 5px 0; font-size: 13px; }
-.footer li strong { display: inline-block; min-width: 200px; }
+.footer li strong { display: inline-block; min-width: 220px; }
 .key-dev { max-width: 360px; }
 .table-wrap { overflow-x: auto; }
 </style>
@@ -40,7 +40,7 @@ tbody tr:hover { background: #fafafa; }
 <div class="header">
   <div class="header-left">
     <h1>MORNING CREDIT DIGEST</h1>
-    <div class="datetime">05/12/26 : 08:00 AM ET</div>
+    <div class="datetime">05/07/26 : 01:50 AM ET</div>
   </div>
   <div class="pills">
     <div class="pill green" id="pill-green">GREEN 0</div>
@@ -84,9 +84,9 @@ tbody tr:hover { background: #fafafa; }
 <div class="footer">
   <h3>TOP 3 NAMES REQUIRING ATTENTION</h3>
   <ul>
-    <li><strong>Warner Bros. Discovery:</strong> Post-earnings ratings pressure with leverage above 4x and continued linear decline.</li>
-    <li><strong>Tesla:</strong> Persistent delivery weakness, margin compression, and brand-related demand erosion.</li>
-    <li><strong>Whirlpool:</strong> Housing-driven demand weakness, elevated leverage, and dividend coverage concerns.</li>
+    <li><strong>Warner Bros. Discovery:</strong> Continued linear ad decline and leverage above 4x with 1Q earnings risk this week.</li>
+    <li><strong>Tesla:</strong> Persistent delivery weakness, margin compression, and brand related demand erosion in Europe and China.</li>
+    <li><strong>Whirlpool:</strong> Housing led demand softness, tariff exposure, and dividend coverage pressure flagged by agencies.</li>
   </ul>
 </div>
 
@@ -94,22 +94,22 @@ tbody tr:hover { background: #fafafa; }
 const data = [
   {company:"AT&T",sector:"Telecom",status:"green",moodys:"Baa2",sp:"BBB",fitch:"BBB+",outlook:"Stable",last_action:"Feb 2025",earnings:"Jul 23, 2026",key_dev:"No material news.",action:"Hold"},
   {company:"Verizon",sector:"Telecom",status:"green",moodys:"Baa1",sp:"BBB+",fitch:"A-",outlook:"Stable",last_action:"Jan 2025",earnings:"Jul 21, 2026",key_dev:"No material news.",action:"Hold"},
-  {company:"Comcast",sector:"Telecom",status:"amber",moodys:"A3",sp:"A-",fitch:"A-",outlook:"Stable",last_action:"Mar 2025",earnings:"Jul 24, 2026",key_dev:"Broadband subscriber losses continue; cable headwinds and Versant spin overhang.",action:"Watch"},
-  {company:"Amazon",sector:"Tech",status:"green",moodys:"A1",sp:"AA",fitch:"AA-",outlook:"Stable",last_action:"Mar 2023",earnings:"Jul 30, 2026",key_dev:"No material news.",action:"Hold"},
-  {company:"Disney",sector:"Media",status:"amber",moodys:"A2",sp:"A-",fitch:"A-",outlook:"Stable",last_action:"May 2024",earnings:"Aug 5, 2026",key_dev:"Reported FQ2 last week; DTC profitability progress but linear ad softness persists.",action:"Watch"},
-  {company:"General Motors",sector:"Auto",status:"amber",moodys:"Baa2",sp:"BBB",fitch:"BBB",outlook:"Stable",last_action:"Apr 2024",earnings:"Jul 22, 2026",key_dev:"Tariff exposure on Mexico and Canada production weighing on FCF outlook.",action:"Watch"},
+  {company:"Comcast",sector:"Telecom",status:"amber",moodys:"A3",sp:"A-",fitch:"A-",outlook:"Stable",last_action:"Mar 2025",earnings:"Jul 24, 2026",key_dev:"Broadband subscriber losses persist and Versant cable spin overhang remains a structural watch item.",action:"Watch"},
+  {company:"Amazon",sector:"Tech",status:"amber",moodys:"A1",sp:"AA",fitch:"AA-",outlook:"Stable",last_action:"Mar 2023",earnings:"Jul 30, 2026",key_dev:"1Q print showed AWS growth deceleration versus peers and softer 2Q operating income guide; capex stepping higher.",action:"Watch"},
+  {company:"Disney",sector:"Media",status:"amber",moodys:"A2",sp:"A-",fitch:"A-",outlook:"Stable",last_action:"May 2024",earnings:"May 7, 2026",key_dev:"Reports FQ2 this morning before market open; focus on DTC margin trajectory and linear ad trends.",action:"Earnings risk"},
+  {company:"General Motors",sector:"Auto",status:"amber",moodys:"Baa2",sp:"BBB",fitch:"BBB",outlook:"Stable",last_action:"Apr 2024",earnings:"Jul 22, 2026",key_dev:"Tariff exposure on Mexico and Canada production continues to weigh on FCF outlook; EV losses persisting.",action:"Watch"},
   {company:"Walmart",sector:"Retail",status:"green",moodys:"Aa2",sp:"AA",fitch:"AA",outlook:"Stable",last_action:"Sep 2024",earnings:"May 15, 2026",key_dev:"No material news.",action:"Hold"},
   {company:"American Tower",sector:"Towers",status:"green",moodys:"Baa3",sp:"BBB-",fitch:"BBB+",outlook:"Stable",last_action:"Feb 2024",earnings:"Jul 29, 2026",key_dev:"No material news.",action:"Hold"},
-  {company:"Nike",sector:"Consumer",status:"amber",moodys:"A1",sp:"AA-",fitch:"n/a",outlook:"Negative",last_action:"Dec 2024",earnings:"Jun 25, 2026",key_dev:"Tariff overhang and China demand softness; turnaround plan execution risk.",action:"Watch"},
+  {company:"Nike",sector:"Consumer",status:"amber",moodys:"A1",sp:"AA-",fitch:"n/a",outlook:"Negative",last_action:"Dec 2024",earnings:"Jun 25, 2026",key_dev:"Tariff overhang on China sourcing and continued Greater China demand softness; turnaround execution risk remains.",action:"Watch"},
   {company:"IBM",sector:"Tech",status:"green",moodys:"A3",sp:"A-",fitch:"A-",outlook:"Stable",last_action:"Jul 2023",earnings:"Jul 22, 2026",key_dev:"No material news.",action:"Hold"},
   {company:"Kimberly-Clark",sector:"Consumer",status:"green",moodys:"A2",sp:"A",fitch:"A",outlook:"Stable",last_action:"Jun 2023",earnings:"Jul 22, 2026",key_dev:"No material news.",action:"Hold"},
-  {company:"Chevron",sector:"Energy",status:"green",moodys:"Aa2",sp:"AA-",fitch:"n/a",outlook:"Stable",last_action:"Oct 2023",earnings:"Aug 1, 2026",key_dev:"No material news.",action:"Hold"},
+  {company:"Chevron",sector:"Energy",status:"amber",moodys:"Aa2",sp:"AA-",fitch:"n/a",outlook:"Stable",last_action:"Oct 2023",earnings:"Aug 1, 2026",key_dev:"Oil price volatility and Hess arbitration ruling pending; capex discipline and buyback pace under scrutiny.",action:"Watch"},
   {company:"NextEra Energy",sector:"Utilities",status:"green",moodys:"Baa1",sp:"A-",fitch:"A-",outlook:"Stable",last_action:"Aug 2024",earnings:"Jul 23, 2026",key_dev:"No material news.",action:"Hold"},
-  {company:"Duke Energy",sector:"Utilities",status:"green",moodys:"Baa2",sp:"BBB+",fitch:"BBB+",outlook:"Stable",last_action:"May 8, 2026",earnings:"Aug 4, 2026",key_dev:"Reported 1Q last week in line; capex plan and regulatory recovery on track.",action:"Hold"},
+  {company:"Duke Energy",sector:"Utilities",status:"green",moodys:"Baa2",sp:"BBB+",fitch:"BBB+",outlook:"Stable",last_action:"Mar 2024",earnings:"May 8, 2026",key_dev:"No material news.",action:"Hold"},
   {company:"Salesforce",sector:"Tech",status:"green",moodys:"A2",sp:"A+",fitch:"n/a",outlook:"Stable",last_action:"Jun 2024",earnings:"May 28, 2026",key_dev:"No material news.",action:"Hold"},
-  {company:"Anheuser-Busch InBev",sector:"Beverage",status:"green",moodys:"A3",sp:"A-",fitch:"BBB+",outlook:"Stable",last_action:"May 8, 2026",earnings:"Jul 31, 2026",key_dev:"1Q earnings beat; organic EBITDA growth and leverage deceleration continue.",action:"Hold"},
-  {company:"Sempra Energy",sector:"Utilities",status:"green",moodys:"Baa2",sp:"BBB+",fitch:"BBB+",outlook:"Stable",last_action:"May 7, 2026",earnings:"Aug 6, 2026",key_dev:"1Q in line; capex plan upsize funded with equity and asset sales as guided.",action:"Hold"},
+  {company:"Anheuser-Busch InBev",sector:"Beverage",status:"green",moodys:"A3",sp:"A-",fitch:"BBB+",outlook:"Stable",last_action:"Mar 2024",earnings:"May 8, 2026",key_dev:"No material news.",action:"Hold"},
+  {company:"Sempra Energy",sector:"Utilities",status:"amber",moodys:"Baa2",sp:"BBB+",fitch:"BBB+",outlook:"Stable",last_action:"Feb 2026",earnings:"May 8, 2026",key_dev:"1Q reports tomorrow; expanded capex plan funding mix and LNG project execution remain key credit watch items.",action:"Earnings risk"},
   {company:"Genuine Parts",sector:"Retail",status:"green",moodys:"A2",sp:"A",fitch:"n/a",outlook:"Stable",last_action:"Apr 2024",earnings:"Jul 21, 2026",key_dev:"No material news.",action:"Hold"},
   {company:"Coca-Cola",sector:"Beverage",status:"green",moodys:"A1",sp:"A+",fitch:"A",outlook:"Stable",last_action:"Feb 2024",earnings:"Jul 22, 2026",key_dev:"No material news.",action:"Hold"},
   {company:"AutoZone",sector:"Retail",status:"green",moodys:"Baa1",sp:"BBB",fitch:"n/a",outlook:"Stable",last_action:"Sep 2023",earnings:"May 26, 2026",key_dev:"No material news.",action:"Hold"},
-  {company:"Whirlpool",sector:"Consumer",status:"red",moodys:"Baa3",sp:"BB+",fitch:"BBB-",outlook:"Negative",last_action:"May 2025",earnings:"Jul 23, 2026",key_dev:"
+  {company:"Whirlpool",sector:"Consumer
