@@ -21,7 +21,7 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: pip install anthropic requests pytz
+        run: run: pip install anthropic pytz yfinance pandas
 
       - name: Generate dashboard
         env:
