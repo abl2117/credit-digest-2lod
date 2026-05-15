@@ -1,0 +1,52 @@
+{
+  "_comment": "Manual overrides for credit ratings. Any company listed here takes precedence over what Claude pulls. Update when you see a rating action. Date format: YYYY-MM-DD. Use n/a if a rating doesn't exist. Outlook: Stable, Positive, Negative, RUR, n/a.",
+  "_last_updated": "2026-05-15",
+
+  "Whirlpool": {
+    "moodys_rating": "Ba2",
+    "moodys_outlook": "Negative",
+    "moodys_date": "2026-02-04",
+    "sp_rating": "BB",
+    "sp_outlook": "Negative",
+    "sp_date": "2025-12-15",
+    "fitch_rating": "BB+",
+    "fitch_outlook": "Negative",
+    "fitch_date": "2025-05-05"
+  },
+
+  "Boeing": {
+    "moodys_rating": "Baa3",
+    "moodys_outlook": "Stable",
+    "moodys_date": "2025-12-12",
+    "sp_rating": "BBB-",
+    "sp_outlook": "Stable",
+    "sp_date": "2025-10-31",
+    "fitch_rating": "BBB-",
+    "fitch_outlook": "Stable",
+    "fitch_date": "2025-06-30"
+  },
+
+  "Warner Bros. Discovery": {
+    "moodys_rating": "Ba1",
+    "moodys_outlook": "Negative",
+    "moodys_date": "2025-06-11",
+    "sp_rating": "BB+",
+    "sp_outlook": "Stable",
+    "sp_date": "2025-05-20",
+    "fitch_rating": "BB+",
+    "fitch_outlook": "Negative",
+    "fitch_date": "2025-06-12"
+  },
+
+  "Microsoft": {
+    "moodys_rating": "Aaa",
+    "moodys_outlook": "Stable",
+    "moodys_date": "2024-07-17",
+    "sp_rating": "AAA",
+    "sp_outlook": "Stable",
+    "sp_date": "2024-07-17",
+    "fitch_rating": "n/a",
+    "fitch_outlook": "n/a",
+    "fitch_date": "n/a"
+  }
+}
