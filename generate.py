@@ -93,7 +93,7 @@ Start at 0 and add points as follows:
 - +10 if any rating outlook is Negative or RUR (across Moody's, S&P, Fitch)
 - Cap the total at 100.
 
-OUTPUT FORMAT: Return ONLY a valid JSON object. No markdown. No code fences. No text before or after the JSON.
+OUTPUT FORMAT: Your ENTIRE response must be ONLY a single JSON object. Start with {{ as the very first character. End with }} as the very last character. ABSOLUTELY NO preamble, explanation, acknowledgment, markdown formatting, or code fences. NO text like "Here is" or "I will provide". The response must be directly parseable by json.loads().
 
 {{"rows": [{{"company": "Company Name", "sector": "Sector", "status": "red|amber|green", "mkt_cap": "12.5", "nd_ebitda": "2.4", "ebitda_margin": "18.5", "fcf_ltm": "1.8", "cash": "5.2", "total_debt": "15.0", "earnings": "Jul 23", "stock_1d": "+1.2", "stock_1m": "+1.2", "stock_ytd": "+1.2", "week52_high": "185.50", "week52_low": "112.30", "moodys_rating": "Baa2", "moodys_outlook": "Stable", "moodys_date": "2025-10-15", "sp_rating": "BBB", "sp_outlook": "Stable", "sp_date": "2025-09-22", "fitch_rating": "BBB", "fitch_outlook": "Stable", "fitch_date": "2025-08-10", "concern_score": 35, "key_dev": "No material news.", "action": "Hold"}}]}}
 
@@ -186,7 +186,7 @@ Start at 0 and add points as follows:
 - +10 if any rating outlook is Negative or RUR (across Moody's, S&P, Fitch)
 - Cap the total at 100.
 
-OUTPUT FORMAT: Return ONLY a valid JSON object. No markdown. No code fences. No text before or after the JSON.
+OUTPUT FORMAT: Your ENTIRE response must be ONLY a single JSON object. Start with {{ as the very first character. End with }} as the very last character. ABSOLUTELY NO preamble, explanation, acknowledgment, markdown formatting, or code fences. NO text like "Here is" or "I will provide". The response must be directly parseable by json.loads().
 
 {{"macro": {{"hy_oas": "350", "ig_oas": "95", "treasury_10y": "4.42", "treasury_2y": "4.85", "vix": "18.2", "sp500": "5234", "sp500_1d": "+0.8"}}, "rows": [{{"company": "Company Name", "sector": "Sector", "status": "red|amber|green", "mkt_cap": "12.5", "nd_ebitda": "2.4", "ebitda_margin": "18.5", "fcf_ltm": "1.8", "cash": "5.2", "total_debt": "15.0", "earnings": "Jul 23", "stock_1d": "+1.2", "stock_1m": "+1.2", "stock_ytd": "+1.2", "week52_high": "185.50", "week52_low": "112.30", "moodys_rating": "Baa2", "moodys_outlook": "Stable", "moodys_date": "2025-10-15", "sp_rating": "BBB", "sp_outlook": "Stable", "sp_date": "2025-09-22", "fitch_rating": "BBB", "fitch_outlook": "Stable", "fitch_date": "2025-08-10", "concern_score": 35, "key_dev": "No material news.", "action": "Hold"}}], "top3": [{{"name": "Company A", "note": "Short reason"}}]}}
 
@@ -223,14 +223,36 @@ def call_claude(prompt, batch_name):
 
 
 def parse_json(raw, label):
+    if not raw:
+        return None, f"JSON parse error in {label}: empty response"
+
     cleaned = raw.strip()
+
+    # Strip markdown code fences if present
     if cleaned.startswith('```'):
         lines = cleaned.split('\n')
         cleaned = '\n'.join(lines[1:-1] if lines[-1].strip() == '```' else lines[1:])
+        cleaned = cleaned.strip()
+
+    # Try direct parse first
     try:
         return json.loads(cleaned), None
-    except Exception as e:
-        return None, f"JSON parse error in {label}: {str(e)[:200]}"
+    except Exception:
+        pass
+
+    # Find the outermost JSON object by locating first '{' and matching last '}'
+    start = cleaned.find('{')
+    end = cleaned.rfind('}')
+    if start != -1 and end != -1 and end > start:
+        candidate = cleaned[start:end+1]
+        try:
+            return json.loads(candidate), None
+        except Exception as e:
+            preview = cleaned[:300].replace('\n',' ')
+            return None, f"JSON parse error in {label}: {str(e)[:150]} | First 300 chars: {preview}"
+
+    preview = cleaned[:300].replace('\n',' ')
+    return None, f"JSON parse error in {label}: no JSON object found | First 300 chars: {preview}"
 
 
 def apply_overrides(rows):
