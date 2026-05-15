@@ -164,6 +164,57 @@ def apply_market_overrides(rows, market_data):
     return rows
 
 
+def fetch_commodities_fx():
+    """
+    Pull WTI, Brent, Gold, EUR/USD from yfinance.
+    Returns dict with current value and 1-day percent change for each.
+    """
+    if not YFINANCE_AVAILABLE:
+        return {}
+
+    tickers = {
+        "wti":    "CL=F",
+        "brent":  "BZ=F",
+        "gold":   "GC=F",
+        "eurusd": "EURUSD=X",
+    }
+    print(f"Fetching commodities and FX from yfinance...")
+    try:
+        hist = yf.download(" ".join(tickers.values()), period="5d", interval="1d",
+                           group_by="ticker", auto_adjust=True,
+                           progress=False, threads=True)
+    except Exception as e:
+        print(f"WARNING: commodities/FX fetch failed: {e}")
+        return {}
+
+    result = {}
+    for key, ticker in tickers.items():
+        try:
+            if ticker in hist.columns.get_level_values(0):
+                df = hist[ticker].dropna()
+            else:
+                df = hist.dropna()
+            if df.empty or 'Close' not in df.columns:
+                continue
+            closes = df['Close']
+            current = float(closes.iloc[-1])
+            prev = float(closes.iloc[-2]) if len(closes) > 1 else current
+            if prev == 0:
+                pct = "n/a"
+            else:
+                p = (current - prev) / prev * 100
+                sign = "+" if p >= 0 else "-"
+                pct = f"{sign}{abs(p):.1f}"
+            if key == "eurusd":
+                result[key] = {"value": f"{current:.4f}", "change": pct}
+            else:
+                result[key] = {"value": f"{current:.2f}", "change": pct}
+        except Exception as e:
+            print(f"  {ticker} ({key}): {str(e)[:80]}")
+
+    print(f"Commodities/FX: {len(result)}/4 succeeded.")
+    return result
+
 
 # Prompts
 PROMPT_A = f"""Today is {datetime_str}. You are generating structured data for a morning credit intelligence dashboard for publicly listed US and global corporates.
@@ -609,7 +660,8 @@ def price_cell(v):
     return f'<td class="num-cell price-cell">${v}</td>'
 
 
-def build_html(all_rows, macro, top3, datetime_str):
+def build_html(all_rows, macro, top3, datetime_str, commodities=None):
+    commodities = commodities or {}
     overview_rows, market_rows, fin_rows = [], [], []
     g_count = a_count = r_count = 0
     for r in all_rows:
@@ -680,6 +732,14 @@ def build_html(all_rows, macro, top3, datetime_str):
             change_html = f'<span class="{cls}">{arrow} {change}</span>'
         return f'<div class="macro-item"><span class="macro-label">{label}</span><span class="macro-value">{value}</span>{change_html}</div>'
 
+    def commodity_item(label, key, prefix='$', suffix=''):
+        c = commodities.get(key)
+        if not c:
+            return macro_item(label, 'n/a')
+        chg = c.get('change', '')
+        up = chg.startswith('+') if chg else None
+        return macro_item(label, f'{prefix}{c["value"]}{suffix}', chg, up)
+
     macro_html = (
         '<div class="macro-strip">'
         + macro_item('HY OAS', f'{hy_oas} bps')
@@ -688,6 +748,10 @@ def build_html(all_rows, macro, top3, datetime_str):
         + macro_item('2Y UST', f'{t2y}%')
         + macro_item('VIX', vix)
         + macro_item('S&amp;P 500', sp500, sp500_1d, sp500_up)
+        + commodity_item('WTI', 'wti')
+        + commodity_item('Brent', 'brent')
+        + commodity_item('Gold', 'gold')
+        + commodity_item('EUR/USD', 'eurusd', prefix='')
         + f'<div class="macro-item macro-note">Live macro as of {datetime_str}</div>'
         + '</div>'
     )
@@ -754,6 +818,18 @@ tbody tr:hover{background:#0d1520}
 
 /* Redesigned Overview tab styles */
 .overview-table tbody td{padding:12px 14px;vertical-align:middle}
+/* Center everything except Company (col 1) and Key Development (col 6) on Overview */
+.overview-table tbody td:not(:nth-child(1)):not(:nth-child(6)),
+.overview-table thead th:not(:nth-child(1)):not(:nth-child(6)){text-align:center}
+/* Market Data tab — center everything except Company (col 1) */
+#pane-market tbody td:not(:nth-child(1)),
+#pane-market thead th:not(:nth-child(1)){text-align:center}
+/* Financials tab — center everything except Company (col 1) */
+#pane-financials tbody td:not(:nth-child(1)),
+#pane-financials thead th:not(:nth-child(1)){text-align:center}
+/* Inside-cell helpers need to inherit center on these tables */
+#pane-market .num-cell,
+#pane-financials .num-cell{text-align:center}
 .co-cell-stack{font-family:"IBM Plex Sans",sans-serif}
 .co-name{font-weight:600;font-size:13px;color:#e6edf3;line-height:1.2}
 .co-sector{font-family:"IBM Plex Mono",monospace;font-size:9px;color:#7090a8;margin-top:3px;letter-spacing:.5px}
@@ -764,7 +840,7 @@ tbody tr:hover{background:#0d1520}
 .concern-cell{padding:10px 12px;font-family:"IBM Plex Mono",monospace}
 .concern-num{font-weight:700;font-size:18px;line-height:1}
 .concern-denom{font-size:11px;color:#3a4a5a;font-weight:400;margin-left:2px}
-.concern-bar{background:#21262d;border-radius:2px;height:4px;margin-top:6px;width:80px;overflow:hidden}
+.concern-bar{background:#21262d;border-radius:2px;height:4px;margin:6px auto 0;width:80px;overflow:hidden}
 .concern-bar div{height:100%;border-radius:2px}
 .concern-tier{font-size:9px;color:#7090a8;margin-top:4px;text-transform:uppercase;letter-spacing:.5px}
 .rating-row-compact{display:flex;align-items:center;gap:8px;font-family:"IBM Plex Mono",monospace;font-size:11px;line-height:1.6}
@@ -782,6 +858,18 @@ tbody tr:hover{background:#0d1520}
 
 .placeholder-pane{padding:80px 28px;text-align:center;color:#4a6080;font-family:"IBM Plex Mono",monospace;font-size:13px;letter-spacing:1px}
 .placeholder-pane .ph-title{font-size:16px;color:#a0b4c8;margin-bottom:10px;letter-spacing:2px}
+.methodology-content{padding:28px 32px;color:#a0b4c8;font-size:13px;line-height:1.6;max-width:920px}
+.methodology-content h2{font-family:"IBM Plex Mono",monospace;font-size:13px;color:#8B0000;text-transform:uppercase;letter-spacing:1.5px;margin:28px 0 12px;padding-bottom:6px;border-bottom:1px solid #1e2a3a;font-weight:700}
+.methodology-content h2:first-child{margin-top:0}
+.methodology-content p{margin:8px 0 12px;color:#a0b4c8}
+.methodology-content ul{margin:8px 0 16px;padding-left:22px}
+.methodology-content li{padding:4px 0;color:#a0b4c8}
+.methodology-content code{font-family:"IBM Plex Mono",monospace;background:#0d1520;padding:1px 6px;border-radius:2px;font-size:11px;color:#a0c4e8}
+.methodology-content .meth-note{font-size:11px;color:#7090a8;font-weight:400;text-transform:none;letter-spacing:0}
+.methodology-table{border-collapse:collapse;margin:8px 0 18px;width:auto;min-width:50%}
+.methodology-table th{background:#0d1117;color:#4a6080;padding:8px 14px;text-align:left;font-size:10px;letter-spacing:1px;text-transform:uppercase;font-family:"IBM Plex Mono",monospace;font-weight:600;border-bottom:1px solid #1e2a3a}
+.methodology-table td{padding:8px 14px;border-bottom:1px solid #0d1520;font-size:12px;color:#a0b4c8;vertical-align:middle}
+.methodology-table td:first-child{font-family:"IBM Plex Mono",monospace}
 footer{background:linear-gradient(135deg,#6b0000,#8B0000);color:#fff;padding:20px 28px;border-top:2px solid #ff000033}
 footer h3{margin-bottom:12px;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;font-family:"IBM Plex Mono",monospace;opacity:.8}
 footer ol{padding-left:20px}
@@ -791,7 +879,7 @@ footer li strong{color:#ffaaaa}
 
     js = """
 (function(){
-  var panes={overview:document.getElementById('pane-overview'),market:document.getElementById('pane-market'),financials:document.getElementById('pane-financials'),redflags:document.getElementById('pane-redflags')};
+  var panes={overview:document.getElementById('pane-overview'),market:document.getElementById('pane-market'),financials:document.getElementById('pane-financials'),redflags:document.getElementById('pane-redflags'),methodology:document.getElementById('pane-methodology')};
   var tabs=document.querySelectorAll('.tab');
   tabs.forEach(function(t){t.addEventListener('click',function(){
     tabs.forEach(function(x){x.classList.remove('active');});
@@ -896,6 +984,7 @@ footer li strong{color:#ffaaaa}
   <button class="tab" data-tab="market">Market Data</button>
   <button class="tab" data-tab="financials">Financials</button>
   <button class="tab" data-tab="redflags">Red Flags</button>
+  <button class="tab" data-tab="methodology">Methodology</button>
 </div>
 <div class="controls">
   <button class="active" data-filter="all">All</button>
@@ -972,6 +1061,107 @@ footer li strong{color:#ffaaaa}
 </div>
 </div>
 
+<div class="pane" id="pane-methodology">
+<div class="methodology-content">
+
+  <h2>Status Definitions</h2>
+  <table class="methodology-table">
+    <tr><td><span class="status-badge green">GREEN</span></td><td>No material concerns; routine monitoring.</td></tr>
+    <tr><td><span class="status-badge amber">AMBER</span></td><td>Elevated attention warranted; watch list.</td></tr>
+    <tr><td><span class="status-badge red">RED</span></td><td>Active concern; escalation or review required.</td></tr>
+  </table>
+
+  <h2>Action Tiers</h2>
+  <table class="methodology-table">
+    <tr><td><span class="action-redesigned green">Monitor</span></td><td>Standard surveillance, no action required.</td></tr>
+    <tr><td><span class="action-redesigned amber">Watch</span></td><td>Increased scrutiny, near-term review possible.</td></tr>
+    <tr><td><span class="action-redesigned red">Review</span></td><td>Formal credit review warranted.</td></tr>
+    <tr><td><span class="action-redesigned red">Escalate</span></td><td>Committee discussion / 2LOD challenge required.</td></tr>
+  </table>
+
+  <h2>Concern Score Methodology</h2>
+  <p>Sum of triggers below, capped at 100.</p>
+  <table class="methodology-table">
+    <tr><th>Trigger</th><th>Points</th></tr>
+    <tr><td>Status is RED</td><td>+25</td></tr>
+    <tr><td>Status is AMBER</td><td>+10</td></tr>
+    <tr><td>ND/EBITDA &gt; 5.0x</td><td>+15</td></tr>
+    <tr><td>Stock YTD &lt; -20%</td><td>+10</td></tr>
+    <tr><td>Stock 1M &lt; -10%</td><td>+10</td></tr>
+    <tr><td>Earnings within 14 days</td><td>+10</td></tr>
+    <tr><td>Key dev mentions downgrade / default / covenant breach / restructuring</td><td>+10</td></tr>
+    <tr><td>FCF LTM negative</td><td>+10</td></tr>
+    <tr><td>EBITDA margin &lt; 10%</td><td>+10</td></tr>
+    <tr><td>Any rating outlook Negative or RUR</td><td>+10</td></tr>
+  </table>
+  <p>Tier mapping:</p>
+  <table class="methodology-table">
+    <tr><td>0&ndash;39</td><td>Comfortable</td></tr>
+    <tr><td>40&ndash;59</td><td>Watch</td></tr>
+    <tr><td>60&ndash;79</td><td>Review</td></tr>
+    <tr><td>80&ndash;100</td><td>Escalate</td></tr>
+  </table>
+
+  <h2>Ratings &amp; Outlook</h2>
+  <ul>
+    <li>M / S / F = Moody&apos;s / S&amp;P / Fitch</li>
+    <li>Outlook colors: <span style="color:#4ec38a;font-weight:700">green</span> = Positive, <span style="color:#7a8a9a;font-weight:700">gray</span> = Stable, <span style="color:#ff6b6b;font-weight:700">red</span> = Negative or RUR</li>
+    <li><span style="color:#f0b429">&#9888;</span> icon = rating action over 12 months old (stale)</li>
+    <li>Source: agency press releases &amp; news synthesis via Claude web search, plus manual override file (<code>ratings_override.json</code>) for high-touch names</li>
+  </ul>
+
+  <h2>Market Data</h2>
+  <ul>
+    <li>Source: Yahoo Finance via <code>yfinance</code> library</li>
+    <li>Current price: latest available close</li>
+    <li>1D / 1M / YTD: calculated from closing prices</li>
+    <li>52W high / low: trailing 52-week trading range</li>
+    <li>Refresh: daily</li>
+  </ul>
+
+  <h2>Macro Indicators</h2>
+  <ul>
+    <li>HY OAS / IG OAS: ICE BofA US Corporate index option-adjusted spreads</li>
+    <li>10Y / 2Y UST: US Treasury closing yields</li>
+    <li>VIX: CBOE Volatility Index</li>
+    <li>S&amp;P 500: index level &amp; 1-day change</li>
+    <li>WTI / Brent: front-month crude oil futures (CL=F, BZ=F)</li>
+    <li>Gold: front-month gold futures (GC=F)</li>
+    <li>EUR/USD: spot FX</li>
+    <li>Sources: spreads, yields, VIX, S&amp;P 500 via Claude web search; commodities &amp; FX via yfinance</li>
+  </ul>
+
+  <h2>Financials</h2>
+  <ul>
+    <li>Source: Currently Claude web search. Phase 2 will move to direct SEC EDGAR XBRL pulls.</li>
+    <li>Net Debt = Total Debt &minus; Cash &amp; Equivalents</li>
+    <li>EBITDA = Operating Income + D&amp;A (GAAP construction, no company-reported adjustments)</li>
+    <li>FCF = Operating Cash Flow &minus; CapEx</li>
+    <li>ND/EBITDA = Net Debt / LTM EBITDA</li>
+    <li>All dollar figures in $Bn unless otherwise indicated</li>
+  </ul>
+
+  <h2>Red Flags <span class="meth-note">(framework pending &mdash; Phase 3)</span></h2>
+  <p>12 universal flags will be applied to every company. Will detail definitions once the engine is built.</p>
+
+  <h2>Refresh Cadence</h2>
+  <ul>
+    <li>Dashboard runs daily at 8:00 AM ET on weekdays</li>
+    <li>Manual override file (<code>ratings_override.json</code>) applies after auto-pull</li>
+    <li>Phase 2: Financials will refresh weekly (Mondays); other data refreshes daily</li>
+  </ul>
+
+  <h2>Data Limitations</h2>
+  <ul>
+    <li>20-F filers (Toyota, BP, Anheuser-Busch InBev) report annually rather than quarterly &mdash; financial data may be 6&ndash;12 months old</li>
+    <li>Non-SEC filers (Nissan, Hyundai, Imperial Brands) have limited financial data; market data still available via yfinance</li>
+    <li>News &amp; key dev: best-effort synthesis from public sources; may miss developments outside the search window</li>
+    <li>This dashboard is a personal scanning tool, not a regulated system of record. Always verify against authoritative sources before relying on data for committee work.</li>
+  </ul>
+
+</div>
+</div>
+
 <footer>
   <h3>&#9650; Top 3 Names Requiring Attention</h3>
   <ol>{top3_html}</ol>
@@ -1004,9 +1194,12 @@ def main():
     market_data = fetch_market_data()
     all_rows = apply_market_overrides(all_rows, market_data)
 
+    # Pull commodities and FX from yfinance
+    commodities = fetch_commodities_fx()
+
     print(f"Batch A: {len(rows_a)} rows, Batch B: {len(rows_b)} rows, Total: {len(all_rows)}")
 
-    html = build_html(all_rows, macro, top3, datetime_str)
+    html = build_html(all_rows, macro, top3, datetime_str, commodities)
 
     with open('index.html', 'w', encoding='utf-8') as f:
         f.write(html)
