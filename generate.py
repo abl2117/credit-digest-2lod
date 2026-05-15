@@ -4,6 +4,13 @@ import os
 from datetime import datetime, timedelta
 import pytz
 
+try:
+    import yfinance as yf
+    YFINANCE_AVAILABLE = True
+except ImportError:
+    YFINANCE_AVAILABLE = False
+    print("WARNING: yfinance not installed; falling back to Claude-sourced market data.")
+
 # Date/time
 et = pytz.timezone('America/New_York')
 now = datetime.now(et)
@@ -25,6 +32,138 @@ if os.path.exists('ratings_override.json'):
         print(f"Loaded ratings_override.json with {sum(1 for k in RATINGS_OVERRIDE if not k.startswith('_'))} manual overrides.")
     except Exception as e:
         print(f"WARNING: ratings_override.json failed to parse: {e}")
+
+# Watchlist mapping for yfinance market data pulls
+# (company name as it appears in Claude output -> yfinance ticker)
+TICKER_MAP = {
+    "AT&T": "T", "Verizon": "VZ", "Comcast": "CMCSA",
+    "Disney": "DIS", "Warner Bros. Discovery": "WBD", "Netflix": "NFLX",
+    "Amazon": "AMZN", "Alphabet": "GOOGL", "Microsoft": "MSFT",
+    "Oracle": "ORCL", "Salesforce": "CRM", "IBM": "IBM",
+    "HP Inc": "HPQ", "HPE": "HPE", "Dell": "DELL", "Nextracker": "NXT",
+    "Sanmina": "SANM", "Flex Ltd": "FLEX", "Jabil": "JBL",
+    "Arrow Electronics": "ARW", "TD Synnex": "SNX", "Ingram Micro": "INGM",
+    "Kyndryl": "KD", "Cognizant": "CTSH",
+    "Equinix": "EQIX", "Digital Realty": "DLR", "American Tower": "AMT",
+    "PayPal": "PYPL", "Corpay": "CPAY",
+    "Booking Holdings": "BKNG", "Uber": "UBER", "Delta": "DAL",
+    "Carnival": "CCL", "Royal Caribbean": "RCL", "Norwegian Cruise Line": "NCLH",
+    "General Motors": "GM", "Tesla": "TSLA", "Ford": "F",
+    "Toyota": "TM", "Nissan": "NSANY", "Hyundai": "HYMTF",
+    "Boeing": "BA", "GE Aerospace": "GE",
+    "Walmart": "WMT", "AutoZone": "AZO", "Genuine Parts": "GPC",
+    "Coca-Cola": "KO", "Anheuser-Busch InBev": "BUD",
+    "Philip Morris": "PM", "Altria": "MO", "Imperial Brands": "IMBBY",
+    "Universal Corporation": "UVV",
+    "Nike": "NKE", "Kimberly-Clark": "KMB", "Whirlpool": "WHR", "Mondelez": "MDLZ",
+    "Ball Corp": "BALL", "Crown Holdings": "CCK", "International Paper": "IP",
+    "Chevron": "CVX", "BP": "BP", "Exxon": "XOM",
+    "NextEra Energy": "NEE", "Duke Energy": "DUK", "Sempra Energy": "SRE",
+    "Caterpillar": "CAT", "Deere": "DE", "Danaher": "DHR",
+    "GE Vernova": "GEV", "Honeywell": "HON", "Otis": "OTIS",
+    "Air Products": "APD", "Corteva": "CTVA", "DuPont": "DD",
+}
+
+
+def fetch_market_data():
+    """
+    Pull current price, 1D/1M/YTD %, 52W high/low for all tickers from yfinance.
+    Returns dict keyed by company name with market data fields.
+    Failures per ticker are logged but don't break the run; failed tickers
+    fall back to Claude's data.
+    """
+    if not YFINANCE_AVAILABLE:
+        return {}
+
+    print(f"Fetching market data from yfinance for {len(TICKER_MAP)} tickers...")
+    result = {}
+    success = 0
+    failed = []
+
+    # Pull all tickers' 1-year history in one batch
+    tickers_str = " ".join(TICKER_MAP.values())
+    try:
+        hist = yf.download(tickers_str, period="1y", interval="1d",
+                           group_by="ticker", auto_adjust=True,
+                           progress=False, threads=True)
+    except Exception as e:
+        print(f"WARNING: yfinance batch download failed: {e}")
+        return {}
+
+    today = now.date()
+    year_start = datetime(today.year, 1, 1).date()
+
+    for company, ticker in TICKER_MAP.items():
+        try:
+            if ticker in hist.columns.get_level_values(0):
+                df = hist[ticker].dropna()
+            else:
+                df = hist.dropna()
+            if df.empty or 'Close' not in df.columns:
+                failed.append(ticker)
+                continue
+
+            closes = df['Close']
+            current = float(closes.iloc[-1])
+            prev = float(closes.iloc[-2]) if len(closes) > 1 else current
+
+            # 1-month: 21 trading days ago
+            one_m_idx = max(0, len(closes) - 22)
+            month_ago = float(closes.iloc[one_m_idx])
+
+            # YTD: first close at or after Jan 1 of current year
+            ytd_closes = closes[closes.index.date >= year_start]
+            ytd_start = float(ytd_closes.iloc[0]) if len(ytd_closes) > 0 else current
+
+            # 52-week high/low from the 1y history we already pulled
+            wk52_high = float(closes.max())
+            wk52_low = float(closes.min())
+
+            def pct(now, then):
+                if then == 0:
+                    return "n/a"
+                p = (now - then) / then * 100
+                sign = "+" if p >= 0 else "-"
+                return f"{sign}{abs(p):.1f}"
+
+            result[company] = {
+                "price": f"{current:.2f}",
+                "stock_1d": pct(current, prev),
+                "stock_1m": pct(current, month_ago),
+                "stock_ytd": pct(current, ytd_start),
+                "week52_high": f"{wk52_high:.2f}",
+                "week52_low": f"{wk52_low:.2f}",
+            }
+            success += 1
+        except Exception as e:
+            failed.append(f"{ticker} ({str(e)[:60]})")
+
+    print(f"yfinance: {success}/{len(TICKER_MAP)} tickers succeeded.")
+    if failed:
+        print(f"yfinance failures: {failed[:10]}{'...' if len(failed) > 10 else ''}")
+    return result
+
+
+def apply_market_overrides(rows, market_data):
+    """Overwrite stock fields with yfinance data where available."""
+    if not market_data:
+        return rows
+    applied = 0
+    for r in rows:
+        co = r.get('company', '')
+        if co in market_data:
+            md = market_data[co]
+            r['price'] = md['price']
+            r['stock_1d'] = md['stock_1d']
+            r['stock_1m'] = md['stock_1m']
+            r['stock_ytd'] = md['stock_ytd']
+            r['week52_high'] = md['week52_high']
+            r['week52_low'] = md['week52_low']
+            applied += 1
+    print(f"Applied yfinance market data to {applied} companies.")
+    return rows
+
+
 
 # Prompts
 PROMPT_A = f"""Today is {datetime_str}. You are generating structured data for a morning credit intelligence dashboard for publicly listed US and global corporates.
@@ -48,7 +187,7 @@ FINANCIAL METRICS (Market Cap, Net Debt/EBITDA, EBITDA Margin, FCF LTM, Cash, To
 Source from stockanalysis.com, macrotrends.net, or the company's most recent 10-Q on sec.gov. Use LTM (trailing twelve months) where applicable.
 
 STOCK DATA (1-day, 1-month, YTD percentage changes, 52-week high, 52-week low):
-Source from yahoo.com/finance, google.com/finance, or stockanalysis.com.
+Return your best estimates if known. NOTE: These fields are programmatically overridden by yfinance after your response, so accuracy is less critical here. Focus your effort on status, ratings, key developments, and financial metrics.
 
 NEXT EARNINGS DATE:
 Source from earningswhispers.com, yahoo.com/finance, or the company's IR page.
@@ -95,7 +234,7 @@ Start at 0 and add points as follows:
 
 OUTPUT FORMAT: Your ENTIRE response must be ONLY a single JSON object. Start with {{ as the very first character. End with }} as the very last character. ABSOLUTELY NO preamble, explanation, acknowledgment, markdown formatting, or code fences. NO text like "Here is" or "I will provide". The response must be directly parseable by json.loads().
 
-{{"rows": [{{"company": "Company Name", "sector": "Sector", "status": "red|amber|green", "mkt_cap": "12.5", "nd_ebitda": "2.4", "ebitda_margin": "18.5", "fcf_ltm": "1.8", "cash": "5.2", "total_debt": "15.0", "earnings": "Jul 23", "stock_1d": "+1.2", "stock_1m": "+1.2", "stock_ytd": "+1.2", "week52_high": "185.50", "week52_low": "112.30", "moodys_rating": "Baa2", "moodys_outlook": "Stable", "moodys_date": "2025-10-15", "sp_rating": "BBB", "sp_outlook": "Stable", "sp_date": "2025-09-22", "fitch_rating": "BBB", "fitch_outlook": "Stable", "fitch_date": "2025-08-10", "concern_score": 35, "key_dev": "No material news.", "action": "Hold"}}]}}
+{{"rows": [{{"company": "Company Name", "sector": "Sector", "status": "red|amber|green", "mkt_cap": "12.5", "nd_ebitda": "2.4", "ebitda_margin": "18.5", "fcf_ltm": "1.8", "cash": "5.2", "total_debt": "15.0", "earnings": "Jul 23", "stock_1d": "+1.2", "stock_1m": "+1.2", "stock_ytd": "+1.2", "week52_high": "185.50", "week52_low": "112.30", "moodys_rating": "Baa2", "moodys_outlook": "Stable", "moodys_date": "2025-10-15", "sp_rating": "BBB", "sp_outlook": "Stable", "sp_date": "2025-09-22", "fitch_rating": "BBB", "fitch_outlook": "Stable", "fitch_date": "2025-08-10", "concern_score": 35, "key_dev": "No material news.", "action": "Monitor"}}]}}
 
 Rules:
 - All 38 names must appear in rows.
@@ -108,6 +247,7 @@ Rules:
 - Ratings: agency-native format (Moody's: Aaa/Aa1/.../C; S&P and Fitch: AAA/AA+/.../D). "n/a" if not rated.
 - Outlook: Stable, Positive, Negative, RUR, or n/a.
 - Rating date: YYYY-MM-DD format, date of most recent action.
+- action: use one of "Monitor" (green), "Watch" (amber), "Review" (red, manageable), "Escalate" (red, urgent). Pick based on severity, not just status.
 - key_dev for GREEN: exactly "No material news."
 - key_dev for AMBER/RED: 1-2 sentences, under 200 characters.
 - Public information only."""
@@ -132,7 +272,7 @@ FINANCIAL METRICS (Market Cap, Net Debt/EBITDA, EBITDA Margin, FCF LTM, Cash, To
 Source from stockanalysis.com, macrotrends.net, or the company's most recent 10-Q on sec.gov. Use LTM (trailing twelve months) where applicable.
 
 STOCK DATA (1-day, 1-month, YTD percentage changes, 52-week high, 52-week low):
-Source from yahoo.com/finance, google.com/finance, or stockanalysis.com.
+Return your best estimates if known. NOTE: These fields are programmatically overridden by yfinance after your response, so accuracy is less critical here. Focus your effort on status, ratings, key developments, and financial metrics.
 
 NEXT EARNINGS DATE:
 Source from earningswhispers.com, yahoo.com/finance, or the company's IR page.
@@ -188,7 +328,7 @@ Start at 0 and add points as follows:
 
 OUTPUT FORMAT: Your ENTIRE response must be ONLY a single JSON object. Start with {{ as the very first character. End with }} as the very last character. ABSOLUTELY NO preamble, explanation, acknowledgment, markdown formatting, or code fences. NO text like "Here is" or "I will provide". The response must be directly parseable by json.loads().
 
-{{"macro": {{"hy_oas": "350", "ig_oas": "95", "treasury_10y": "4.42", "treasury_2y": "4.85", "vix": "18.2", "sp500": "5234", "sp500_1d": "+0.8"}}, "rows": [{{"company": "Company Name", "sector": "Sector", "status": "red|amber|green", "mkt_cap": "12.5", "nd_ebitda": "2.4", "ebitda_margin": "18.5", "fcf_ltm": "1.8", "cash": "5.2", "total_debt": "15.0", "earnings": "Jul 23", "stock_1d": "+1.2", "stock_1m": "+1.2", "stock_ytd": "+1.2", "week52_high": "185.50", "week52_low": "112.30", "moodys_rating": "Baa2", "moodys_outlook": "Stable", "moodys_date": "2025-10-15", "sp_rating": "BBB", "sp_outlook": "Stable", "sp_date": "2025-09-22", "fitch_rating": "BBB", "fitch_outlook": "Stable", "fitch_date": "2025-08-10", "concern_score": 35, "key_dev": "No material news.", "action": "Hold"}}], "top3": [{{"name": "Company A", "note": "Short reason"}}]}}
+{{"macro": {{"hy_oas": "350", "ig_oas": "95", "treasury_10y": "4.42", "treasury_2y": "4.85", "vix": "18.2", "sp500": "5234", "sp500_1d": "+0.8"}}, "rows": [{{"company": "Company Name", "sector": "Sector", "status": "red|amber|green", "mkt_cap": "12.5", "nd_ebitda": "2.4", "ebitda_margin": "18.5", "fcf_ltm": "1.8", "cash": "5.2", "total_debt": "15.0", "earnings": "Jul 23", "stock_1d": "+1.2", "stock_1m": "+1.2", "stock_ytd": "+1.2", "week52_high": "185.50", "week52_low": "112.30", "moodys_rating": "Baa2", "moodys_outlook": "Stable", "moodys_date": "2025-10-15", "sp_rating": "BBB", "sp_outlook": "Stable", "sp_date": "2025-09-22", "fitch_rating": "BBB", "fitch_outlook": "Stable", "fitch_date": "2025-08-10", "concern_score": 35, "key_dev": "No material news.", "action": "Monitor"}}], "top3": [{{"name": "Company A", "note": "Short reason"}}]}}
 
 Rules:
 - All 37 names must appear in rows.
@@ -201,6 +341,7 @@ Rules:
 - Ratings: agency-native format. "n/a" if not rated.
 - Outlook: Stable, Positive, Negative, RUR, or n/a.
 - Rating date: YYYY-MM-DD format.
+- action: use one of "Monitor" (green), "Watch" (amber), "Review" (red, manageable), "Escalate" (red, urgent). Pick based on severity, not just status.
 - key_dev for GREEN: exactly "No material news."
 - key_dev for AMBER/RED: 1-2 sentences, under 200 characters.
 - top3: 3 names from across BOTH batches most requiring attention today.
@@ -346,6 +487,128 @@ def ratings_cell(r):
     return f'<td class="ratings-cell">{"".join(lines)}</td>'
 
 
+def ratings_cell_compact(r):
+    """Compact ratings cell for redesigned Overview tab — agency / rating / outlook only."""
+    agencies = [
+        ('moodys_rating','moodys_outlook','M'),
+        ('sp_rating','sp_outlook','S'),
+        ('fitch_rating','fitch_outlook','F'),
+    ]
+    lines = []
+    for rf, of, label in agencies:
+        rating = r.get(rf,'n/a') or 'n/a'
+        outlook = r.get(of,'n/a') or 'n/a'
+        outlook_short = outlook[:3].upper() if outlook != 'n/a' else '—'
+        color = outlook_color(outlook)
+        lines.append(
+            f'<div class="rating-row-compact">'
+            f'<span class="agency-tag">{label}</span>'
+            f'<span class="rating-val">{rating}</span>'
+            f'<span class="outlook-tag" style="color:{color}">{outlook_short}</span>'
+            f'</div>'
+        )
+    return f'<td class="ratings-cell">{"".join(lines)}</td>'
+
+
+def last_action_cell(r):
+    """Show the most recent rating action date across all three agencies, with which agency."""
+    candidates = [
+        ('moodys_date', 'Moody\'s'),
+        ('sp_date', 'S&P'),
+        ('fitch_date', 'Fitch'),
+    ]
+    valid = []
+    for field, name in candidates:
+        d = r.get(field, 'n/a') or 'n/a'
+        if d != 'n/a':
+            try:
+                parsed = datetime.strptime(d, '%Y-%m-%d').date()
+                valid.append((parsed, name, d))
+            except:
+                pass
+    if not valid:
+        return '<td class="action-date-cell"><div class="action-date-na">No date</div></td>'
+    valid.sort(reverse=True)
+    most_recent, agency, raw_date = valid[0]
+    try:
+        display = most_recent.strftime('%b %d, %Y')
+    except:
+        display = raw_date
+    stale = is_stale(raw_date)
+    stale_mark = ' <span class="stale-flag" title="Over 12 months old">&#9888;</span>' if stale else ''
+    return (
+        f'<td class="action-date-cell">'
+        f'<div class="action-date-main">{display}{stale_mark}</div>'
+        f'<div class="action-date-sub">{agency}</div>'
+        f'</td>'
+    )
+
+
+def concern_cell_redesigned(r, status):
+    """Larger concern score cell with tier label below."""
+    try:
+        score = int(r.get('concern_score', 0))
+    except:
+        score = 0
+    color = '#ff6b6b' if score >= 70 else ('#f0b429' if score >= 40 else '#4ec38a')
+    if score >= 80:
+        tier = 'Escalate'
+    elif score >= 60:
+        tier = 'Review'
+    elif score >= 40:
+        tier = 'Watch'
+    else:
+        tier = 'Comfortable'
+    return (
+        f'<td class="concern-cell">'
+        f'<div class="concern-num" style="color:{color}">{score}<span class="concern-denom">/100</span></div>'
+        f'<div class="concern-bar"><div style="background:{color};width:{min(score,100)}%"></div></div>'
+        f'<div class="concern-tier">{tier}</div>'
+        f'</td>'
+    )
+
+
+def status_cell_redesigned(status):
+    """Larger status badge with background tint."""
+    return f'<td><span class="status-badge {status}">{status.upper()}</span></td>'
+
+
+def company_cell_redesigned(r):
+    """Company name + sector underneath."""
+    return (
+        f'<td class="co-cell-stack">'
+        f'<div class="co-name">{r.get("company","")}</div>'
+        f'<div class="co-sector">{r.get("sector","").upper()}</div>'
+        f'</td>'
+    )
+
+
+def action_cell_redesigned(r):
+    """Action badge with the new Monitor/Watch/Review/Escalate labels."""
+    action = r.get('action', 'Monitor')
+    action_l = action.lower()
+    if action_l in ('escalate', 'sell'):
+        cls = 'red'
+        text = 'Escalate'
+    elif action_l in ('review', 'reduce'):
+        cls = 'red'
+        text = 'Review'
+    elif action_l in ('watch',):
+        cls = 'amber'
+        text = 'Watch'
+    else:
+        cls = 'green'
+        text = 'Monitor'
+    return f'<td><span class="action-redesigned {cls}">{text}</span></td>'
+
+
+def price_cell(v):
+    v = str(v or 'n/a').strip()
+    if not v or v == 'n/a':
+        return '<td class="num-cell stock-flat">n/a</td>'
+    return f'<td class="num-cell price-cell">${v}</td>'
+
+
 def build_html(all_rows, macro, top3, datetime_str):
     overview_rows, market_rows, fin_rows = [], [], []
     g_count = a_count = r_count = 0
@@ -355,25 +618,26 @@ def build_html(all_rows, macro, top3, datetime_str):
         elif status == 'amber': a_count += 1
         elif status == 'red': r_count += 1
 
-        # OVERVIEW row
+        # OVERVIEW row — redesigned
         overview_rows.append(
             f'<tr data-status="{status}" data-company="{r.get("company","").lower()}" data-sector="{r.get("sector","")}">'
-            f'<td class="co-cell">{r.get("company","")}</td>'
-            f'<td><span class="sector-tag">{r.get("sector","")}</span></td>'
-            f'<td class="status {status}">{status.upper()}</td>'
-            + ratings_cell(r)
-            + score_cell(r.get('concern_score','n/a'))
-            + f'<td class="key-dev" title="{r.get("key_dev","").replace(chr(34),"&quot;")}">{r.get("key_dev","")}</td>'
-            + f'<td class="action-cell"><span class="action-badge {status}">{r.get("action","Hold")}</span></td>'
+            + company_cell_redesigned(r)
+            + status_cell_redesigned(status)
+            + concern_cell_redesigned(r, status)
+            + ratings_cell_compact(r)
+            + last_action_cell(r)
+            + f'<td class="key-dev-redesigned" title="{r.get("key_dev","").replace(chr(34),"&quot;")}">{r.get("key_dev","")}</td>'
+            + action_cell_redesigned(r)
             + '</tr>'
         )
 
-        # MARKET row
+        # MARKET row — with current price column added
         market_rows.append(
             f'<tr data-status="{status}" data-company="{r.get("company","").lower()}" data-sector="{r.get("sector","")}">'
             f'<td class="co-cell">{r.get("company","")}</td>'
             f'<td><span class="sector-tag">{r.get("sector","")}</span></td>'
             f'<td class="status {status}">{status.upper()}</td>'
+            + price_cell(r.get('price'))
             + stock_cell(r.get('stock_1d'))
             + stock_cell(r.get('stock_1m'))
             + stock_cell(r.get('stock_ytd'))
@@ -487,6 +751,35 @@ tbody tr:hover{background:#0d1520}
 .outlook-val{font-weight:600;min-width:24px;font-size:9px}
 .rating-date{color:#3a4a5a;font-size:9px;margin-left:auto}
 .stale-flag{color:#f0b429;font-size:11px;margin-left:2px;cursor:help}
+
+/* Redesigned Overview tab styles */
+.overview-table tbody td{padding:12px 14px;vertical-align:middle}
+.co-cell-stack{font-family:"IBM Plex Sans",sans-serif}
+.co-name{font-weight:600;font-size:13px;color:#e6edf3;line-height:1.2}
+.co-sector{font-family:"IBM Plex Mono",monospace;font-size:9px;color:#7090a8;margin-top:3px;letter-spacing:.5px}
+.status-badge{font-weight:700;font-size:13px;letter-spacing:1px;font-family:"IBM Plex Mono",monospace;padding:5px 12px;border-radius:3px;display:inline-block;text-align:center}
+.status-badge.red{color:#ff6b6b;background:rgba(255,107,107,.12)}
+.status-badge.amber{color:#f0b429;background:rgba(240,180,41,.12)}
+.status-badge.green{color:#4ec38a;background:rgba(78,195,138,.12)}
+.concern-cell{padding:10px 12px;font-family:"IBM Plex Mono",monospace}
+.concern-num{font-weight:700;font-size:18px;line-height:1}
+.concern-denom{font-size:11px;color:#3a4a5a;font-weight:400;margin-left:2px}
+.concern-bar{background:#21262d;border-radius:2px;height:4px;margin-top:6px;width:80px;overflow:hidden}
+.concern-bar div{height:100%;border-radius:2px}
+.concern-tier{font-size:9px;color:#7090a8;margin-top:4px;text-transform:uppercase;letter-spacing:.5px}
+.rating-row-compact{display:flex;align-items:center;gap:8px;font-family:"IBM Plex Mono",monospace;font-size:11px;line-height:1.6}
+.outlook-tag{font-weight:700;font-size:9px;width:32px;display:inline-block}
+.action-date-cell{font-family:"IBM Plex Mono",monospace;padding:10px 12px}
+.action-date-main{font-size:11px;color:#a0b4c8;font-weight:500;line-height:1.3}
+.action-date-sub{font-size:9px;color:#4a6080;margin-top:3px;text-transform:uppercase;letter-spacing:.5px}
+.action-date-na{font-size:10px;color:#3a4a5a;font-style:italic}
+.key-dev-redesigned{color:#a0b4c8;font-size:12px;line-height:1.5;padding:10px 14px}
+.action-redesigned{padding:6px 14px;border-radius:3px;font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;font-family:"IBM Plex Mono",monospace;display:inline-block;white-space:nowrap}
+.action-redesigned.red{background:#3a0000;color:#ff6b6b;border:1px solid #8B0000}
+.action-redesigned.amber{background:#2a1a00;color:#f0b429;border:1px solid #8b6200}
+.action-redesigned.green{background:#001a0a;color:#4ec38a;border:1px solid #1a5c32}
+.price-cell{font-weight:700;color:#a0c4e8}
+
 .placeholder-pane{padding:80px 28px;text-align:center;color:#4a6080;font-family:"IBM Plex Mono",monospace;font-size:13px;letter-spacing:1px}
 .placeholder-pane .ph-title{font-size:16px;color:#a0b4c8;margin-bottom:10px;letter-spacing:2px}
 footer{background:linear-gradient(135deg,#6b0000,#8B0000);color:#fff;padding:20px 28px;border-top:2px solid #ff000033}
@@ -614,16 +907,16 @@ footer li strong{color:#ffaaaa}
 </div>
 
 <div class="pane active" id="pane-overview">
-<table>
+<table class="overview-table">
 <colgroup>
-<col style="width:14%"><col style="width:10%"><col style="width:7%"><col style="width:24%"><col style="width:9%"><col style="width:28%"><col style="width:8%">
+<col style="width:14%"><col style="width:7%"><col style="width:9%"><col style="width:14%"><col style="width:11%"><col style="width:36%"><col style="width:9%">
 </colgroup>
 <thead><tr>
   <th data-type="text">Company</th>
-  <th data-type="text">Sector</th>
   <th data-type="text">Status</th>
-  <th data-type="text">Ratings (M/S/F)</th>
   <th data-type="num">Concern</th>
+  <th data-type="text">Ratings (M/S/F)</th>
+  <th data-type="date">Last Action</th>
   <th data-type="text">Key Development</th>
   <th data-type="text">Action</th>
 </tr></thead>
@@ -634,12 +927,13 @@ footer li strong{color:#ffaaaa}
 <div class="pane" id="pane-market">
 <table>
 <colgroup>
-<col style="width:16%"><col style="width:11%"><col style="width:8%"><col style="width:9%"><col style="width:9%"><col style="width:9%"><col style="width:11%"><col style="width:11%"><col style="width:16%">
+<col style="width:15%"><col style="width:10%"><col style="width:7%"><col style="width:9%"><col style="width:8%"><col style="width:8%"><col style="width:8%"><col style="width:10%"><col style="width:10%"><col style="width:15%">
 </colgroup>
 <thead><tr>
   <th data-type="text">Company</th>
   <th data-type="text">Sector</th>
   <th data-type="text">Status</th>
+  <th data-type="num">Price $</th>
   <th data-type="num">1D %</th>
   <th data-type="num">1M %</th>
   <th data-type="num">YTD %</th>
@@ -705,6 +999,10 @@ def main():
 
     # Apply manual overrides for ratings
     all_rows = apply_overrides(all_rows)
+
+    # Pull authoritative market data from yfinance and override Claude's stock fields
+    market_data = fetch_market_data()
+    all_rows = apply_market_overrides(all_rows, market_data)
 
     print(f"Batch A: {len(rows_a)} rows, Batch B: {len(rows_b)} rows, Total: {len(all_rows)}")
 
