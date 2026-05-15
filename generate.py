@@ -57,11 +57,25 @@ NEWS (last 24 to 48 hours):
 Source from reuters.com, bloomberg.com, wsj.com, ft.com, agency press releases, or sec.gov 8-K filings.
 
 CREDIT RATINGS — CRITICAL ACCURACY RULES:
-For each agency (Moody's, S&P, Fitch), search specifically for the MOST RECENT rating action within the last 12 months. Source priority:
-1. Agency press releases (moodys.com, spglobal.com, fitchratings.com)
-2. Reuters, Bloomberg, Investing.com rating action articles
-3. Company 10-K or IR page disclosures
-Always return the date of the most recent action (YYYY-MM-DD). If you cannot find any source dated within the last 12 months, return the most recent known rating and flag the date accordingly. Distinguish issuer/corporate family rating from issue-specific ratings. Search queries should include the year 2026 first, then 2025 if needed.
+For each agency (Moody's, S&P, Fitch) for EACH company, you MUST perform multiple targeted searches. Required search sequence per agency per company:
+1. First search: "[Company] [Agency] rating action 2026"
+2. Second search if needed: "[Company] [Agency] credit rating 2025"
+3. Third search if needed: "[Company] credit rating [Agency] downgrade upgrade outlook"
+
+Source priority (use in this order):
+1. Agency press releases (moodys.com, spglobal.com, fitchratings.com) — most authoritative
+2. Reuters, Bloomberg, Investing.com, Yahoo Finance rating action articles
+3. Company 10-K, prospectus, or IR page disclosures
+
+CRITICAL ACCURACY REQUIREMENTS:
+- Always return the date of the MOST RECENT rating action found (YYYY-MM-DD format)
+- Compare dates across sources — use the source with the most recent date
+- If two sources disagree on rating, use the one with the most recent date
+- Distinguish issuer/corporate family rating from issue-specific (bond-level) ratings — use the ISSUER rating
+- For Moody's: use issuer rating or Corporate Family Rating (CFR), NOT senior unsecured if different
+- Do NOT confuse outlook with rating — outlook is Stable/Positive/Negative/RUR, separate from the letter grade
+- A rating action includes: upgrade, downgrade, affirmation, outlook change, or watch placement
+- For each rating, the date should reflect the most recent rating action (including outlook revisions or affirmations), not the date of original rating assignment
 
 Use web search to source values. For well-known public companies, use your best available knowledge if a specific value is not directly returned by search. Only return "n/a" if the value is genuinely unknowable.
 
@@ -127,11 +141,25 @@ NEWS (last 24 to 48 hours):
 Source from reuters.com, bloomberg.com, wsj.com, ft.com, agency press releases, or sec.gov 8-K filings.
 
 CREDIT RATINGS — CRITICAL ACCURACY RULES:
-For each agency (Moody's, S&P, Fitch), search specifically for the MOST RECENT rating action within the last 12 months. Source priority:
-1. Agency press releases (moodys.com, spglobal.com, fitchratings.com)
-2. Reuters, Bloomberg, Investing.com rating action articles
-3. Company 10-K or IR page disclosures
-Always return the date of the most recent action (YYYY-MM-DD). If you cannot find any source dated within the last 12 months, return the most recent known rating and flag the date accordingly. Distinguish issuer/corporate family rating from issue-specific ratings. Search queries should include the year 2026 first, then 2025 if needed.
+For each agency (Moody's, S&P, Fitch) for EACH company, you MUST perform multiple targeted searches. Required search sequence per agency per company:
+1. First search: "[Company] [Agency] rating action 2026"
+2. Second search if needed: "[Company] [Agency] credit rating 2025"
+3. Third search if needed: "[Company] credit rating [Agency] downgrade upgrade outlook"
+
+Source priority (use in this order):
+1. Agency press releases (moodys.com, spglobal.com, fitchratings.com) — most authoritative
+2. Reuters, Bloomberg, Investing.com, Yahoo Finance rating action articles
+3. Company 10-K, prospectus, or IR page disclosures
+
+CRITICAL ACCURACY REQUIREMENTS:
+- Always return the date of the MOST RECENT rating action found (YYYY-MM-DD format)
+- Compare dates across sources — use the source with the most recent date
+- If two sources disagree on rating, use the one with the most recent date
+- Distinguish issuer/corporate family rating from issue-specific (bond-level) ratings — use the ISSUER rating
+- For Moody's: use issuer rating or Corporate Family Rating (CFR), NOT senior unsecured if different
+- Do NOT confuse outlook with rating — outlook is Stable/Positive/Negative/RUR, separate from the letter grade
+- A rating action includes: upgrade, downgrade, affirmation, outlook change, or watch placement
+- For each rating, the date should reflect the most recent rating action (including outlook revisions or affirmations), not the date of original rating assignment
 
 MACRO INDICATORS (source once):
 Source from wsj.com, bloomberg.com, or fred.stlouisfed.org.
@@ -183,9 +211,9 @@ Rules:
 def call_claude(prompt, batch_name):
     print(f"Calling Claude for {batch_name}...")
     response = client.messages.create(
-        model="claude-sonnet-4-5",
+        model="claude-sonnet-4-6",
         max_tokens=16000,
-        tools=[{"type": "web_search_20250305", "name": "web_search", "max_uses": 30}],
+        tools=[{"type": "web_search_20250305", "name": "web_search", "max_uses": 50}],
         messages=[{"role": "user", "content": prompt}]
     )
     for block in reversed(response.content):
