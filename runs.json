@@ -323,6 +323,75 @@
         "html_bytes": 211912
       },
       "logged_at": "2026-05-16T00:55:00.070409+00:00"
+    },
+    {
+      "run_id": "2026-05-16-1454",
+      "run_started": "2026-05-16T18:54:50.324469+00:00",
+      "run_completed": "2026-05-16T18:59:54.241070+00:00",
+      "duration_seconds": 303,
+      "data_sources": {
+        "anthropic_claude": {
+          "model": "claude-sonnet-4-6",
+          "calls": 2,
+          "batches_succeeded": 2
+        },
+        "sec_edgar": {
+          "from_cache": true,
+          "names_attempted": 74,
+          "names_succeeded": 68,
+          "names_failed": [],
+          "names_no_sec_filer": [],
+          "total_warnings": 31
+        },
+        "yfinance": {
+          "market_data_companies": 73,
+          "commodities_indices": 6
+        }
+      },
+      "overrides_applied": {
+        "ratings_override": 4
+      },
+      "validation_warnings": [
+        "Comcast: Total debt not found in SEC tags",
+        "Warner Bros. Discovery: Revenue YoY = 112.8% (unusual; verify)",
+        "Microsoft: EBITDA margin = 264.6% (outside plausible range)",
+        "Oracle: Revenue YoY = 137.6% (unusual; verify)",
+        "Salesforce: EBITDA margin = 113.9% (outside plausible range)",
+        "IBM: EBITDA could not be constructed (missing op_income or D&A)",
+        "Kyndryl: EBITDA could not be constructed (missing op_income or D&A)",
+        "General Motors: Total debt not found in SEC tags",
+        "Toyota: ND/EBITDA = 415.5x (outside plausible range)",
+        "Nissan: Not an SEC filer",
+        "Hyundai: Not an SEC filer",
+        "Anheuser-Busch InBev: Revenue LTM not found in SEC tags",
+        "Anheuser-Busch InBev: EBITDA could not be constructed (missing op_income or D&A)",
+        "Anheuser-Busch InBev: Cash not found in SEC tags",
+        "Anheuser-Busch InBev: Total debt not found in SEC tags",
+        "Imperial Brands: Not an SEC filer",
+        "Nike: EBITDA could not be constructed (missing op_income or D&A)",
+        "Chevron: EBITDA could not be constructed (missing op_income or D&A)",
+        "BP: Revenue LTM not found in SEC tags",
+        "BP: EBITDA could not be constructed (missing op_income or D&A)",
+        "BP: Cash not found in SEC tags",
+        "BP: Total debt not found in SEC tags",
+        "Exxon: EBITDA could not be constructed (missing op_income or D&A)",
+        "NextEra Energy: EBITDA margin = 88.0% (outside plausible range)",
+        "Sempra Energy: EBITDA could not be constructed (missing op_income or D&A)",
+        "Sempra Energy: Total debt not found in SEC tags",
+        "GE Vernova: Total debt not found in SEC tags",
+        "Otis: Revenue LTM not found in SEC tags",
+        "Corteva: EBITDA could not be constructed (missing op_income or D&A)",
+        "Corteva: Total debt not found in SEC tags",
+        "DuPont: EBITDA could not be constructed (missing op_income or D&A)"
+      ],
+      "output": {
+        "total_rows": 74,
+        "red_count": 12,
+        "amber_count": 32,
+        "green_count": 30,
+        "html_bytes": 211350
+      },
+      "logged_at": "2026-05-16T18:59:54.241141+00:00"
     }
   ]
 }
