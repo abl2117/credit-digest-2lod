@@ -736,6 +736,101 @@
         "html_bytes": 176044
       },
       "logged_at": "2026-05-16T22:32:48.737813+00:00"
+    },
+    {
+      "run_id": "2026-05-16-1901",
+      "run_started": "2026-05-16T23:01:59.218616+00:00",
+      "run_completed": "2026-05-16T23:06:41.900910+00:00",
+      "duration_seconds": 282,
+      "data_sources": {
+        "anthropic_claude": {
+          "model": "claude-sonnet-4-6",
+          "calls": 2,
+          "batches_succeeded": 2
+        },
+        "sec_edgar": {
+          "from_cache": true,
+          "names_attempted": 74,
+          "names_succeeded": 47,
+          "names_failed": [],
+          "names_no_sec_filer": [],
+          "total_warnings": 71
+        },
+        "yfinance": {
+          "market_data_companies": 73,
+          "commodities_indices": 6
+        },
+        "fred": {
+          "from_cache": false,
+          "series_attempted": 0,
+          "series_succeeded": 0,
+          "series_failed": [],
+          "warnings": []
+        }
+      },
+      "overrides_applied": {
+        "ratings_override": 4
+      },
+      "validation_warnings": [
+        "AT&T: Total debt not found in SEC tags",
+        "Verizon: Total debt not found in SEC tags",
+        "Comcast: Total debt not found in SEC tags",
+        "Warner Bros. Discovery: Revenue LTM not found in SEC tags",
+        "Warner Bros. Discovery: Total debt not found in SEC tags",
+        "Microsoft: Revenue LTM not found in SEC tags",
+        "Oracle: Total debt not found in SEC tags",
+        "Salesforce: Revenue LTM not found in SEC tags",
+        "Sanmina: Revenue LTM not found in SEC tags",
+        "Flex Ltd: Revenue LTM not found in SEC tags",
+        "Flex Ltd: EBITDA could not be constructed (missing op_income or D&A)",
+        "Jabil: Revenue LTM not found in SEC tags",
+        "TD Synnex: Revenue LTM not found in SEC tags",
+        "TD Synnex: Total debt not found in SEC tags",
+        "Equinix: Revenue LTM not found in SEC tags",
+        "Digital Realty: Total debt not found in SEC tags",
+        "American Tower: EBITDA could not be constructed (missing op_income or D&A)",
+        "American Tower: Total debt not found in SEC tags",
+        "Corpay: Total debt not found in SEC tags",
+        "Delta: Revenue LTM not found in SEC tags",
+        "Carnival: Revenue LTM not found in SEC tags",
+        "Royal Caribbean: Revenue LTM not found in SEC tags",
+        "Royal Caribbean: Total debt not found in SEC tags",
+        "Norwegian Cruise Line: Revenue LTM not found in SEC tags",
+        "Norwegian Cruise Line: Total debt not found in SEC tags",
+        "General Motors: Total debt not found in SEC tags",
+        "Tesla: EBITDA could not be constructed (missing op_income or D&A)",
+        "Tesla: Total debt not found in SEC tags",
+        "Ford: Total debt not found in SEC tags",
+        "Toyota: Revenue LTM not found in SEC tags",
+        "Toyota: EBITDA could not be constructed (missing op_income or D&A)",
+        "Toyota: Cash not found in SEC tags",
+        "Toyota: Total debt not found in SEC tags",
+        "Nissan: Not an SEC filer",
+        "Hyundai: Not an SEC filer",
+        "GE Aerospace: EBITDA could not be constructed (missing op_income or D&A)",
+        "GE Aerospace: Cash not found in SEC tags",
+        "Walmart: EBITDA could not be constructed (missing op_income or D&A)",
+        "Genuine Parts: EBITDA could not be constructed (missing op_income or D&A)",
+        "Genuine Parts: Cash not found in SEC tags",
+        "Anheuser-Busch InBev: Revenue LTM not found in SEC tags",
+        "Anheuser-Busch InBev: EBITDA could not be constructed (missing op_income or D&A)",
+        "Anheuser-Busch InBev: Cash not found in SEC tags",
+        "Anheuser-Busch InBev: Total debt not found in SEC tags",
+        "Philip Morris: Total debt not found in SEC tags",
+        "Imperial Brands: Not an SEC filer",
+        "Kimberly-Clark: Total debt not found in SEC tags",
+        "Whirlpool: Revenue LTM not found in SEC tags",
+        "Mondelez: Cash not found in SEC tags",
+        "Mondelez: Total debt not found in SEC tags"
+      ],
+      "output": {
+        "total_rows": 74,
+        "red_count": 12,
+        "amber_count": 20,
+        "green_count": 42,
+        "html_bytes": 301656
+      },
+      "logged_at": "2026-05-16T23:06:41.900991+00:00"
     }
   ]
 }
