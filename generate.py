@@ -107,7 +107,6 @@ WATCHLIST = {
     "Ford":                    {"ticker": "F",     "filer_type": "10-K", "sector": "Auto"},
     "Toyota":                  {"ticker": "TM",    "filer_type": "20-F", "sector": "Auto"},
     "Nissan":                  {"ticker": "NSANY", "filer_type": None,   "sector": "Auto"},
-    "Hyundai":                 {"ticker": "HYMTF", "filer_type": None,   "sector": "Auto"},
     "Boeing":                  {"ticker": "BA",    "filer_type": "10-K", "sector": "Aerospace"},
     "GE Aerospace":            {"ticker": "GE",    "filer_type": "10-K", "sector": "Aerospace"},
     "Walmart":                 {"ticker": "WMT",   "filer_type": "10-K", "sector": "Retail"},
@@ -506,7 +505,7 @@ Rules:
 PROMPT_B = f"""Today is {datetime_str}. You are generating structured data for a morning credit intelligence dashboard for publicly listed US and global corporates.
 
 Watchlist - BATCH B (37 names):
-Auto: General Motors, Tesla, Ford, Toyota, Nissan, Hyundai
+Auto: General Motors, Tesla, Ford, Toyota, Nissan
 Aerospace: Boeing, GE Aerospace
 Retail: Walmart, AutoZone, Genuine Parts
 Beverage: Coca-Cola, Anheuser-Busch InBev
@@ -1513,7 +1512,7 @@ footer li strong{color:#ffaaaa}
 <header>
   <div>
     <div class="title">MORNING CREDIT DIGEST</div>
-    <div class="subtitle">2LOD Credit Surveillance &nbsp;&bull;&nbsp; US Corporate Watchlist &nbsp;&bull;&nbsp; 75 Names</div>
+    <div class="subtitle">2LOD Credit Surveillance &nbsp;&bull;&nbsp; US Corporate Watchlist &nbsp;&bull;&nbsp; 74 Names</div>
   </div>
   <div class="right-block">
     <div class="pills">
