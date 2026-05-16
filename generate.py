@@ -504,7 +504,7 @@ Rules:
 
 PROMPT_B = f"""Today is {datetime_str}. You are generating structured data for a morning credit intelligence dashboard for publicly listed US and global corporates.
 
-Watchlist - BATCH B (37 names):
+Watchlist - BATCH B (36 names):
 Auto: General Motors, Tesla, Ford, Toyota, Nissan
 Aerospace: Boeing, GE Aerospace
 Retail: Walmart, AutoZone, Genuine Parts
@@ -581,7 +581,7 @@ OUTPUT FORMAT: Your ENTIRE response must be ONLY a single JSON object. Start wit
 {{"macro": {{"hy_oas": "350", "ig_oas": "95", "treasury_10y": "4.42", "treasury_2y": "4.85", "vix": "18.2", "sp500": "5234", "sp500_1d": "+0.8"}}, "rows": [{{"company": "Company Name", "sector": "Sector", "status": "red|amber|green", "mkt_cap": "12.5", "nd_ebitda": "2.4", "ebitda_margin": "18.5", "fcf_ltm": "1.8", "cash": "5.2", "total_debt": "15.0", "earnings": "Jul 23", "stock_1d": "+1.2", "stock_1m": "+1.2", "stock_ytd": "+1.2", "week52_high": "185.50", "week52_low": "112.30", "moodys_rating": "Baa2", "moodys_outlook": "Stable", "moodys_date": "2025-10-15", "sp_rating": "BBB", "sp_outlook": "Stable", "sp_date": "2025-09-22", "fitch_rating": "BBB", "fitch_outlook": "Stable", "fitch_date": "2025-08-10", "concern_score": 35, "key_dev": "No material news.", "action": "Monitor"}}], "top3": [{{"name": "Company A", "note": "Short reason"}}]}}
 
 Rules:
-- All 37 names must appear in rows.
+- All 36 names must appear in rows.
 - All dollar figures in $Bn. Round to one decimal.
 - Net Debt/EBITDA: number only, no "x".
 - EBITDA Margin: number only, no % sign.
@@ -1709,7 +1709,7 @@ footer li strong{color:#ffaaaa}
     <li><strong>Tag fallback chains:</strong> Companies tag concepts slightly differently. We try the primary tag (e.g., <code>Revenues</code>), then fall back to alternatives (e.g., <code>RevenueFromContractWithCustomerExcludingAssessedTax</code>) if missing.</li>
     <li><strong>Validation:</strong> Implausible values (cash &gt; assets, ND/EBITDA outside &plusmn;50x, etc.) trigger warnings shown as &#9888; on the row.</li>
     <li><strong>20-F filers</strong> (Toyota, BP, AB InBev): annual data only; quarterly fields show the most recent annual figure.</li>
-    <li><strong>Non-SEC filers</strong> (Nissan, Hyundai, Imperial Brands): no SEC data available; financials fall back to Claude web-search estimates.</li>
+    <li><strong>Non-SEC filers</strong> (Nissan, Imperial Brands): no SEC data available; financials fall back to Claude web-search estimates.</li>
     <li><strong>Cache file:</strong> <code>financials_cache.json</code> in the repo &mdash; auditable record of what data was used.</li>
   </ul>
 
@@ -1767,7 +1767,7 @@ footer li strong{color:#ffaaaa}
   <h2>Data Limitations</h2>
   <ul>
     <li>20-F filers (Toyota, BP, Anheuser-Busch InBev) report annually rather than quarterly &mdash; financial data may be 6&ndash;12 months old</li>
-    <li>Non-SEC filers (Nissan, Hyundai, Imperial Brands) have limited financial data; market data still available via yfinance</li>
+    <li>Non-SEC filers (Nissan, Imperial Brands) have limited financial data; market data still available via yfinance</li>
     <li>News &amp; key dev: best-effort synthesis from public sources; may miss developments outside the search window</li>
     <li>This dashboard is a personal scanning tool, not a regulated system of record. Always verify against authoritative sources before relying on data for committee work.</li>
   </ul>
