@@ -25,6 +25,13 @@ try:
 except ImportError:
     RUN_LOG_AVAILABLE = False
 
+try:
+    import red_flags
+    RED_FLAGS_AVAILABLE = True
+except ImportError:
+    RED_FLAGS_AVAILABLE = False
+    print("WARNING: red_flags module not found; Red Flags tab will remain placeholder.")
+
 # Date/time
 et = pytz.timezone('America/New_York')
 now = datetime.now(et)
@@ -782,7 +789,42 @@ def last_action_cell(r):
 
 
 def concern_cell_redesigned(r, status):
-    """Larger concern score cell with tier label below."""
+    """
+    Flag count cell - uses red_flags engine output if available, falls back to concern_score.
+    Visual: numeric count, progress bar, tier label.
+    """
+    flag_count = r.get('_flag_count')
+    watch_count = r.get('_watch_count', 0)
+    total_flags = 9  # 9 universal flags currently implemented
+
+    if flag_count is not None:
+        # Use flag count
+        try:
+            from red_flags import flag_count_tier
+            tier = flag_count_tier(flag_count, watch_count)
+        except ImportError:
+            tier = 'Comfortable'
+        # Color based on count
+        if flag_count >= 5:
+            color = '#ff6b6b'  # red
+        elif flag_count >= 3:
+            color = '#ff6b6b'
+        elif flag_count >= 1 or watch_count >= 3:
+            color = '#f0b429'  # amber
+        else:
+            color = '#4ec38a'  # green
+        # Progress bar shows total signal (flagged * 2 + watch, normalized to ~9)
+        signal_strength = min(100, (flag_count * 2 + watch_count) / (total_flags * 2) * 100)
+        watch_suffix = f' <span class="watch-suffix">+{watch_count}~</span>' if watch_count > 0 else ''
+        return (
+            f'<td class="concern-cell">'
+            f'<div class="concern-num" style="color:{color}">{flag_count}<span class="concern-denom">/{total_flags}</span>{watch_suffix}</div>'
+            f'<div class="concern-bar"><div style="background:{color};width:{signal_strength:.0f}%"></div></div>'
+            f'<div class="concern-tier">{tier}</div>'
+            f'</td>'
+        )
+
+    # Fallback: original concern score
     try:
         score = int(r.get('concern_score', 0))
     except:
@@ -861,6 +903,82 @@ def money_cell(v, decimals=1):
         return f'<td class="num-cell">{formatted}</td>'
     except (ValueError, TypeError):
         return f'<td class="num-cell">{v}</td>'
+
+
+def redflag_cell(state):
+    """Render a single flag cell: FLAGGED/WATCH/CLEAR/N/A."""
+    if state == "FLAGGED":
+        return '<td class="rf-cell rf-flagged" title="FLAGGED">&#9888;</td>'
+    if state == "WATCH":
+        return '<td class="rf-cell rf-watch" title="WATCH">~</td>'
+    if state == "CLEAR":
+        return '<td class="rf-cell rf-clear" title="CLEAR">&#10003;</td>'
+    return '<td class="rf-cell rf-na" title="N/A">&mdash;</td>'
+
+
+def build_redflag_rows(rows):
+    """
+    Build heatmap rows. Each row: company name + 9 flag columns + summary count.
+    Flag order matches FLAG_DEFINITIONS order from red_flags module.
+    Sorted by flag_count descending, then watch_count descending.
+    """
+    if not rows:
+        return []
+
+    # Get flag IDs in display order
+    try:
+        from red_flags import FLAG_DEFINITIONS
+        flag_ids = [f["id"] for f in FLAG_DEFINITIONS]
+    except ImportError:
+        flag_ids = []
+
+    # Sort rows: most-flagged first
+    sorted_rows = sorted(
+        [r for r in rows if r.get("_flags")],
+        key=lambda r: (-(r.get("_flag_count") or 0), -(r.get("_watch_count") or 0), r.get("company", "").lower())
+    )
+
+    rf_rows = []
+    for r in sorted_rows:
+        flags = r.get("_flags", {})
+        flag_count = r.get("_flag_count", 0)
+        watch_count = r.get("_watch_count", 0)
+        status = (r.get("status") or "green").lower()
+
+        # Build tooltip with all reasons
+        flag_cells = ""
+        for fid in flag_ids:
+            result = flags.get(fid, {})
+            state = result.get("state", "N/A")
+            reason = result.get("reason", "")
+            # Override the title with the actual reason
+            cell = redflag_cell(state)
+            # Inject reason into title attribute
+            cell = cell.replace(f'title="{state}"', f'title="{fid}: {reason}"', 1)
+            flag_cells += cell
+
+        # Summary count cell
+        if flag_count >= 5:
+            count_color = "#ff6b6b"
+        elif flag_count >= 1:
+            count_color = "#f0b429" if flag_count < 3 else "#ff6b6b"
+        elif watch_count >= 3:
+            count_color = "#f0b429"
+        else:
+            count_color = "#4ec38a"
+
+        rf_rows.append(
+            f'<tr data-status="{status}" data-company="{r.get("company","").lower()}" data-sector="{r.get("sector","")}">'
+            f'<td class="co-cell">{r.get("company","")}</td>'
+            f'<td><span class="sector-tag">{r.get("sector","")}</span></td>'
+            f'<td class="status {status}">{status.upper()}</td>'
+            + flag_cells
+            + f'<td class="rf-summary" style="color:{count_color}"><strong>{flag_count}</strong>'
+            + (f'<span class="rf-watch-suffix">+{watch_count}~</span>' if watch_count > 0 else '')
+            + '</td>'
+            + '</tr>'
+        )
+    return rf_rows
 
 
 def build_html(all_rows, macro, top3, datetime_str, commodities=None):
@@ -955,6 +1073,19 @@ def build_html(all_rows, macro, top3, datetime_str, commodities=None):
         f'<li><strong>{i.get("name","")}</strong>: {i.get("note","")}</li>'
         for i in top3
     )
+
+    # Build red flag heatmap rows
+    redflag_rows_list = build_redflag_rows(all_rows)
+
+    # Build red flag column headers from flag definitions
+    try:
+        from red_flags import FLAG_DEFINITIONS
+        rf_headers = "".join(
+            f'<th data-type="text" title="{f["name"]}: {f["threshold"]}"><div class="rf-hdr-num">{f["number"]}</div><div class="rf-hdr-label">{f["name"]}</div></th>'
+            for f in FLAG_DEFINITIONS
+        )
+    except ImportError:
+        rf_headers = ""
 
     hy_oas = macro.get('hy_oas','n/a'); ig_oas = macro.get('ig_oas','n/a')
     t10y = macro.get('treasury_10y','n/a'); t2y = macro.get('treasury_2y','n/a')
@@ -1090,6 +1221,31 @@ tbody tr:hover{background:#0d1520}
 .concern-bar{background:#21262d;border-radius:2px;height:4px;margin:6px auto 0;width:80px;overflow:hidden}
 .concern-bar div{height:100%;border-radius:2px}
 .concern-tier{font-size:9px;color:#7090a8;margin-top:4px;text-transform:uppercase;letter-spacing:.5px}
+.watch-suffix{font-size:10px;color:#f0b429;font-weight:600;margin-left:4px;font-family:"IBM Plex Mono",monospace}
+
+/* Red Flags heatmap */
+.rf-legend{padding:14px 28px;background:#0d1117;border-bottom:1px solid #1e2a3a;display:flex;flex-wrap:wrap;gap:24px;align-items:center;font-size:11px;color:#a0b4c8}
+.rf-legend-item{display:flex;align-items:center;gap:6px;font-family:"IBM Plex Mono",monospace}
+.rf-legend-item .rf-cell{position:static;display:inline-flex;width:22px;height:22px;padding:0;border-radius:3px;font-size:12px}
+.rf-legend-note{margin-left:auto;font-size:10px;color:#7090a8;font-style:italic;font-family:"IBM Plex Sans",sans-serif}
+.rf-table{width:100%;border-collapse:collapse;background:#0a0e14;table-layout:fixed}
+.rf-table th{background:#0d1117;color:#4a6080;padding:8px 6px;font-size:9px;letter-spacing:.5px;text-transform:uppercase;border-bottom:1px solid #1e2a3a;font-family:"IBM Plex Mono",monospace;font-weight:600;vertical-align:bottom;text-align:center}
+.rf-table thead th:first-child{text-align:left;width:14%;padding-left:14px}
+.rf-table thead th:nth-child(2){width:9%}
+.rf-table thead th:nth-child(3){width:7%}
+.rf-table thead th:last-child{width:7%}
+.rf-hdr-num{font-size:13px;color:#a0b4c8;font-weight:700;margin-bottom:4px}
+.rf-hdr-label{font-size:8px;color:#4a6080;line-height:1.2;white-space:normal}
+.rf-table td{padding:8px 6px;border-bottom:1px solid #0d1520;font-size:12px;vertical-align:middle;text-align:center}
+.rf-table td:first-child{text-align:left;padding-left:14px;font-weight:600;color:#e6edf3;font-size:13px}
+.rf-cell{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:3px;font-family:"IBM Plex Mono",monospace;font-weight:700;cursor:help;font-size:13px}
+.rf-flagged{background:rgba(255,107,107,.15);color:#ff6b6b;border:1px solid rgba(255,107,107,.4)}
+.rf-watch{background:rgba(240,180,41,.12);color:#f0b429;border:1px solid rgba(240,180,41,.35)}
+.rf-clear{background:rgba(78,195,138,.08);color:#4ec38a;border:1px solid rgba(78,195,138,.25)}
+.rf-na{background:#0d1520;color:#3a4a5a;border:1px solid #1e2a3a}
+.rf-summary{font-family:"IBM Plex Mono",monospace;font-size:14px;font-weight:700}
+.rf-summary strong{font-size:16px}
+.rf-watch-suffix{font-size:10px;color:#f0b429;margin-left:3px;font-weight:600}
 .rating-row-compact{display:flex;align-items:center;gap:8px;font-family:"IBM Plex Mono",monospace;font-size:11px;line-height:1.6}
 .outlook-tag{font-weight:700;font-size:9px;width:32px;display:inline-block}
 .action-date-cell{font-family:"IBM Plex Mono",monospace;padding:10px 12px}
@@ -1254,7 +1410,7 @@ footer li strong{color:#ffaaaa}
 <thead><tr>
   <th data-type="text">Company</th>
   <th data-type="text">Status</th>
-  <th data-type="num">Concern</th>
+  <th data-type="num">Flags</th>
   <th data-type="text">Ratings (M/S/F)</th>
   <th data-type="date">Last Action</th>
   <th data-type="text">Key Development</th>
@@ -1310,10 +1466,23 @@ footer li strong{color:#ffaaaa}
 </div>
 
 <div class="pane" id="pane-redflags">
-<div class="placeholder-pane">
-  <div class="ph-title">RED FLAGS FRAMEWORK</div>
-  <div>15-flag framework integration pending</div>
+<div class="rf-legend">
+  <div class="rf-legend-item"><span class="rf-cell rf-flagged">&#9888;</span> Flagged (threshold breached)</div>
+  <div class="rf-legend-item"><span class="rf-cell rf-watch">~</span> Watch (approaching threshold)</div>
+  <div class="rf-legend-item"><span class="rf-cell rf-clear">&#10003;</span> Clear</div>
+  <div class="rf-legend-item"><span class="rf-cell rf-na">&mdash;</span> N/A (insufficient data)</div>
+  <div class="rf-legend-note">Hover any cell for the trigger reason. See Methodology tab for full flag definitions.</div>
 </div>
+<table class="rf-table">
+<thead><tr>
+  <th data-type="text">Company</th>
+  <th data-type="text">Sector</th>
+  <th data-type="text">Status</th>
+  {rf_headers}
+  <th data-type="num">Total</th>
+</tr></thead>
+<tbody>{"".join(redflag_rows_list)}</tbody>
+</table>
 </div>
 
 <div class="pane" id="pane-methodology">
@@ -1335,28 +1504,11 @@ footer li strong{color:#ffaaaa}
     <tr><td><span class="action-redesigned red">Escalate</span></td><td>Committee discussion / 2LOD challenge required.</td></tr>
   </table>
 
-  <h2>Concern Score Methodology</h2>
-  <p>Sum of triggers below, capped at 100.</p>
-  <table class="methodology-table">
-    <tr><th>Trigger</th><th>Points</th></tr>
-    <tr><td>Status is RED</td><td>+25</td></tr>
-    <tr><td>Status is AMBER</td><td>+10</td></tr>
-    <tr><td>ND/EBITDA &gt; 5.0x</td><td>+15</td></tr>
-    <tr><td>Stock YTD &lt; -20%</td><td>+10</td></tr>
-    <tr><td>Stock 1M &lt; -10%</td><td>+10</td></tr>
-    <tr><td>Earnings within 14 days</td><td>+10</td></tr>
-    <tr><td>Key dev mentions downgrade / default / covenant breach / restructuring</td><td>+10</td></tr>
-    <tr><td>FCF LTM negative</td><td>+10</td></tr>
-    <tr><td>EBITDA margin &lt; 10%</td><td>+10</td></tr>
-    <tr><td>Any rating outlook Negative or RUR</td><td>+10</td></tr>
-  </table>
-  <p>Tier mapping:</p>
-  <table class="methodology-table">
-    <tr><td>0&ndash;39</td><td>Comfortable</td></tr>
-    <tr><td>40&ndash;59</td><td>Watch</td></tr>
-    <tr><td>60&ndash;79</td><td>Review</td></tr>
-    <tr><td>80&ndash;100</td><td>Escalate</td></tr>
-  </table>
+  <h2>Flag Count (Overview Tab)</h2>
+  <p>The <strong>Flags</strong> column on the Overview tab shows the count of FLAGGED triggers from the 9 universal red flags evaluated per company. The progress bar weights flagged (2x) plus watch (1x) signals against a maximum of 18.</p>
+  <p>Format: <code>X/9 (+Y~)</code> where X = flagged count and Y = watch count.</p>
+  <p>See the Red Flags tab for the full per-company heatmap and the section below for flag definitions and thresholds.</p>
+  <p><em>Note: an older "Concern Score" (sum-of-triggers 0&ndash;100) has been retired in favor of the flag-based system since the flags map directly to credit analytical thresholds rather than relying on weighted heuristics.</em></p>
 
   <h2>Ratings &amp; Outlook</h2>
   <ul>
@@ -1417,8 +1569,39 @@ footer li strong{color:#ffaaaa}
     <li><strong>Cache file:</strong> <code>financials_cache.json</code> in the repo &mdash; auditable record of what data was used.</li>
   </ul>
 
-  <h2>Red Flags <span class="meth-note">(framework pending &mdash; Phase 3)</span></h2>
-  <p>12 universal flags will be applied to every company. Will detail definitions once the engine is built.</p>
+  <h2>Red Flags Framework</h2>
+  <p>9 of 12 universal flags are computed each run from SEC EDGAR, yfinance, and ratings data. Each flag returns one of: <span class="rf-cell rf-flagged" style="position:static;display:inline-flex;width:18px;height:18px;font-size:10px">&#9888;</span> FLAGGED, <span class="rf-cell rf-watch" style="position:static;display:inline-flex;width:18px;height:18px;font-size:10px">~</span> WATCH, <span class="rf-cell rf-clear" style="position:static;display:inline-flex;width:18px;height:18px;font-size:10px">&#10003;</span> CLEAR, or <span class="rf-cell rf-na" style="position:static;display:inline-flex;width:18px;height:18px;font-size:10px">&mdash;</span> N/A.</p>
+  <table class="methodology-table">
+    <tr><th>Flag</th><th>Threshold</th><th>Watch</th><th>Data Source</th></tr>
+    <tr><td>1. Leverage Too High</td><td>ND/EBITDA &gt; 5.0x</td><td>&gt; 4.0x</td><td>SEC EDGAR</td></tr>
+    <tr><td>2. Leverage Climbing</td><td>ND/EBITDA +1.0x YoY</td><td>+0.5x</td><td>SEC EDGAR quarterly history</td></tr>
+    <tr><td>3. Coverage Thin</td><td>EBITDA/Interest &lt; 3.0x</td><td>&lt; 4.5x</td><td>SEC EDGAR</td></tr>
+    <tr><td>4. Burning Cash</td><td>FCF negative 2 quarters</td><td>1 quarter</td><td>SEC EDGAR quarterly history</td></tr>
+    <tr><td>7. Revenue Shrinking</td><td>Rev YoY &lt; -5%</td><td>&lt; -2%</td><td>SEC EDGAR</td></tr>
+    <tr><td>8. Margin Compression</td><td>EBITDA margin -300bps YoY</td><td>-150bps</td><td>SEC EDGAR quarterly history</td></tr>
+    <tr><td>9. Stock Collapse</td><td>YTD &lt; -25%</td><td>&lt; -15%</td><td>yfinance</td></tr>
+    <tr><td>10. Rating Pressure</td><td>2+ Negative outlooks</td><td>1 negative</td><td>Ratings + override file</td></tr>
+    <tr><td>11. Bad News in Filings</td><td>Trigger phrases in key dev</td><td>Watch phrases</td><td>Claude key dev synthesis</td></tr>
+  </table>
+  <p><strong>Pending flags</strong> (require data not in XBRL companyfacts):</p>
+  <ul>
+    <li>Flag 5. Wall of Maturities &mdash; needs debt maturity schedule (10-K narrative parsing)</li>
+    <li>Flag 6. Refi at Higher Rates &mdash; needs coupon data on outstanding debt</li>
+    <li>Flag 12. Liquidity Squeeze &mdash; needs revolver availability disclosure</li>
+  </ul>
+  <p><strong>Tier mapping (Overview tab Flags column):</strong></p>
+  <table class="methodology-table">
+    <tr><td>0 flagged, 0-2 watch</td><td>Comfortable</td></tr>
+    <tr><td>0 flagged, 3+ watch</td><td>Watch</td></tr>
+    <tr><td>1-2 flagged</td><td>Watch</td></tr>
+    <tr><td>3-4 flagged</td><td>Review</td></tr>
+    <tr><td>5+ flagged</td><td>Escalate</td></tr>
+  </table>
+  <p><strong>Bad news keyword scanner (Flag 11)</strong> looks for these phrases in the Key Development field:</p>
+  <ul>
+    <li><strong>FLAGGED triggers:</strong> covenant breach, covenant violation, default, missed payment, restructuring, chapter 11, chapter 7, bankruptcy, going concern</li>
+    <li><strong>WATCH triggers:</strong> downgrade, lawsuit, litigation, investigation, fraud, sec inquiry, guidance cut, guidance withdrawn, material weakness, restatement, layoffs, going private, strategic review</li>
+  </ul>
 
   <h2>Refresh Cadence</h2>
   <ul>
@@ -1480,6 +1663,7 @@ def main():
     # Pull authoritative financials from SEC EDGAR (cached weekly)
     sec_metadata = {"from_cache": False, "names_succeeded": 0, "names_attempted": 0}
     sec_warnings = []
+    sec_data = {}
     if SEC_EDGAR_AVAILABLE:
         sec_data, sec_warnings, sec_metadata = sec_edgar.fetch_financials(WATCHLIST)
         all_rows = sec_edgar.apply_sec_overrides(all_rows, sec_data)
@@ -1493,6 +1677,13 @@ def main():
 
     # Recompute status deterministically from the data (overrides Claude's call)
     all_rows = compute_status_from_data(all_rows)
+
+    # Evaluate the 9 universal red flags
+    flag_summary = None
+    if RED_FLAGS_AVAILABLE:
+        all_rows, flag_summary = red_flags.evaluate_flags(all_rows, sec_data)
+        flagged_co = sum(1 for r in all_rows if r.get('_flag_count', 0) >= 1)
+        print(f"Red Flags: {flag_summary['total_flagged_triggers']} total flagged triggers across {flagged_co} companies")
 
     print(f"Batch A: {len(rows_a)} rows, Batch B: {len(rows_b)} rows, Total: {len(all_rows)}")
 
