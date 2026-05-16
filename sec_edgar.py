@@ -459,7 +459,7 @@ def _save_cache(cache_path, data):
 
 
 def _cache_is_fresh(cache):
-    """Return True if cache_last_full_refresh is within CACHE_TTL_DAYS."""
+    """Return True if cache_last_full_refresh is within CACHE_TTL_DAYS AND has usable data."""
     if not cache:
         return False
     last = cache.get("_last_full_refresh")
@@ -468,9 +468,22 @@ def _cache_is_fresh(cache):
     try:
         last_dt = datetime.strptime(last, "%Y-%m-%d").date()
         age = (datetime.now(timezone.utc).date() - last_dt).days
-        return age < CACHE_TTL_DAYS
+        if age >= CACHE_TTL_DAYS:
+            return False
     except Exception:
         return False
+    # Sanity check: cache must have at least some companies with real data
+    real_entries = [v for k, v in cache.items()
+                    if not k.startswith("_") and isinstance(v, dict)
+                    and v.get("revenue_ltm") is not None]
+    total_entries = sum(1 for k in cache if not k.startswith("_"))
+    if total_entries == 0:
+        return False
+    success_rate = len(real_entries) / total_entries
+    if success_rate < 0.5:
+        print(f"SEC EDGAR: cache exists but success rate is {success_rate:.0%} ({len(real_entries)}/{total_entries}) — treating as stale.")
+        return False
+    return True
 
 
 def fetch_financials(watchlist, cache_path="financials_cache.json", force_refresh=False):
