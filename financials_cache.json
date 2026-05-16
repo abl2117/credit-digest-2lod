@@ -1,0 +1,380 @@
+{
+  "AT&T": {
+    "_warnings": [
+      "No CIK found for ticker T"
+    ]
+  },
+  "Verizon": {
+    "_warnings": [
+      "No CIK found for ticker VZ"
+    ]
+  },
+  "Comcast": {
+    "_warnings": [
+      "No CIK found for ticker CMCSA"
+    ]
+  },
+  "Disney": {
+    "_warnings": [
+      "No CIK found for ticker DIS"
+    ]
+  },
+  "Warner Bros. Discovery": {
+    "_warnings": [
+      "No CIK found for ticker WBD"
+    ]
+  },
+  "Netflix": {
+    "_warnings": [
+      "No CIK found for ticker NFLX"
+    ]
+  },
+  "Amazon": {
+    "_warnings": [
+      "No CIK found for ticker AMZN"
+    ]
+  },
+  "Alphabet": {
+    "_warnings": [
+      "No CIK found for ticker GOOGL"
+    ]
+  },
+  "Microsoft": {
+    "_warnings": [
+      "No CIK found for ticker MSFT"
+    ]
+  },
+  "Oracle": {
+    "_warnings": [
+      "No CIK found for ticker ORCL"
+    ]
+  },
+  "Salesforce": {
+    "_warnings": [
+      "No CIK found for ticker CRM"
+    ]
+  },
+  "IBM": {
+    "_warnings": [
+      "No CIK found for ticker IBM"
+    ]
+  },
+  "HP Inc": {
+    "_warnings": [
+      "No CIK found for ticker HPQ"
+    ]
+  },
+  "HPE": {
+    "_warnings": [
+      "No CIK found for ticker HPE"
+    ]
+  },
+  "Dell": {
+    "_warnings": [
+      "No CIK found for ticker DELL"
+    ]
+  },
+  "Nextracker": {
+    "_warnings": [
+      "No CIK found for ticker NXT"
+    ]
+  },
+  "Sanmina": {
+    "_warnings": [
+      "No CIK found for ticker SANM"
+    ]
+  },
+  "Flex Ltd": {
+    "_warnings": [
+      "No CIK found for ticker FLEX"
+    ]
+  },
+  "Jabil": {
+    "_warnings": [
+      "No CIK found for ticker JBL"
+    ]
+  },
+  "Arrow Electronics": {
+    "_warnings": [
+      "No CIK found for ticker ARW"
+    ]
+  },
+  "TD Synnex": {
+    "_warnings": [
+      "No CIK found for ticker SNX"
+    ]
+  },
+  "Ingram Micro": {
+    "_warnings": [
+      "No CIK found for ticker INGM"
+    ]
+  },
+  "Kyndryl": {
+    "_warnings": [
+      "No CIK found for ticker KD"
+    ]
+  },
+  "Cognizant": {
+    "_warnings": [
+      "No CIK found for ticker CTSH"
+    ]
+  },
+  "Equinix": {
+    "_warnings": [
+      "No CIK found for ticker EQIX"
+    ]
+  },
+  "Digital Realty": {
+    "_warnings": [
+      "No CIK found for ticker DLR"
+    ]
+  },
+  "American Tower": {
+    "_warnings": [
+      "No CIK found for ticker AMT"
+    ]
+  },
+  "PayPal": {
+    "_warnings": [
+      "No CIK found for ticker PYPL"
+    ]
+  },
+  "Corpay": {
+    "_warnings": [
+      "No CIK found for ticker CPAY"
+    ]
+  },
+  "Booking Holdings": {
+    "_warnings": [
+      "No CIK found for ticker BKNG"
+    ]
+  },
+  "Uber": {
+    "_warnings": [
+      "No CIK found for ticker UBER"
+    ]
+  },
+  "Delta": {
+    "_warnings": [
+      "No CIK found for ticker DAL"
+    ]
+  },
+  "Carnival": {
+    "_warnings": [
+      "No CIK found for ticker CCL"
+    ]
+  },
+  "Royal Caribbean": {
+    "_warnings": [
+      "No CIK found for ticker RCL"
+    ]
+  },
+  "Norwegian Cruise Line": {
+    "_warnings": [
+      "No CIK found for ticker NCLH"
+    ]
+  },
+  "General Motors": {
+    "_warnings": [
+      "No CIK found for ticker GM"
+    ]
+  },
+  "Tesla": {
+    "_warnings": [
+      "No CIK found for ticker TSLA"
+    ]
+  },
+  "Ford": {
+    "_warnings": [
+      "No CIK found for ticker F"
+    ]
+  },
+  "Toyota": {
+    "_warnings": [
+      "No CIK found for ticker TM"
+    ]
+  },
+  "Nissan": {
+    "_no_sec_filer": true,
+    "_ticker": "NSANY",
+    "_warnings": [
+      "Not an SEC filer"
+    ]
+  },
+  "Hyundai": {
+    "_no_sec_filer": true,
+    "_ticker": "HYMTF",
+    "_warnings": [
+      "Not an SEC filer"
+    ]
+  },
+  "Boeing": {
+    "_warnings": [
+      "No CIK found for ticker BA"
+    ]
+  },
+  "GE Aerospace": {
+    "_warnings": [
+      "No CIK found for ticker GE"
+    ]
+  },
+  "Walmart": {
+    "_warnings": [
+      "No CIK found for ticker WMT"
+    ]
+  },
+  "AutoZone": {
+    "_warnings": [
+      "No CIK found for ticker AZO"
+    ]
+  },
+  "Genuine Parts": {
+    "_warnings": [
+      "No CIK found for ticker GPC"
+    ]
+  },
+  "Coca-Cola": {
+    "_warnings": [
+      "No CIK found for ticker KO"
+    ]
+  },
+  "Anheuser-Busch InBev": {
+    "_warnings": [
+      "No CIK found for ticker BUD"
+    ]
+  },
+  "Philip Morris": {
+    "_warnings": [
+      "No CIK found for ticker PM"
+    ]
+  },
+  "Altria": {
+    "_warnings": [
+      "No CIK found for ticker MO"
+    ]
+  },
+  "Imperial Brands": {
+    "_no_sec_filer": true,
+    "_ticker": "IMBBY",
+    "_warnings": [
+      "Not an SEC filer"
+    ]
+  },
+  "Universal Corporation": {
+    "_warnings": [
+      "No CIK found for ticker UVV"
+    ]
+  },
+  "Nike": {
+    "_warnings": [
+      "No CIK found for ticker NKE"
+    ]
+  },
+  "Kimberly-Clark": {
+    "_warnings": [
+      "No CIK found for ticker KMB"
+    ]
+  },
+  "Whirlpool": {
+    "_warnings": [
+      "No CIK found for ticker WHR"
+    ]
+  },
+  "Mondelez": {
+    "_warnings": [
+      "No CIK found for ticker MDLZ"
+    ]
+  },
+  "Ball Corp": {
+    "_warnings": [
+      "No CIK found for ticker BALL"
+    ]
+  },
+  "Crown Holdings": {
+    "_warnings": [
+      "No CIK found for ticker CCK"
+    ]
+  },
+  "International Paper": {
+    "_warnings": [
+      "No CIK found for ticker IP"
+    ]
+  },
+  "Chevron": {
+    "_warnings": [
+      "No CIK found for ticker CVX"
+    ]
+  },
+  "BP": {
+    "_warnings": [
+      "No CIK found for ticker BP"
+    ]
+  },
+  "Exxon": {
+    "_warnings": [
+      "No CIK found for ticker XOM"
+    ]
+  },
+  "NextEra Energy": {
+    "_warnings": [
+      "No CIK found for ticker NEE"
+    ]
+  },
+  "Duke Energy": {
+    "_warnings": [
+      "No CIK found for ticker DUK"
+    ]
+  },
+  "Sempra Energy": {
+    "_warnings": [
+      "No CIK found for ticker SRE"
+    ]
+  },
+  "Caterpillar": {
+    "_warnings": [
+      "No CIK found for ticker CAT"
+    ]
+  },
+  "Deere": {
+    "_warnings": [
+      "No CIK found for ticker DE"
+    ]
+  },
+  "Danaher": {
+    "_warnings": [
+      "No CIK found for ticker DHR"
+    ]
+  },
+  "GE Vernova": {
+    "_warnings": [
+      "No CIK found for ticker GEV"
+    ]
+  },
+  "Honeywell": {
+    "_warnings": [
+      "No CIK found for ticker HON"
+    ]
+  },
+  "Otis": {
+    "_warnings": [
+      "No CIK found for ticker OTIS"
+    ]
+  },
+  "Air Products": {
+    "_warnings": [
+      "No CIK found for ticker APD"
+    ]
+  },
+  "Corteva": {
+    "_warnings": [
+      "No CIK found for ticker CTVA"
+    ]
+  },
+  "DuPont": {
+    "_warnings": [
+      "No CIK found for ticker DD"
+    ]
+  },
+  "_last_full_refresh": "2026-05-16",
+  "_full_refresh_at": "2026-05-16T00:27:26.099029+00:00"
+}
