@@ -32,6 +32,13 @@ except ImportError:
     RED_FLAGS_AVAILABLE = False
     print("WARNING: red_flags module not found; Red Flags tab will remain placeholder.")
 
+try:
+    import fred
+    FRED_AVAILABLE = True
+except ImportError:
+    FRED_AVAILABLE = False
+    print("WARNING: fred module not found; Macro tab will be empty.")
+
 # Date/time
 et = pytz.timezone('America/New_York')
 now = datetime.now(et)
@@ -439,30 +446,30 @@ Source from earningswhispers.com, yahoo.com/finance, or the company's IR page.
 NEWS (last 24 to 48 hours):
 Source from reuters.com, bloomberg.com, wsj.com, ft.com, agency press releases, or sec.gov 8-K filings.
 
-CREDIT RATINGS — CRITICAL ACCURACY RULES:
+CREDIT RATINGS - CRITICAL ACCURACY RULES:
 For each agency (Moody's, S&P, Fitch) for EACH company, you MUST perform multiple targeted searches. Required search sequence per agency per company:
 1. First search: "[Company] [Agency] rating action 2026"
 2. Second search if needed: "[Company] [Agency] credit rating 2025"
 3. Third search if needed: "[Company] credit rating [Agency] downgrade upgrade outlook"
 
 Source priority (use in this order):
-1. Agency press releases (moodys.com, spglobal.com, fitchratings.com) — most authoritative
+1. Agency press releases (moodys.com, spglobal.com, fitchratings.com) - most authoritative
 2. Reuters, Bloomberg, Investing.com, Yahoo Finance rating action articles
 3. Company 10-K, prospectus, or IR page disclosures
 
 CRITICAL ACCURACY REQUIREMENTS:
 - Always return the date of the MOST RECENT rating action found (YYYY-MM-DD format)
-- Compare dates across sources — use the source with the most recent date
+- Compare dates across sources - use the source with the most recent date
 - If two sources disagree on rating, use the one with the most recent date
-- Distinguish issuer/corporate family rating from issue-specific (bond-level) ratings — use the ISSUER rating
+- Distinguish issuer/corporate family rating from issue-specific (bond-level) ratings - use the ISSUER rating
 - For Moody's: use issuer rating or Corporate Family Rating (CFR), NOT senior unsecured if different
-- Do NOT confuse outlook with rating — outlook is Stable/Positive/Negative/RUR, separate from the letter grade
+- Do NOT confuse outlook with rating - outlook is Stable/Positive/Negative/RUR, separate from the letter grade
 - A rating action includes: upgrade, downgrade, affirmation, outlook change, or watch placement
 - For each rating, the date should reflect the most recent rating action (including outlook revisions or affirmations), not the date of original rating assignment
 
 Use web search to source values. For well-known public companies, use your best available knowledge if a specific value is not directly returned by search. Only return "n/a" if the value is genuinely unknowable.
 
-CONCERN SCORE — compute for every row as an integer 0-100:
+CONCERN SCORE - compute for every row as an integer 0-100:
 Start at 0 and add points as follows:
 - +25 if status is red
 - +10 if status is amber
@@ -524,24 +531,24 @@ Source from earningswhispers.com, yahoo.com/finance, or the company's IR page.
 NEWS (last 24 to 48 hours):
 Source from reuters.com, bloomberg.com, wsj.com, ft.com, agency press releases, or sec.gov 8-K filings.
 
-CREDIT RATINGS — CRITICAL ACCURACY RULES:
+CREDIT RATINGS - CRITICAL ACCURACY RULES:
 For each agency (Moody's, S&P, Fitch) for EACH company, you MUST perform multiple targeted searches. Required search sequence per agency per company:
 1. First search: "[Company] [Agency] rating action 2026"
 2. Second search if needed: "[Company] [Agency] credit rating 2025"
 3. Third search if needed: "[Company] credit rating [Agency] downgrade upgrade outlook"
 
 Source priority (use in this order):
-1. Agency press releases (moodys.com, spglobal.com, fitchratings.com) — most authoritative
+1. Agency press releases (moodys.com, spglobal.com, fitchratings.com) - most authoritative
 2. Reuters, Bloomberg, Investing.com, Yahoo Finance rating action articles
 3. Company 10-K, prospectus, or IR page disclosures
 
 CRITICAL ACCURACY REQUIREMENTS:
 - Always return the date of the MOST RECENT rating action found (YYYY-MM-DD format)
-- Compare dates across sources — use the source with the most recent date
+- Compare dates across sources - use the source with the most recent date
 - If two sources disagree on rating, use the one with the most recent date
-- Distinguish issuer/corporate family rating from issue-specific (bond-level) ratings — use the ISSUER rating
+- Distinguish issuer/corporate family rating from issue-specific (bond-level) ratings - use the ISSUER rating
 - For Moody's: use issuer rating or Corporate Family Rating (CFR), NOT senior unsecured if different
-- Do NOT confuse outlook with rating — outlook is Stable/Positive/Negative/RUR, separate from the letter grade
+- Do NOT confuse outlook with rating - outlook is Stable/Positive/Negative/RUR, separate from the letter grade
 - A rating action includes: upgrade, downgrade, affirmation, outlook change, or watch placement
 - For each rating, the date should reflect the most recent rating action (including outlook revisions or affirmations), not the date of original rating assignment
 
@@ -556,7 +563,7 @@ Source from wsj.com, bloomberg.com, or fred.stlouisfed.org.
 
 Use web search to source values. For well-known public companies, use your best available knowledge if a specific value is not directly returned by search. Only return "n/a" if the value is genuinely unknowable.
 
-CONCERN SCORE — compute for every row as an integer 0-100:
+CONCERN SCORE - compute for every row as an integer 0-100:
 Start at 0 and add points as follows:
 - +25 if status is red
 - +10 if status is amber
@@ -732,7 +739,7 @@ def ratings_cell(r):
 
 
 def ratings_cell_compact(r):
-    """Compact ratings cell for redesigned Overview tab — agency / rating / outlook only."""
+    """Compact ratings cell for redesigned Overview tab - agency / rating / outlook only."""
     agencies = [
         ('moodys_rating','moodys_outlook','M'),
         ('sp_rating','sp_outlook','S'),
@@ -742,7 +749,7 @@ def ratings_cell_compact(r):
     for rf, of, label in agencies:
         rating = r.get(rf,'n/a') or 'n/a'
         outlook = r.get(of,'n/a') or 'n/a'
-        outlook_short = outlook[:3].upper() if outlook != 'n/a' else '—'
+        outlook_short = outlook[:3].upper() if outlook != 'n/a' else '-'
         color = outlook_color(outlook)
         lines.append(
             f'<div class="rating-row-compact">'
@@ -981,8 +988,120 @@ def build_redflag_rows(rows):
     return rf_rows
 
 
-def build_html(all_rows, macro, top3, datetime_str, commodities=None):
+def build_macro_tab(macro_data):
+    """
+    Build the Macro tab content from FRED data.
+    macro_data is the dict returned by fred.fetch_macro_data().
+    """
+    if not macro_data:
+        return '<div class="placeholder-pane"><div class="ph-title">MACRO TAB</div><div>FRED data not available. Ensure FRED_API_KEY is set as a GitHub secret and fred.py is in the repo.</div></div>'
+
+    # Group by category
+    categories = {
+        "rates":     {"label": "Rates &amp; Treasury Curve", "items": []},
+        "spreads":   {"label": "Credit Spreads",             "items": []},
+        "inflation": {"label": "Inflation",                  "items": []},
+        "labor":     {"label": "Labor Market",               "items": []},
+        "activity":  {"label": "Economic Activity",          "items": []},
+    }
+
+    for key, m in macro_data.items():
+        if not isinstance(m, dict):
+            continue
+        cat = m.get("_category", "other")
+        if cat in categories:
+            categories[cat]["items"].append((key, m))
+
+    # Sort each category by key for stable ordering
+    for cat in categories.values():
+        cat["items"].sort(key=lambda x: x[0])
+
+    def fmt_value(m):
+        """Format the headline value with appropriate units."""
+        val = m.get("value")
+        units = m.get("_units", "")
+        if val is None:
+            return "n/a"
+        # Currency / index values get formatting based on size
+        try:
+            v = float(val)
+            if "%" in units or "YoY" in units:
+                return f"{v:.1f}%"
+            if v < 10:
+                return f"{v:.2f}"
+            if v < 1000:
+                return f"{v:.1f}"
+            return f"{v:,.0f}"
+        except (TypeError, ValueError):
+            return str(val)
+
+    def fmt_change(m):
+        """Format the change from prior observation."""
+        change = m.get("change")
+        if change is None:
+            return ""
+        try:
+            c = float(change)
+            sign = "+" if c >= 0 else ""
+            cls = "macro-up" if c >= 0 else "macro-down"
+            arrow = "&#9650;" if c >= 0 else "&#9660;"
+            # For rates/spreads, format as bps or decimal
+            if abs(c) < 1:
+                return f'<span class="{cls}">{arrow} {sign}{c:.2f}</span>'
+            return f'<span class="{cls}">{arrow} {sign}{c:.1f}</span>'
+        except (TypeError, ValueError):
+            return ""
+
+    def build_section(cat_key, cat_data):
+        if not cat_data["items"]:
+            return ""
+        rows = []
+        for key, m in cat_data["items"]:
+            label = m.get("_label", key)
+            value = fmt_value(m)
+            change = fmt_change(m)
+            as_of = m.get("as_of", "")
+            freq = m.get("_frequency", "")
+            series_id = m.get("_series_id", "")
+            rows.append(
+                f'<tr>'
+                f'<td class="macro-row-label">{label}</td>'
+                f'<td class="macro-row-value">{value}</td>'
+                f'<td class="macro-row-change">{change}</td>'
+                f'<td class="macro-row-asof">{as_of}</td>'
+                f'<td class="macro-row-freq">{freq}</td>'
+                f'<td class="macro-row-series">{series_id}</td>'
+                f'</tr>'
+            )
+        return (
+            f'<div class="macro-section">'
+            f'<h3 class="macro-section-title">{cat_data["label"]}</h3>'
+            f'<table class="macro-table">'
+            f'<thead><tr>'
+            f'<th>Indicator</th><th>Value</th><th>Change</th><th>As of</th><th>Freq</th><th>FRED ID</th>'
+            f'</tr></thead>'
+            f'<tbody>{"".join(rows)}</tbody>'
+            f'</table>'
+            f'</div>'
+        )
+
+    sections_html = "".join(build_section(k, v) for k, v in categories.items())
+
+    return (
+        '<div class="macro-tab-content">'
+        '<div class="macro-tab-intro">'
+        '<p>Source: <strong>FRED (Federal Reserve Economic Data)</strong>, St. Louis Fed. '
+        'Cache TTL 20 hours, refreshes once per dashboard run. Change column shows movement '
+        'from the prior observation in the same series.</p>'
+        '</div>'
+        f'{sections_html}'
+        '</div>'
+    )
+
+
+def build_html(all_rows, macro, top3, datetime_str, commodities=None, fred_data=None):
     commodities = commodities or {}
+    fred_data = fred_data or {}
     overview_rows, market_rows, fin_rows = [], [], []
     g_count = a_count = r_count = 0
     for r in all_rows:
@@ -991,7 +1110,7 @@ def build_html(all_rows, macro, top3, datetime_str, commodities=None):
         elif status == 'amber': a_count += 1
         elif status == 'red': r_count += 1
 
-        # OVERVIEW row — redesigned
+        # OVERVIEW row - redesigned
         overview_rows.append(
             f'<tr data-status="{status}" data-company="{r.get("company","").lower()}" data-sector="{r.get("sector","")}">'
             + company_cell_redesigned(r)
@@ -1019,7 +1138,7 @@ def build_html(all_rows, macro, top3, datetime_str, commodities=None):
         else:
             ev_str = "n/a"
 
-        # MARKET row — Mkt Cap and EV inserted after Sector, before Status
+        # MARKET row - Mkt Cap and EV inserted after Sector, before Status
         market_rows.append(
             f'<tr data-status="{status}" data-company="{r.get("company","").lower()}" data-sector="{r.get("sector","")}">'
             f'<td class="co-cell">{r.get("company","")}</td>'
@@ -1037,7 +1156,7 @@ def build_html(all_rows, macro, top3, datetime_str, commodities=None):
             + '</tr>'
         )
 
-        # FINANCIALS row — Revenue + YoY added, Mkt Cap removed (moved to Market Data tab)
+        # FINANCIALS row - Revenue + YoY added, Mkt Cap removed (moved to Market Data tab)
         # Source indicator and warning icon
         fin_source = r.get('_financials_source', '')
         fin_warnings = r.get('_fin_warnings') or []
@@ -1086,6 +1205,9 @@ def build_html(all_rows, macro, top3, datetime_str, commodities=None):
         )
     except ImportError:
         rf_headers = ""
+
+    # Build Macro tab content
+    macro_tab_html = build_macro_tab(fred_data)
 
     hy_oas = macro.get('hy_oas','n/a'); ig_oas = macro.get('ig_oas','n/a')
     t10y = macro.get('treasury_10y','n/a'); t2y = macro.get('treasury_2y','n/a')
@@ -1199,10 +1321,10 @@ tbody tr:hover{background:#0d1520}
 /* Center everything except Company (col 1) and Key Development (col 6) on Overview */
 .overview-table tbody td:not(:nth-child(1)):not(:nth-child(6)),
 .overview-table thead th:not(:nth-child(1)):not(:nth-child(6)){text-align:center}
-/* Market Data tab — center everything except Company (col 1) */
+/* Market Data tab - center everything except Company (col 1) */
 #pane-market tbody td:not(:nth-child(1)),
 #pane-market thead th:not(:nth-child(1)){text-align:center}
-/* Financials tab — center everything except Company (col 1) */
+/* Financials tab - center everything except Company (col 1) */
 #pane-financials tbody td:not(:nth-child(1)),
 #pane-financials thead th:not(:nth-child(1)){text-align:center}
 /* Inside-cell helpers need to inherit center on these tables */
@@ -1263,6 +1385,23 @@ tbody tr:hover{background:#0d1520}
 .src-tag.claude{background:#0d1520;color:#7090a8;border:1px solid #1e2a3a}
 .data-warn{color:#f0b429;font-size:12px;cursor:help;margin-left:2px}
 
+/* Macro tab */
+.macro-tab-content{padding:24px 28px}
+.macro-tab-intro{color:#a0b4c8;font-size:12px;line-height:1.5;margin-bottom:24px;padding-bottom:14px;border-bottom:1px solid #1e2a3a;max-width:960px}
+.macro-tab-intro p{margin:0}
+.macro-section{margin-bottom:28px}
+.macro-section-title{font-family:"IBM Plex Mono",monospace;font-size:11px;color:#8B0000;text-transform:uppercase;letter-spacing:1.5px;font-weight:700;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #1e2a3a}
+.macro-table{width:auto;min-width:560px;border-collapse:collapse}
+.macro-table th{background:#0d1117;color:#4a6080;padding:8px 14px;text-align:left;font-size:10px;letter-spacing:1px;text-transform:uppercase;font-family:"IBM Plex Mono",monospace;font-weight:600;border-bottom:1px solid #1e2a3a;cursor:default}
+.macro-table th:hover{background:#0d1117;color:#4a6080}
+.macro-table td{padding:8px 14px;border-bottom:1px solid #0d1520;font-size:12px;color:#a0b4c8;vertical-align:middle;font-family:"IBM Plex Mono",monospace}
+.macro-row-label{color:#e6edf3;font-family:"IBM Plex Sans",sans-serif !important;font-weight:500}
+.macro-row-value{color:#a0c4e8;font-weight:700;text-align:right}
+.macro-row-change{font-weight:600}
+.macro-row-asof{color:#7090a8;font-size:11px}
+.macro-row-freq{color:#7090a8;font-size:11px;text-transform:uppercase}
+.macro-row-series{color:#4a6080;font-size:10px}
+
 .placeholder-pane{padding:80px 28px;text-align:center;color:#4a6080;font-family:"IBM Plex Mono",monospace;font-size:13px;letter-spacing:1px}
 .placeholder-pane .ph-title{font-size:16px;color:#a0b4c8;margin-bottom:10px;letter-spacing:2px}
 .methodology-content{padding:28px 32px;color:#a0b4c8;font-size:13px;line-height:1.6;max-width:920px}
@@ -1286,7 +1425,7 @@ footer li strong{color:#ffaaaa}
 
     js = """
 (function(){
-  var panes={overview:document.getElementById('pane-overview'),market:document.getElementById('pane-market'),financials:document.getElementById('pane-financials'),redflags:document.getElementById('pane-redflags'),methodology:document.getElementById('pane-methodology')};
+  var panes={overview:document.getElementById('pane-overview'),market:document.getElementById('pane-market'),financials:document.getElementById('pane-financials'),redflags:document.getElementById('pane-redflags'),macro:document.getElementById('pane-macro'),methodology:document.getElementById('pane-methodology')};
   var tabs=document.querySelectorAll('.tab');
   tabs.forEach(function(t){t.addEventListener('click',function(){
     tabs.forEach(function(x){x.classList.remove('active');});
@@ -1391,6 +1530,7 @@ footer li strong{color:#ffaaaa}
   <button class="tab" data-tab="market">Market Data</button>
   <button class="tab" data-tab="financials">Financials</button>
   <button class="tab" data-tab="redflags">Red Flags</button>
+  <button class="tab" data-tab="macro">Macro</button>
   <button class="tab" data-tab="methodology">Methodology</button>
 </div>
 <div class="controls">
@@ -1485,6 +1625,10 @@ footer li strong{color:#ffaaaa}
 </table>
 </div>
 
+<div class="pane" id="pane-macro">
+{macro_tab_html}
+</div>
+
 <div class="pane" id="pane-methodology">
 <div class="methodology-content">
 
@@ -1541,6 +1685,7 @@ footer li strong{color:#ffaaaa}
     <li>Gold: front-month gold futures (GC=F)</li>
     <li>EUR/USD: spot FX</li>
     <li>Sources: spreads, yields, VIX, S&amp;P 500 level via Claude web search; equity indices (Nasdaq, Dow), commodities &amp; FX via yfinance</li>
+    <li><strong>Macro tab</strong>: 18 indicators pulled directly from FRED (Federal Reserve Economic Data) covering rates, spreads, inflation, labor, and activity. Updates daily. Cache TTL 20 hours.</li>
   </ul>
 
   <h2>Financials</h2>
@@ -1606,7 +1751,7 @@ footer li strong{color:#ffaaaa}
   <h2>Refresh Cadence</h2>
   <ul>
     <li>Dashboard runs daily at 8:00 AM ET on weekdays</li>
-    <li><strong>Daily refresh:</strong> Market data, commodities/FX, equity indices (yfinance); ratings, news, top 3 (Claude); status compute</li>
+    <li><strong>Daily refresh:</strong> Market data, commodities/FX, equity indices (yfinance); ratings, news, top 3 (Claude); FRED macro indicators (cache TTL 20 hours); status compute</li>
     <li><strong>Weekly refresh:</strong> SEC EDGAR financials (cache TTL = 6 days; refreshes on first run after expiry)</li>
     <li>Manual override file (<code>ratings_override.json</code>) applies after auto-pull</li>
   </ul>
@@ -1615,6 +1760,7 @@ footer li strong{color:#ffaaaa}
   <ul>
     <li><strong><code>runs.json</code></strong> in the repo: rolling log of the last 60 runs, capturing data sources called, success/failure counts, validation warnings, output stats, and timing. Auto-trimmed.</li>
     <li><strong><code>financials_cache.json</code></strong> in the repo: snapshot of the SEC data used for the current run. Inspectable.</li>
+    <li><strong><code>macro_cache.json</code></strong> in the repo: snapshot of the FRED data used for the current run. Inspectable.</li>
     <li><strong>Row-level provenance:</strong> each financial cell carries a source tag (<span class="src-tag sec">SEC</span> or <span class="src-tag claude">EST</span>) and a warning marker (<span style="color:#f0b429">&#9888;</span>) where validation rules fired.</li>
     <li><strong>Validation rules:</strong> impossible values (cash &gt; assets, ND/EBITDA &gt; 50x, EBITDA margin &gt; 80%, etc.) trigger row warnings. Hover to see the specific rule that fired.</li>
   </ul>
@@ -1675,6 +1821,18 @@ def main():
     # Pull commodities, FX, and equity indices from yfinance
     commodities = fetch_commodities_fx()
 
+    # Pull macro economic indicators from FRED (cached ~20 hours)
+    fred_metadata = {"from_cache": False, "series_succeeded": 0, "series_attempted": 0, "series_failed": []}
+    fred_warnings = []
+    fred_data = {}
+    if FRED_AVAILABLE:
+        print("Calling FRED for macro economic data...")
+        fred_data, fred_warnings, fred_metadata = fred.fetch_macro_data(
+            cache_path="macro_cache.json",
+            force_refresh=False,
+        )
+        print(f"FRED: {fred_metadata.get('series_succeeded',0)}/{fred_metadata.get('series_attempted',0)} series succeeded")
+
     # Recompute status deterministically from the data (overrides Claude's call)
     all_rows = compute_status_from_data(all_rows)
 
@@ -1687,7 +1845,7 @@ def main():
 
     print(f"Batch A: {len(rows_a)} rows, Batch B: {len(rows_b)} rows, Total: {len(all_rows)}")
 
-    html = build_html(all_rows, macro, top3, datetime_str, commodities)
+    html = build_html(all_rows, macro, top3, datetime_str, commodities, fred_data)
 
     with open('index.html', 'w', encoding='utf-8') as f:
         f.write(html)
@@ -1722,6 +1880,13 @@ def main():
                 "yfinance": {
                     "market_data_companies": len(market_data) if market_data else 0,
                     "commodities_indices": len(commodities) if commodities else 0,
+                },
+                "fred": {
+                    "from_cache": fred_metadata.get("from_cache", False),
+                    "series_attempted": fred_metadata.get("series_attempted", 0),
+                    "series_succeeded": fred_metadata.get("series_succeeded", 0),
+                    "series_failed": fred_metadata.get("series_failed", []),
+                    "warnings": fred_warnings[:20],
                 },
             },
             "overrides_applied": {
