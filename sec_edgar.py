@@ -56,6 +56,10 @@ TAG_CHAINS = {
     ],
     "op_income": [
         "OperatingIncomeLoss",
+        "IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest",
+        "IncomeLossFromContinuingOperationsBeforeIncomeTaxesMinorityInterestAndIncomeLossFromEquityMethodInvestments",
+        "IncomeLossFromContinuingOperationsBeforeInterestExpenseInterestIncomeIncomeTaxesExtraordinaryItemsNoncontrollingInterestsNet",
+        "OperatingIncomeLossExcludingDepreciation",
     ],
     "da": [
         "DepreciationDepletionAndAmortization",
@@ -151,18 +155,47 @@ def _build_ticker_to_cik_map():
 
 def _pick_period_end(fact_units, prefer_quarterly=True):
     """
-    From SEC's per-unit list of fact instances, pick the most recent point-in-time
-    fact (for balance-sheet items: end-of-period values) or the relevant quarterly
-    instance. Returns list sorted newest first.
+    From SEC's per-unit list of fact instances, dedupe by end date keeping the most
+    recently filed instance (handles restatements), filter to facts filed within
+    last 3 years, and return list sorted newest first.
     """
-    # SEC facts are dicts with keys: start, end, val, fy, fp, form, accn, filed
-    # For instant facts (balance sheet), only `end` is set.
-    items = []
-    for f in fact_units or []:
+    if not fact_units:
+        return []
+    today = datetime.now().date()
+    cutoff = today - timedelta(days=3 * 365)
+
+    def filing_date(f):
+        try:
+            return datetime.strptime(f.get("filed", ""), "%Y-%m-%d").date()
+        except Exception:
+            return None
+
+    # Filter and dedupe
+    by_end = {}
+    for f in fact_units:
         end = f.get("end")
         if not end:
             continue
-        items.append(f)
+        # Skip ancient filings
+        fd = filing_date(f)
+        if fd and fd < cutoff:
+            continue
+        try:
+            ed = datetime.strptime(end, "%Y-%m-%d").date()
+        except Exception:
+            continue
+        if ed < cutoff:
+            continue
+        existing = by_end.get(end)
+        if existing is None:
+            by_end[end] = f
+            continue
+        existing_filed = filing_date(existing)
+        new_filed = filing_date(f)
+        if new_filed and (not existing_filed or new_filed > existing_filed):
+            by_end[end] = f
+
+    items = list(by_end.values())
     items.sort(key=lambda x: x.get("end", ""), reverse=True)
     return items
 
@@ -170,7 +203,8 @@ def _pick_period_end(fact_units, prefer_quarterly=True):
 def _get_concept(facts, tag_chain, taxonomy="us-gaap"):
     """
     Walk fallback tags. Returns (units_list, tag_used) for the first tag found,
-    where units_list is the list of fact instances for the primary unit (usually USD).
+    where units_list is the list of fact instances in USD (or the only unit if no USD).
+    Skips non-USD denominations to avoid Toyota-style FX mismatches.
     """
     facts_taxonomy = facts.get("facts", {}).get(taxonomy, {})
     for tag in tag_chain:
@@ -180,12 +214,11 @@ def _get_concept(facts, tag_chain, taxonomy="us-gaap"):
         units = node.get("units", {})
         if not units:
             continue
-        # Pick primary unit: prefer USD, then USD/shares not relevant here, then anything
-        unit_key = next((k for k in units.keys() if k == "USD"), None)
-        if not unit_key:
-            unit_key = next(iter(units.keys()), None)
-        if unit_key:
-            return units[unit_key], tag
+        # Only use USD facts. If only non-USD is available, return None to flag the issue.
+        if "USD" in units:
+            return units["USD"], tag
+        # Continue to next tag in chain rather than using foreign currency
+        continue
     return None, None
 
 
@@ -205,6 +238,10 @@ def _ltm_sum(facts, tag_chain, is_quarterly_filer=True):
     """
     Sum the last twelve months for a flow item (revenue, op income, OCF, etc.).
     Strategy:
+      - Dedupe quarterly facts by end-date, keeping the most recently filed instance
+        (this handles restatements: a quarter republished in a later 10-K should win
+        over the original 10-Q filing).
+      - Filter to facts filed within the last ~3 years (anything older is stale data).
       - For 10-K/10-Q filers (quarterly): take 4 most recent non-overlapping
         quarterly facts (start/end span ~90 days each) and sum.
       - For 20-F filers (annual only): take the most recent annual fact.
@@ -214,9 +251,19 @@ def _ltm_sum(facts, tag_chain, is_quarterly_filer=True):
     if not units:
         return None, None, None, None
 
+    # Filter out stale facts: must have been filed within last 3 years
+    today = datetime.now().date()
+    cutoff = today - timedelta(days=3 * 365)
+
+    def filing_date(f):
+        try:
+            return datetime.strptime(f.get("filed", ""), "%Y-%m-%d").date()
+        except Exception:
+            return None
+
     # Separate quarterly (~90 days) and annual (~365 days) periods
-    quarterly = []
-    annual = []
+    quarterly_raw = []
+    annual_raw = []
     for f in units:
         start = f.get("start"); end = f.get("end")
         if not start or not end:
@@ -225,15 +272,41 @@ def _ltm_sum(facts, tag_chain, is_quarterly_filer=True):
             sd = datetime.strptime(start, "%Y-%m-%d").date()
             ed = datetime.strptime(end, "%Y-%m-%d").date()
             days = (ed - sd).days
-        except:
+        except Exception:
             continue
         f["_days"] = days
+        # Drop ancient filings
+        fd = filing_date(f)
+        if fd and fd < cutoff:
+            continue
+        # Also drop facts where the period itself is far older than the cutoff
+        if ed < cutoff:
+            continue
         if 80 <= days <= 100:
-            quarterly.append(f)
+            quarterly_raw.append(f)
         elif 350 <= days <= 380:
-            annual.append(f)
+            annual_raw.append(f)
 
-    # Strategy 1: 4 most recent quarters
+    # Dedupe quarterly facts by end date: keep the most recently filed instance
+    # (this handles restatements where a quarter is republished in a later filing)
+    def dedupe_by_end(facts_list):
+        by_end = {}
+        for f in facts_list:
+            end = f.get("end")
+            existing = by_end.get(end)
+            if existing is None:
+                by_end[end] = f
+                continue
+            existing_filed = filing_date(existing)
+            new_filed = filing_date(f)
+            if new_filed and (not existing_filed or new_filed > existing_filed):
+                by_end[end] = f
+        return list(by_end.values())
+
+    quarterly = dedupe_by_end(quarterly_raw)
+    annual = dedupe_by_end(annual_raw)
+
+    # Strategy 1: 4 most recent non-overlapping quarters
     if quarterly:
         quarterly.sort(key=lambda x: x.get("end", ""), reverse=True)
         latest_end = quarterly[0].get("end")
@@ -242,13 +315,12 @@ def _ltm_sum(facts, tag_chain, is_quarterly_filer=True):
         for q in quarterly[1:]:
             if len(picked) >= 4:
                 break
-            # No overlap: this quarter's end must be before previous quarter's start
             try:
                 prev_start = datetime.strptime(picked[-1].get("start"), "%Y-%m-%d").date()
                 this_end = datetime.strptime(q.get("end"), "%Y-%m-%d").date()
                 if this_end <= prev_start:
                     picked.append(q)
-            except:
+            except Exception:
                 continue
         if len(picked) == 4:
             ltm = sum(f.get("val", 0) for f in picked)
@@ -271,7 +343,17 @@ def _ltm_revenue_yoy(facts, tag_chain):
     if not units:
         return None
 
-    quarterly = []
+    today = datetime.now().date()
+    cutoff = today - timedelta(days=3 * 365)
+
+    def filing_date(f):
+        try:
+            return datetime.strptime(f.get("filed", ""), "%Y-%m-%d").date()
+        except Exception:
+            return None
+
+    # Collect quarterly facts within recency window
+    quarterly_raw = []
     for f in units:
         start = f.get("start"); end = f.get("end")
         if not start or not end:
@@ -280,10 +362,30 @@ def _ltm_revenue_yoy(facts, tag_chain):
             sd = datetime.strptime(start, "%Y-%m-%d").date()
             ed = datetime.strptime(end, "%Y-%m-%d").date()
             days = (ed - sd).days
-        except:
+        except Exception:
             continue
         if 80 <= days <= 100:
-            quarterly.append(f)
+            fd = filing_date(f)
+            if fd and fd < cutoff:
+                continue
+            if ed < cutoff:
+                continue
+            quarterly_raw.append(f)
+
+    # Dedupe by end date, keep most recently filed
+    by_end = {}
+    for f in quarterly_raw:
+        end = f.get("end")
+        existing = by_end.get(end)
+        if existing is None:
+            by_end[end] = f
+            continue
+        existing_filed = filing_date(existing)
+        new_filed = filing_date(f)
+        if new_filed and (not existing_filed or new_filed > existing_filed):
+            by_end[end] = f
+    quarterly = list(by_end.values())
+
     if len(quarterly) < 8:
         return None
     quarterly.sort(key=lambda x: x.get("end", ""), reverse=True)
@@ -335,12 +437,23 @@ def _ltm_revenue_yoy(facts, tag_chain):
 def _extract_quarterly_history(facts, tag_chain, max_quarters=12):
     """
     Return list of quarterly facts (~90 days) sorted newest first, capped to max_quarters.
+    Filtered to facts within last 3 years, deduped by period-end keeping most recently filed.
     Each entry: {"period_end": "YYYY-MM-DD", "value": float, "form": "10-Q" or "10-K"}.
     """
     units, _ = _get_concept(facts, tag_chain)
     if not units:
         return []
-    quarterly = []
+    today = datetime.now().date()
+    cutoff = today - timedelta(days=3 * 365)
+
+    def filing_date(f):
+        try:
+            return datetime.strptime(f.get("filed", ""), "%Y-%m-%d").date()
+        except Exception:
+            return None
+
+    # Collect raw quarterly facts within recency window
+    raw = []
     for f in units:
         start = f.get("start"); end = f.get("end")
         if not start or not end:
@@ -349,53 +462,89 @@ def _extract_quarterly_history(facts, tag_chain, max_quarters=12):
             sd = datetime.strptime(start, "%Y-%m-%d").date()
             ed = datetime.strptime(end, "%Y-%m-%d").date()
             days = (ed - sd).days
-        except:
+        except Exception:
             continue
-        if 80 <= days <= 100:
-            quarterly.append({
-                "period_end": end,
-                "value": f.get("val"),
-                "form": f.get("form", "10-Q"),
-            })
-    quarterly.sort(key=lambda x: x["period_end"], reverse=True)
-    # Dedupe by period_end (sometimes same quarter appears in both 10-Q and later 10-K filing)
-    seen = set()
-    deduped = []
-    for q in quarterly:
-        if q["period_end"] in seen:
+        if not (80 <= days <= 100):
             continue
-        seen.add(q["period_end"])
-        deduped.append(q)
+        fd = filing_date(f)
+        if fd and fd < cutoff:
+            continue
+        if ed < cutoff:
+            continue
+        raw.append(f)
+
+    # Dedupe by end date keeping most recently filed
+    by_end = {}
+    for f in raw:
+        end = f.get("end")
+        existing = by_end.get(end)
+        if existing is None:
+            by_end[end] = f
+            continue
+        existing_filed = filing_date(existing)
+        new_filed = filing_date(f)
+        if new_filed and (not existing_filed or new_filed > existing_filed):
+            by_end[end] = f
+
+    deduped = [
+        {"period_end": f.get("end"), "value": f.get("val"), "form": f.get("form", "10-Q")}
+        for f in by_end.values()
+    ]
+    deduped.sort(key=lambda x: x["period_end"], reverse=True)
     return deduped[:max_quarters]
 
 
 def _extract_balance_history(facts, tag_chain, max_periods=12):
     """
     Return list of balance-sheet (instant) facts sorted newest first.
+    Filtered to facts within last 3 years, deduped by period-end keeping most recently filed.
     Each entry: {"period_end": "YYYY-MM-DD", "value": float, "form": ...}.
     """
     units, _ = _get_concept(facts, tag_chain)
     if not units:
         return []
-    items = []
+    today = datetime.now().date()
+    cutoff = today - timedelta(days=3 * 365)
+
+    def filing_date(f):
+        try:
+            return datetime.strptime(f.get("filed", ""), "%Y-%m-%d").date()
+        except Exception:
+            return None
+
+    raw = []
     for f in units:
         end = f.get("end")
         if not end:
             continue
-        items.append({
-            "period_end": end,
-            "value": f.get("val"),
-            "form": f.get("form", "10-Q"),
-        })
-    items.sort(key=lambda x: x["period_end"], reverse=True)
-    # Dedupe
-    seen = set()
-    deduped = []
-    for q in items:
-        if q["period_end"] in seen:
+        try:
+            ed = datetime.strptime(end, "%Y-%m-%d").date()
+        except Exception:
             continue
-        seen.add(q["period_end"])
-        deduped.append(q)
+        if ed < cutoff:
+            continue
+        fd = filing_date(f)
+        if fd and fd < cutoff:
+            continue
+        raw.append(f)
+
+    by_end = {}
+    for f in raw:
+        end = f.get("end")
+        existing = by_end.get(end)
+        if existing is None:
+            by_end[end] = f
+            continue
+        existing_filed = filing_date(existing)
+        new_filed = filing_date(f)
+        if new_filed and (not existing_filed or new_filed > existing_filed):
+            by_end[end] = f
+
+    deduped = [
+        {"period_end": f.get("end"), "value": f.get("val"), "form": f.get("form", "10-Q")}
+        for f in by_end.values()
+    ]
+    deduped.sort(key=lambda x: x["period_end"], reverse=True)
     return deduped[:max_periods]
 
 
