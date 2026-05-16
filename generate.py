@@ -421,10 +421,10 @@ Travel: Booking Holdings, Uber, Delta, Carnival, Royal Caribbean, Norwegian Crui
 For each company gather the data below using these source priorities:
 
 FINANCIAL METRICS (Market Cap, Net Debt/EBITDA, EBITDA Margin, FCF LTM, Cash, Total Debt):
-Return your best estimates if known, but NOTE: For US 10-K and 10-Q filers, financial fields are programmatically overridden by SEC EDGAR after your response. For non-SEC filers (Nissan, Hyundai, Imperial Brands) and 20-F filers (Toyota, BP, AB InBev), your estimates may stand. Focus your effort primarily on status, ratings, action, key developments, and news.
+DO NOT search for financial data. Return "n/a" for these fields. They are pulled from SEC EDGAR programmatically after your response and your estimates are not used. Skip these completely to save search budget.
 
 STOCK DATA (1-day, 1-month, YTD percentage changes, 52-week high, 52-week low):
-Return your best estimates if known. NOTE: These fields are programmatically overridden by yfinance after your response, so accuracy is less critical here. Focus your effort on status, ratings, key developments, and financial metrics.
+DO NOT search for stock prices. Return "n/a" for these fields. They are pulled from yfinance programmatically after your response and your estimates are not used. Skip these completely to save search budget.
 
 NEXT EARNINGS DATE:
 Source from earningswhispers.com, yahoo.com/finance, or the company's IR page.
@@ -506,10 +506,10 @@ Industrials: Caterpillar, Deere, Danaher, GE Vernova, Honeywell, Otis, Air Produ
 For each company gather the data below using these source priorities:
 
 FINANCIAL METRICS (Market Cap, Net Debt/EBITDA, EBITDA Margin, FCF LTM, Cash, Total Debt):
-Return your best estimates if known, but NOTE: For US 10-K and 10-Q filers, financial fields are programmatically overridden by SEC EDGAR after your response. For non-SEC filers (Nissan, Hyundai, Imperial Brands) and 20-F filers (Toyota, BP, AB InBev), your estimates may stand. Focus your effort primarily on status, ratings, action, key developments, and news.
+DO NOT search for financial data. Return "n/a" for these fields. They are pulled from SEC EDGAR programmatically after your response and your estimates are not used. Skip these completely to save search budget.
 
 STOCK DATA (1-day, 1-month, YTD percentage changes, 52-week high, 52-week low):
-Return your best estimates if known. NOTE: These fields are programmatically overridden by yfinance after your response, so accuracy is less critical here. Focus your effort on status, ratings, key developments, and financial metrics.
+DO NOT search for stock prices. Return "n/a" for these fields. They are pulled from yfinance programmatically after your response and your estimates are not used. Skip these completely to save search budget.
 
 NEXT EARNINGS DATE:
 Source from earningswhispers.com, yahoo.com/finance, or the company's IR page.
@@ -591,7 +591,7 @@ def call_claude(prompt, batch_name):
     response = client.messages.create(
         model="claude-sonnet-4-6",
         max_tokens=16000,
-        tools=[{"type": "web_search_20250305", "name": "web_search", "max_uses": 50}],
+        tools=[{"type": "web_search_20250305", "name": "web_search", "max_uses": 25}],
         messages=[{"role": "user", "content": prompt}]
     )
     for block in reversed(response.content):
@@ -846,6 +846,23 @@ def price_cell(v):
     return f'<td class="num-cell price-cell">${v}</td>'
 
 
+def money_cell(v, decimals=1):
+    """Format a $Bn value with $ prefix and comma thousands separator."""
+    v = str(v or 'n/a').strip()
+    if not v or v == 'n/a':
+        return '<td class="num-cell stock-flat">n/a</td>'
+    try:
+        num = float(v)
+        # Format with commas, fixed decimals; place minus sign before $
+        if num < 0:
+            formatted = f"-${abs(num):,.{decimals}f}"
+        else:
+            formatted = f"${num:,.{decimals}f}"
+        return f'<td class="num-cell">{formatted}</td>'
+    except (ValueError, TypeError):
+        return f'<td class="num-cell">{v}</td>'
+
+
 def build_html(all_rows, macro, top3, datetime_str, commodities=None):
     commodities = commodities or {}
     overview_rows, market_rows, fin_rows = [], [], []
@@ -889,8 +906,8 @@ def build_html(all_rows, macro, top3, datetime_str, commodities=None):
             f'<tr data-status="{status}" data-company="{r.get("company","").lower()}" data-sector="{r.get("sector","")}">'
             f'<td class="co-cell">{r.get("company","")}</td>'
             f'<td><span class="sector-tag">{r.get("sector","")}</span></td>'
-            + num_cell(r.get('mkt_cap'))
-            + num_cell(ev_str)
+            + money_cell(r.get('mkt_cap'))
+            + money_cell(ev_str)
             + f'<td class="status {status}">{status.upper()}</td>'
             + price_cell(r.get('price'))
             + stock_cell(r.get('stock_1d'))
@@ -923,14 +940,14 @@ def build_html(all_rows, macro, top3, datetime_str, commodities=None):
             f'<td class="co-cell">{r.get("company","")} {source_marker}{warning_marker}</td>'
             f'<td><span class="sector-tag">{r.get("sector","")}</span></td>'
             f'<td class="status {status}">{status.upper()}</td>'
-            + num_cell(r.get('revenue_ltm'))
+            + money_cell(r.get('revenue_ltm'))
             + num_cell(r.get('revenue_yoy_pct'), '%')
             + num_cell(r.get('nd_ebitda'))
             + num_cell(r.get('ebitda_margin'),'%')
             + num_cell(r.get('op_margin'),'%')
-            + num_cell(r.get('fcf_ltm'))
-            + num_cell(r.get('cash'))
-            + num_cell(r.get('total_debt'))
+            + money_cell(r.get('fcf_ltm'))
+            + money_cell(r.get('cash'))
+            + money_cell(r.get('total_debt'))
             + '</tr>'
         )
 
