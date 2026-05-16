@@ -85,6 +85,11 @@ TAG_CHAINS = {
         "DebtCurrent",
         "ShortTermBorrowings",
     ],
+    "interest_expense": [
+        "InterestExpense",
+        "InterestExpenseDebt",
+        "InterestAndDebtExpense",
+    ],
 }
 
 
@@ -327,7 +332,74 @@ def _ltm_revenue_yoy(facts, tag_chain):
     return (curr_sum - prev_sum) / prev_sum * 100
 
 
-def _extract_metrics(facts, filer_type):
+def _extract_quarterly_history(facts, tag_chain, max_quarters=12):
+    """
+    Return list of quarterly facts (~90 days) sorted newest first, capped to max_quarters.
+    Each entry: {"period_end": "YYYY-MM-DD", "value": float, "form": "10-Q" or "10-K"}.
+    """
+    units, _ = _get_concept(facts, tag_chain)
+    if not units:
+        return []
+    quarterly = []
+    for f in units:
+        start = f.get("start"); end = f.get("end")
+        if not start or not end:
+            continue
+        try:
+            sd = datetime.strptime(start, "%Y-%m-%d").date()
+            ed = datetime.strptime(end, "%Y-%m-%d").date()
+            days = (ed - sd).days
+        except:
+            continue
+        if 80 <= days <= 100:
+            quarterly.append({
+                "period_end": end,
+                "value": f.get("val"),
+                "form": f.get("form", "10-Q"),
+            })
+    quarterly.sort(key=lambda x: x["period_end"], reverse=True)
+    # Dedupe by period_end (sometimes same quarter appears in both 10-Q and later 10-K filing)
+    seen = set()
+    deduped = []
+    for q in quarterly:
+        if q["period_end"] in seen:
+            continue
+        seen.add(q["period_end"])
+        deduped.append(q)
+    return deduped[:max_quarters]
+
+
+def _extract_balance_history(facts, tag_chain, max_periods=12):
+    """
+    Return list of balance-sheet (instant) facts sorted newest first.
+    Each entry: {"period_end": "YYYY-MM-DD", "value": float, "form": ...}.
+    """
+    units, _ = _get_concept(facts, tag_chain)
+    if not units:
+        return []
+    items = []
+    for f in units:
+        end = f.get("end")
+        if not end:
+            continue
+        items.append({
+            "period_end": end,
+            "value": f.get("val"),
+            "form": f.get("form", "10-Q"),
+        })
+    items.sort(key=lambda x: x["period_end"], reverse=True)
+    # Dedupe
+    seen = set()
+    deduped = []
+    for q in items:
+        if q["period_end"] in seen:
+            continue
+        seen.add(q["period_end"])
+        deduped.append(q)
+    return deduped[:max_periods]
+
+
+
     """
     Given the raw companyfacts JSON, extract all metrics we need.
     Returns dict of values + provenance metadata.
@@ -384,6 +456,28 @@ def _extract_metrics(facts, filer_type):
     if opi_ltm is not None and rev_ltm and rev_ltm > 0:
         op_margin = round(opi_ltm / rev_ltm * 100, 1)
 
+    # Interest expense LTM + coverage ratio
+    intex_ltm, _, _, intex_tag = _ltm_sum(facts, TAG_CHAINS["interest_expense"], is_q)
+    interest_coverage = None
+    if ebitda_ltm and intex_ltm and intex_ltm > 0:
+        interest_coverage = round(ebitda_ltm / intex_ltm, 1)
+
+    # Quarterly history (last 12 quarters) for flow items
+    history = {
+        "revenue": _extract_quarterly_history(facts, TAG_CHAINS["revenue"]),
+        "op_income": _extract_quarterly_history(facts, TAG_CHAINS["op_income"]),
+        "da": _extract_quarterly_history(facts, TAG_CHAINS["da"]),
+        "ocf": _extract_quarterly_history(facts, TAG_CHAINS["ocf"]),
+        "capex": _extract_quarterly_history(facts, TAG_CHAINS["capex"]),
+        "interest_expense": _extract_quarterly_history(facts, TAG_CHAINS["interest_expense"]),
+    }
+    # Balance-sheet history (period-end snapshots) for stock items
+    balance_history = {
+        "cash": _extract_balance_history(facts, TAG_CHAINS["cash"]),
+        "lt_debt": _extract_balance_history(facts, TAG_CHAINS["lt_debt"]),
+        "st_debt": _extract_balance_history(facts, TAG_CHAINS["st_debt"]),
+    }
+
     return {
         "revenue_ltm": to_bn(rev_ltm),
         "ebitda_ltm": to_bn(ebitda_ltm),
@@ -397,13 +491,17 @@ def _extract_metrics(facts, filer_type):
         "ebitda_margin": ebitda_margin,
         "op_margin": op_margin,
         "revenue_yoy_pct": round(rev_yoy, 1) if rev_yoy is not None else None,
+        "interest_expense_ltm": to_bn(intex_ltm),
+        "interest_coverage": interest_coverage,
         "_period_end": rev_end or opi_end or cash_end,
         "_filing_form": rev_form or opi_form,
         "_tags_used": {
             "revenue": rev_tag, "op_income": opi_tag, "da": da_tag,
             "ocf": ocf_tag, "capex": capex_tag, "cash": cash_tag,
-            "lt_debt": lt_tag, "st_debt": st_tag,
-        }
+            "lt_debt": lt_tag, "st_debt": st_tag, "interest_expense": intex_tag,
+        },
+        "_history": history,
+        "_balance_history": balance_history,
     }
 
 
@@ -614,6 +712,7 @@ def apply_sec_overrides(rows, sec_data):
         "nd_ebitda": "nd_ebitda",
         "revenue_yoy_pct": "revenue_yoy_pct",
         "op_margin": "op_margin",
+        "interest_coverage": "interest_coverage",
     }
     for r in rows:
         co = r.get("company", "")
