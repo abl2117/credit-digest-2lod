@@ -1,44 +1,32 @@
 """
-US Census Bureau Value in Place (VIP) construction spending integration.
+SEC EDGAR integration for the credit digest.
 
-Pulls the monthly Construction Put in Place series for the data center category
-and adjacent categories (power, office, commercial, manufacturing) that provide
-context for evaluating credit exposure in the data center and broader CRE space.
+Pulls audited financial data directly from SEC's XBRL-tagged company facts API.
+No API key required. Respects SEC's User-Agent requirement.
 
 Public functions:
-    fetch_construction_data(cache_path='construction_cache.json', force_refresh=False)
-      -> (construction_dict, warnings_list, metadata_dict)
+    fetch_financials(watchlist, cache_path='financials_cache.json', force_refresh=False)
+      -> (financials_dict, warnings_list, run_metadata_dict)
 
-The Census API is free; an API key is recommended but not required for low-volume use.
-Register at https://api.census.gov/data/key_signup.html and set CENSUS_API_KEY as a
-GitHub secret. Without a key the API throttles after ~500 calls/day; we make ~10/day.
-
-Data source: US Census Bureau, Value of Construction Put in Place Survey (VIP).
-The data center category was broken out from "office" starting in January 2014.
-
-Returned structure:
+The returned financials_dict is keyed by company name with structure:
     {
-      "data_center": {
-        "value": 3940.0,           # latest monthly value, $M
-        "as_of": "2026-01",        # YYYY-MM
-        "prior_value": 3851.0,
-        "prior_as_of": "2025-12",
-        "change": 89.0,
-        "change_pct": 2.3,
-        "yoy_change": 856.0,
-        "yoy_change_pct": 27.7,
-        "ttm_total": 39400.0,      # trailing 12-month total
-        "history": [
-          {"date": "2026-01", "value": 3940.0},
-          ...
-        ],
-        "_category_code": "DATACEN",
-        "_units": "$M",
-        "_seasonal": "Not Seasonally Adjusted",
-        "_fetched_at": "2026-05-16T..."
+      "Whirlpool": {
+        "revenue_ltm": 15234.5,
+        "ebitda_ltm": 1456.2,
+        "fcf_ltm": 234.1,
+        "cash": 1234.0,
+        "total_debt": 4700.0,
+        "net_debt": 3466.0,
+        "nd_ebitda": 2.38,
+        "ebitda_margin": 9.56,
+        "op_margin": 6.55,
+        "revenue_yoy_pct": -3.2,
+        "_source": "SEC:CIK0000106640",
+        "_filing_form": "10-Q",
+        "_period_end": "2026-03-31",
+        "_fetched_at": "2026-05-15T08:02:14Z",
+        "_warnings": []
       },
-      "power": {...},
-      "office": {...},
       ...
     }
 """
@@ -48,281 +36,682 @@ import os
 import time
 import urllib.request
 import urllib.error
-import urllib.parse
 from datetime import datetime, timedelta, timezone
 
-# Cache freshness: VIP is monthly so a 12-hour TTL is fine
-CACHE_TTL_HOURS = 12
+# SEC requires identifying User-Agent: "Sample Company Name AdminContact@samplecompany.com"
+# Format must include human-readable name + contact email separated by a space
+SEC_USER_AGENT = "Credit Digest Personal Research contact@example.com"
 
-CENSUS_VIP_URL = "https://api.census.gov/data/timeseries/eits/vip"
+# Cache freshness: refresh full dataset if cache is older than this
+CACHE_TTL_DAYS = 6
 
-# Categories to track. Each entry: (key, census category_code, label, history_months)
-# The Census category_code for data centers was added in 2024 when the category was
-# formally split out from office. Pattern matches the FRED naming convention
-# (TLPWRCON for power, TLOFCONS for office, etc.). We attempt the most likely code
-# first; if it returns nothing on the first fetch, run with FORCE_DISCOVERY=True
-# below to enumerate available codes.
-CATEGORIES = [
-    ("data_center",   "DATACEN",  "Data Center Construction",    36),
-    ("power",         "PWR",      "Power Construction",          36),
-    ("office",        "OFFICE",   "Office Construction",         36),
-    ("commercial",    "COMM",     "Commercial Construction",     36),
-    ("manufacturing", "MFG",      "Manufacturing Construction",  36),
-    ("total_private", "TLPRV",    "Total Private Construction",  36),
-    ("total",         "TLCON",    "Total Construction",          36),
-]
+# Freshness gates for tag candidates. A candidate tag's latest fact must be within
+# these windows to be accepted as current; otherwise the fallback chain advances.
+# Worst-case quarterly filing lag is ~80 days, so 180 leaves comfortable headroom.
+FRESHNESS_DAYS = 180
+ANNUAL_FRESHNESS_DAYS = 540  # ~18 months for 20-F annual-only filers
 
-# We want private, not seasonally adjusted, monthly values.
-# data_type_code conventions:
-#   TOTAL = total spending
-#   PRV   = private only
-#   PUB   = public only
-# seasonally_adj: yes / no
-DATA_TYPE_CODE = "PRV"
-SEASONALLY_ADJ = "no"
-
-# Set to True on first run to enumerate available category codes if the defaults
-# above return no data. The module logs all category codes it finds so you can
-# update the CATEGORIES table.
-FORCE_DISCOVERY = False
+# Concept tag fallback chains (try in order, take first that produces usable data).
+TAG_CHAINS = {
+    "revenue": [
+        "Revenues",
+        "RevenueFromContractWithCustomerExcludingAssessedTax",
+        "RevenueFromContractWithCustomerIncludingAssessedTax",
+        "SalesRevenueNet",
+        "SalesRevenueGoodsNet",
+    ],
+    "op_income": [
+        "OperatingIncomeLoss",
+        "IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest",
+        "IncomeLossFromContinuingOperationsBeforeIncomeTaxesMinorityInterestAndIncomeLossFromEquityMethodInvestments",
+        "IncomeLossFromContinuingOperationsBeforeInterestExpenseInterestIncomeIncomeTaxesExtraordinaryItemsNoncontrollingInterestsNet",
+        "OperatingIncomeLossExcludingDepreciation",
+    ],
+    "da": [
+        "DepreciationDepletionAndAmortization",
+        "DepreciationAndAmortization",
+        "DepreciationAmortizationAndAccretionNet",
+        "Depreciation",
+    ],
+    "ocf": [
+        "NetCashProvidedByUsedInOperatingActivities",
+        "NetCashProvidedByUsedInOperatingActivitiesContinuingOperations",
+    ],
+    "capex": [
+        "PaymentsToAcquirePropertyPlantAndEquipment",
+        "PaymentsForCapitalImprovements",
+    ],
+    "cash": [
+        "CashAndCashEquivalentsAtCarryingValue",
+        "Cash",
+        "CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalents",
+    ],
+    "lt_debt": [
+        "LongTermDebtNoncurrent",
+        "LongTermDebt",
+    ],
+    "st_debt": [
+        "LongTermDebtCurrent",
+        "DebtCurrent",
+        "ShortTermBorrowings",
+    ],
+    "interest_expense": [
+        "InterestExpense",
+        "InterestExpenseDebt",
+        "InterestAndDebtExpense",
+    ],
+}
 
 
 # ---------------------------------------------------------------------------
 # HTTP
 # ---------------------------------------------------------------------------
 
-def _http_get_json(url, retries=3, sleep=0.5):
-    """Lightweight GET with retry on transient failures."""
+def _http_get(url, retries=3, sleep=0.5):
+    """SEC requires User-Agent; rate limit is generous but we throttle anyway."""
     req = urllib.request.Request(url, headers={
+        "User-Agent": SEC_USER_AGENT,
         "Accept": "application/json",
-        "User-Agent": "Credit Digest Personal Research",
+        "Accept-Encoding": "gzip, deflate",
+        "Host": url.split("/")[2] if "://" in url else "www.sec.gov",
     })
     last_err = None
     for attempt in range(retries):
         try:
             with urllib.request.urlopen(req, timeout=30) as r:
-                return json.loads(r.read())
+                content = r.read()
+                if r.headers.get('Content-Encoding') == 'gzip':
+                    import gzip
+                    content = gzip.decompress(content)
+                return json.loads(content)
         except urllib.error.HTTPError as e:
             last_err = f"HTTP {e.code} {e.reason}"
-            if e.code in (429, 500, 502, 503, 504):
+            try:
+                body = e.read().decode('utf-8', errors='replace')[:200]
+                last_err += f" body={body}"
+            except Exception:
+                pass
+            if e.code == 404:
+                return None
+            if e.code in (429, 503):
                 time.sleep(sleep * (2 ** attempt))
                 continue
-            if e.code in (400, 404):
-                try:
-                    body = e.read().decode("utf-8", errors="replace")[:300]
-                    last_err += f" body={body}"
-                except Exception:
-                    pass
-                print(f"  Census HTTP {e.code} on {url}: {last_err}")
-                return None
-            print(f"  Census HTTP error on {url}: {last_err}")
+            print(f"  SEC HTTP error on {url}: {last_err}")
             return None
         except Exception as e:
             last_err = f"{type(e).__name__}: {str(e)[:120]}"
-            print(f"  Census fetch error on {url}: {last_err}")
+            print(f"  SEC fetch error on {url}: {last_err}")
             time.sleep(sleep)
-    print(f"  Census fetch failed after {retries} attempts: {last_err}")
+    raise RuntimeError(f"SEC fetch failed after {retries} attempts: {last_err}")
+
+
+def _build_ticker_to_cik_map():
+    """Returns dict: TICKER (upper) -> CIK (zero-padded 10-digit string)."""
+    print(f"SEC EDGAR: fetching company_tickers.json with User-Agent='{SEC_USER_AGENT}'")
+    data = _http_get("https://www.sec.gov/files/company_tickers.json")
+    if not data:
+        print("SEC EDGAR: company_tickers.json returned None (see error above)")
+        return {}
+    out = {}
+    for _, entry in data.items():
+        cik = str(entry.get("cik_str", "")).zfill(10)
+        ticker = (entry.get("ticker") or "").upper()
+        if ticker and cik:
+            out[ticker] = cik
+    return out
+
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+def _filing_date(f):
+    try:
+        return datetime.strptime(f.get("filed", ""), "%Y-%m-%d").date()
+    except Exception:
+        return None
+
+
+def _dedupe_by_end(facts_list):
+    """Keep the most recently filed instance for each period-end (handles restatements)."""
+    by_end = {}
+    for f in facts_list:
+        end = f.get("end")
+        if not end:
+            continue
+        existing = by_end.get(end)
+        if existing is None:
+            by_end[end] = f
+            continue
+        existing_filed = _filing_date(existing)
+        new_filed = _filing_date(f)
+        if new_filed and (not existing_filed or new_filed > existing_filed):
+            by_end[end] = f
+    return list(by_end.values())
+
+
+def _iter_concept_candidates(facts, tag_chain, taxonomy="us-gaap"):
+    """
+    Yield (units_list, tag) for each tag in the chain that has USD data.
+    Callers should iterate and accept the first tag whose data is *usable*,
+    rather than the first tag that merely exists.
+    """
+    facts_taxonomy = facts.get("facts", {}).get(taxonomy, {})
+    for tag in tag_chain:
+        node = facts_taxonomy.get(tag)
+        if not node:
+            continue
+        units = node.get("units", {})
+        if not units:
+            continue
+        if "USD" in units:
+            yield units["USD"], tag
+        # Skip non-USD denominations (avoids Toyota-style FX mismatches)
+
+
+def _get_concept(facts, tag_chain, taxonomy="us-gaap"):
+    """
+    Legacy single-tag selector: returns first tag with USD data, no usability check.
+    Kept only for backwards compatibility; prefer _iter_concept_candidates.
+    """
+    for units, tag in _iter_concept_candidates(facts, tag_chain, taxonomy):
+        return units, tag
+    return None, None
+
+
+# ---------------------------------------------------------------------------
+# Balance-sheet (instant) extraction
+# ---------------------------------------------------------------------------
+
+def _pick_period_end_for_units(units):
+    """
+    Dedupe instant facts by end date keeping the most recently filed instance,
+    filter to facts filed within the last 3 years, and return newest first.
+    """
+    if not units:
+        return []
+    today = datetime.now().date()
+    cutoff = today - timedelta(days=3 * 365)
+    items = []
+    for f in units:
+        end = f.get("end")
+        if not end:
+            continue
+        try:
+            ed = datetime.strptime(end, "%Y-%m-%d").date()
+        except Exception:
+            continue
+        if ed < cutoff:
+            continue
+        fd = _filing_date(f)
+        if fd and fd < cutoff:
+            continue
+        items.append(f)
+    deduped = _dedupe_by_end(items)
+    deduped.sort(key=lambda x: x.get("end", ""), reverse=True)
+    return deduped
+
+
+def _pick_period_end(fact_units, prefer_quarterly=True):
+    """Legacy wrapper for backwards compatibility."""
+    return _pick_period_end_for_units(fact_units)
+
+
+def _latest_balance_sheet(facts, tag_chain):
+    """
+    Iterate through fallback chain; return first tag whose latest fact is within
+    the freshness window. Returns (value, period_end, tag_used).
+    """
+    today = datetime.now().date()
+    for units, tag in _iter_concept_candidates(facts, tag_chain):
+        items = _pick_period_end_for_units(units)
+        if not items:
+            continue
+        f = items[0]
+        try:
+            ed = datetime.strptime(f.get("end", ""), "%Y-%m-%d").date()
+        except Exception:
+            continue
+        if (today - ed).days > FRESHNESS_DAYS:
+            continue
+        return f.get("val"), f.get("end"), tag
+    return None, None, None
+
+
+# ---------------------------------------------------------------------------
+# LTM (flow) extraction with fallback chain validation
+# ---------------------------------------------------------------------------
+
+def _ltm_sum_for_units(units, today, cutoff):
+    """
+    Build LTM from one tag's USD units.
+    Returns (ltm, end, form) or (None, None, None) if no usable LTM can be built.
+    The latest quarterly fact must be within FRESHNESS_DAYS of today (or ANNUAL_FRESHNESS_DAYS
+    for annual-only filers) so stale tags don't return data that looks current.
+    """
+    quarterly_raw, annual_raw = [], []
+    for f in units:
+        start, end = f.get("start"), f.get("end")
+        if not start or not end:
+            continue
+        try:
+            sd = datetime.strptime(start, "%Y-%m-%d").date()
+            ed = datetime.strptime(end, "%Y-%m-%d").date()
+            days = (ed - sd).days
+        except Exception:
+            continue
+        fd = _filing_date(f)
+        if fd and fd < cutoff:
+            continue
+        if ed < cutoff:
+            continue
+        if 80 <= days <= 100:
+            quarterly_raw.append(f)
+        elif 350 <= days <= 380:
+            annual_raw.append(f)
+
+    quarterly = _dedupe_by_end(quarterly_raw)
+    annual = _dedupe_by_end(annual_raw)
+
+    # Strategy 1: 4 non-overlapping quarters, latest within quarterly freshness window
+    if quarterly:
+        quarterly.sort(key=lambda x: x.get("end", ""), reverse=True)
+        latest_end = quarterly[0].get("end")
+        try:
+            latest_date = datetime.strptime(latest_end, "%Y-%m-%d").date()
+        except Exception:
+            latest_date = None
+
+        if latest_date and (today - latest_date).days <= FRESHNESS_DAYS:
+            picked = [quarterly[0]]
+            for q in quarterly[1:]:
+                if len(picked) >= 4:
+                    break
+                try:
+                    prev_start = datetime.strptime(picked[-1].get("start"), "%Y-%m-%d").date()
+                    this_end = datetime.strptime(q.get("end"), "%Y-%m-%d").date()
+                    if this_end <= prev_start:
+                        picked.append(q)
+                except Exception:
+                    continue
+            if len(picked) == 4:
+                ltm = sum(f.get("val", 0) for f in picked)
+                form = picked[0].get("form", "10-Q")
+                return ltm, latest_end, form
+
+    # Strategy 2: latest annual, within annual freshness window (for 20-F filers)
+    if annual:
+        annual.sort(key=lambda x: x.get("end", ""), reverse=True)
+        f = annual[0]
+        try:
+            latest_date = datetime.strptime(f.get("end", ""), "%Y-%m-%d").date()
+        except Exception:
+            return None, None, None
+        if (today - latest_date).days <= ANNUAL_FRESHNESS_DAYS:
+            return f.get("val"), f.get("end"), f.get("form", "10-K")
+
+    return None, None, None
+
+
+def _ltm_sum(facts, tag_chain, is_quarterly_filer=True):
+    """
+    Iterate fallback chain; return first tag that produces a usable LTM.
+    Returns (ltm_value, latest_period_end, form_type, tag_used).
+    """
+    today = datetime.now().date()
+    cutoff = today - timedelta(days=3 * 365)
+    for units, tag in _iter_concept_candidates(facts, tag_chain):
+        ltm, end, form = _ltm_sum_for_units(units, today, cutoff)
+        if ltm is not None:
+            return ltm, end, form, tag
+    return None, None, None, None
+
+
+def _yoy_for_units(units, today, cutoff):
+    """Compute YoY % change in LTM revenue from one tag's USD units. None if not feasible."""
+    quarterly_raw = []
+    for f in units:
+        start, end = f.get("start"), f.get("end")
+        if not start or not end:
+            continue
+        try:
+            sd = datetime.strptime(start, "%Y-%m-%d").date()
+            ed = datetime.strptime(end, "%Y-%m-%d").date()
+            days = (ed - sd).days
+        except Exception:
+            continue
+        if not (80 <= days <= 100):
+            continue
+        fd = _filing_date(f)
+        if fd and fd < cutoff:
+            continue
+        if ed < cutoff:
+            continue
+        quarterly_raw.append(f)
+
+    quarterly = _dedupe_by_end(quarterly_raw)
+    if len(quarterly) < 8:
+        return None
+    quarterly.sort(key=lambda x: x.get("end", ""), reverse=True)
+
+    # Latest fact must be reasonably current
+    try:
+        latest_end = datetime.strptime(quarterly[0].get("end", ""), "%Y-%m-%d").date()
+    except Exception:
+        return None
+    if (today - latest_end).days > FRESHNESS_DAYS:
+        return None
+
+    def non_overlapping_4(start_idx):
+        picked = [quarterly[start_idx]]
+        i = start_idx + 1
+        while len(picked) < 4 and i < len(quarterly):
+            try:
+                prev_start = datetime.strptime(picked[-1].get("start"), "%Y-%m-%d").date()
+                this_end = datetime.strptime(quarterly[i].get("end"), "%Y-%m-%d").date()
+                if this_end <= prev_start:
+                    picked.append(quarterly[i])
+            except Exception:
+                pass
+            i += 1
+        return picked if len(picked) == 4 else None
+
+    current = non_overlapping_4(0)
+    if not current:
+        return None
+    last_start = current[-1].get("start")
+    try:
+        last_start_date = datetime.strptime(last_start, "%Y-%m-%d").date()
+    except Exception:
+        return None
+    prev_idx = None
+    for i, q in enumerate(quarterly):
+        try:
+            qe = datetime.strptime(q.get("end"), "%Y-%m-%d").date()
+            if qe <= last_start_date:
+                prev_idx = i
+                break
+        except Exception:
+            continue
+    if prev_idx is None:
+        return None
+    previous = non_overlapping_4(prev_idx)
+    if not previous:
+        return None
+    curr_sum = sum(q.get("val", 0) for q in current)
+    prev_sum = sum(q.get("val", 0) for q in previous)
+    if prev_sum == 0:
+        return None
+    return (curr_sum - prev_sum) / prev_sum * 100
+
+
+def _ltm_revenue_yoy(facts, tag_chain):
+    """Iterate fallback chain; return first tag that produces a usable YoY figure."""
+    today = datetime.now().date()
+    cutoff = today - timedelta(days=3 * 365)
+    for units, _tag in _iter_concept_candidates(facts, tag_chain):
+        yoy = _yoy_for_units(units, today, cutoff)
+        if yoy is not None:
+            return yoy
     return None
 
 
 # ---------------------------------------------------------------------------
-# Category discovery
+# History extraction (uses the resolved tag, not the chain)
 # ---------------------------------------------------------------------------
 
-def _discover_categories(api_key=None, lookback_months=3):
-    """
-    Hit the VIP endpoint without a category_code filter and enumerate all codes
-    that come back. Useful when the expected DATACEN code doesn't match and we
-    need to find the actual code Census assigned.
-    """
-    end = datetime.now().date().replace(day=1) - timedelta(days=1)
-    start_month = end - timedelta(days=lookback_months * 31)
-    time_param = f"from {start_month.strftime('%Y-%m')} to {end.strftime('%Y-%m')}"
-
-    params = {
-        "get": "category_code,data_type_code,cell_value,seasonally_adj",
-        "time": time_param,
-        "for": "us:*",
-        "seasonally_adj": SEASONALLY_ADJ,
-    }
-    if api_key:
-        params["key"] = api_key
-    url = CENSUS_VIP_URL + "?" + urllib.parse.urlencode(params)
-
-    data = _http_get_json(url)
-    if not data or len(data) < 2:
-        return []
-
-    # First row is headers
-    headers = data[0]
-    cat_idx = headers.index("category_code") if "category_code" in headers else None
-    if cat_idx is None:
-        return []
-
-    codes = set()
-    for row in data[1:]:
-        if cat_idx < len(row):
-            codes.add(row[cat_idx])
-    return sorted(codes)
-
-
-# ---------------------------------------------------------------------------
-# Single-category fetch
-# ---------------------------------------------------------------------------
-
-def _fetch_category(category_code, history_months, api_key=None):
-    """
-    Fetch a single Census VIP category. Returns list of {date, value} newest-first,
-    or None on failure.
-    """
-    end = datetime.now().date()
-    # Pull ~3 years for YoY and TTM headroom
-    start = end - timedelta(days=3 * 365 + 60)
-    time_param = f"from {start.strftime('%Y-%m')} to {end.strftime('%Y-%m')}"
-
-    params = {
-        "get": "cell_value,time_slot_id,time_slot_name,data_type_code,category_code",
-        "time": time_param,
-        "category_code": category_code,
-        "data_type_code": DATA_TYPE_CODE,
-        "seasonally_adj": SEASONALLY_ADJ,
-        "for": "us:*",
-    }
-    if api_key:
-        params["key"] = api_key
-    url = CENSUS_VIP_URL + "?" + urllib.parse.urlencode(params)
-
-    data = _http_get_json(url)
-    if not data or len(data) < 2:
+def _history_units_for_tag(facts, tag, taxonomy="us-gaap"):
+    """Return the USD units list for a specific tag, or None."""
+    if not tag:
         return None
-
-    headers = data[0]
-    val_idx = headers.index("cell_value") if "cell_value" in headers else None
-    time_idx = None
-    # Census returns time as the "time" field added to the row tail by some
-    # endpoints, or as time_slot_name. Locate whatever date-like header we have.
-    for key in ("time", "time_slot_name", "time_slot_date"):
-        if key in headers:
-            time_idx = headers.index(key)
-            break
-    if val_idx is None or time_idx is None:
+    node = facts.get("facts", {}).get(taxonomy, {}).get(tag)
+    if not node:
         return None
+    units = node.get("units", {})
+    return units.get("USD")
 
-    obs = []
-    for row in data[1:]:
-        if val_idx >= len(row) or time_idx >= len(row):
-            continue
-        raw_val = row[val_idx]
-        raw_time = row[time_idx]
-        if raw_val in (None, "", "."):
-            continue
-        # Normalize date to YYYY-MM
-        date_str = _normalize_date(raw_time)
-        if not date_str:
+
+def _extract_quarterly_history_for_tag(facts, tag, max_quarters=12):
+    """
+    Return list of quarterly facts (~90 days) for the *resolved* tag, newest first.
+    Keeps history consistent with the LTM metric (no cross-tag inconsistency).
+    """
+    units = _history_units_for_tag(facts, tag)
+    if not units:
+        return []
+    today = datetime.now().date()
+    cutoff = today - timedelta(days=3 * 365)
+    raw = []
+    for f in units:
+        start, end = f.get("start"), f.get("end")
+        if not start or not end:
             continue
         try:
-            obs.append({"date": date_str, "value": float(raw_val)})
-        except (TypeError, ValueError):
+            sd = datetime.strptime(start, "%Y-%m-%d").date()
+            ed = datetime.strptime(end, "%Y-%m-%d").date()
+            days = (ed - sd).days
+        except Exception:
             continue
-
-    if not obs:
-        return None
-
-    # Dedupe by date (some endpoints return multiple rows for same period) and
-    # sort newest-first
-    by_date = {}
-    for o in obs:
-        by_date[o["date"]] = o
-    deduped = list(by_date.values())
-    deduped.sort(key=lambda x: x["date"], reverse=True)
-    return deduped[:history_months]
-
-
-def _normalize_date(raw):
-    """Census returns dates in various formats; normalize to YYYY-MM."""
-    if not raw:
-        return None
-    raw = str(raw).strip()
-    # Try YYYY-MM directly
-    if len(raw) >= 7 and raw[4] == "-":
-        return raw[:7]
-    # Try YYYY-MM-DD
-    if len(raw) == 10 and raw[4] == "-" and raw[7] == "-":
-        return raw[:7]
-    # Try MMM-YYYY (e.g. "Jan-2026")
-    try:
-        dt = datetime.strptime(raw, "%b-%Y")
-        return dt.strftime("%Y-%m")
-    except ValueError:
-        pass
-    try:
-        dt = datetime.strptime(raw, "%B %Y")
-        return dt.strftime("%Y-%m")
-    except ValueError:
-        pass
-    return None
+        if not (80 <= days <= 100):
+            continue
+        fd = _filing_date(f)
+        if fd and fd < cutoff:
+            continue
+        if ed < cutoff:
+            continue
+        raw.append(f)
+    deduped = _dedupe_by_end(raw)
+    out = [
+        {"period_end": f.get("end"), "value": f.get("val"), "form": f.get("form", "10-Q")}
+        for f in deduped
+    ]
+    out.sort(key=lambda x: x["period_end"], reverse=True)
+    return out[:max_quarters]
 
 
-# ---------------------------------------------------------------------------
-# Metric computation
-# ---------------------------------------------------------------------------
-
-def _compute_metrics(observations):
-    """
-    Convert raw monthly observations (newest-first) into dashboard metrics.
-    Returns dict or None if insufficient data.
-    """
-    if not observations:
-        return None
-
-    latest = observations[0]
-    prior = observations[1] if len(observations) > 1 else None
-
-    # YoY: find observation ~12 months back
-    yoy_ref = None
-    try:
-        latest_dt = datetime.strptime(latest["date"], "%Y-%m")
-    except ValueError:
-        return None
-    target_year_ago = latest_dt.replace(year=latest_dt.year - 1)
-    for o in observations:
+def _extract_balance_history_for_tag(facts, tag, max_periods=12):
+    """Return balance-sheet (instant) history for the *resolved* tag, newest first."""
+    units = _history_units_for_tag(facts, tag)
+    if not units:
+        return []
+    today = datetime.now().date()
+    cutoff = today - timedelta(days=3 * 365)
+    raw = []
+    for f in units:
+        end = f.get("end")
+        if not end:
+            continue
         try:
-            d = datetime.strptime(o["date"], "%Y-%m")
-        except ValueError:
+            ed = datetime.strptime(end, "%Y-%m-%d").date()
+        except Exception:
             continue
-        if d.year == target_year_ago.year and d.month == target_year_ago.month:
-            yoy_ref = o
-            break
+        if ed < cutoff:
+            continue
+        fd = _filing_date(f)
+        if fd and fd < cutoff:
+            continue
+        raw.append(f)
+    deduped = _dedupe_by_end(raw)
+    out = [
+        {"period_end": f.get("end"), "value": f.get("val"), "form": f.get("form", "10-Q")}
+        for f in deduped
+    ]
+    out.sort(key=lambda x: x["period_end"], reverse=True)
+    return out[:max_periods]
 
-    change = None
-    change_pct = None
-    if prior and prior["value"] not in (None, 0):
-        change = round(latest["value"] - prior["value"], 1)
-        change_pct = round((latest["value"] - prior["value"]) / prior["value"] * 100, 2)
 
-    yoy_change = None
-    yoy_change_pct = None
-    if yoy_ref and yoy_ref["value"] not in (None, 0):
-        yoy_change = round(latest["value"] - yoy_ref["value"], 1)
-        yoy_change_pct = round((latest["value"] - yoy_ref["value"]) / yoy_ref["value"] * 100, 2)
+# Legacy chain-based helpers kept for any external callers; route through the
+# tag-resolved versions by picking the first tag that yields data.
+def _extract_quarterly_history(facts, tag_chain, max_quarters=12):
+    for _units, tag in _iter_concept_candidates(facts, tag_chain):
+        hist = _extract_quarterly_history_for_tag(facts, tag, max_quarters)
+        if hist:
+            return hist
+    return []
 
-    # Trailing 12-month total
-    ttm_total = None
-    if len(observations) >= 12:
-        ttm_total = round(sum(o["value"] for o in observations[:12]), 1)
+
+def _extract_balance_history(facts, tag_chain, max_periods=12):
+    for _units, tag in _iter_concept_candidates(facts, tag_chain):
+        hist = _extract_balance_history_for_tag(facts, tag, max_periods)
+        if hist:
+            return hist
+    return []
+
+
+# ---------------------------------------------------------------------------
+# Metric extraction (per company)
+# ---------------------------------------------------------------------------
+
+def _extract_metrics(facts, filer_type):
+    """
+    Given the raw companyfacts JSON, extract all metrics we need.
+    Returns dict of values + provenance metadata.
+    """
+    is_q = (filer_type == "10-K")  # 10-K filers also file 10-Q quarterly
+
+    rev_ltm, rev_end, rev_form, rev_tag = _ltm_sum(facts, TAG_CHAINS["revenue"], is_q)
+    opi_ltm, opi_end, opi_form, opi_tag = _ltm_sum(facts, TAG_CHAINS["op_income"], is_q)
+    da_ltm, da_end, da_form, da_tag = _ltm_sum(facts, TAG_CHAINS["da"], is_q)
+    ocf_ltm, ocf_end, ocf_form, ocf_tag = _ltm_sum(facts, TAG_CHAINS["ocf"], is_q)
+    capex_ltm, _, _, capex_tag = _ltm_sum(facts, TAG_CHAINS["capex"], is_q)
+
+    cash, cash_end, cash_tag = _latest_balance_sheet(facts, TAG_CHAINS["cash"])
+    lt_debt, lt_end, lt_tag = _latest_balance_sheet(facts, TAG_CHAINS["lt_debt"])
+    st_debt, st_end, st_tag = _latest_balance_sheet(facts, TAG_CHAINS["st_debt"])
+    if st_debt is None:
+        st_debt = 0  # short-term debt commonly absent for clean balance sheets
+
+    rev_yoy = _ltm_revenue_yoy(facts, TAG_CHAINS["revenue"])
+
+    # Derived metrics (values converted to $Bn, rounded 1dp where applicable)
+    def to_bn(v):
+        if v is None:
+            return None
+        return round(v / 1e9, 1)
+
+    ebitda_ltm = None
+    if opi_ltm is not None and da_ltm is not None:
+        ebitda_ltm = opi_ltm + da_ltm
+
+    fcf_ltm = None
+    if ocf_ltm is not None and capex_ltm is not None:
+        # capex reported as positive outflow in SEC XBRL; subtract absolute value
+        fcf_ltm = ocf_ltm - abs(capex_ltm)
+
+    total_debt = None
+    if lt_debt is not None:
+        total_debt = lt_debt + (st_debt or 0)
+
+    net_debt = None
+    if total_debt is not None and cash is not None:
+        net_debt = total_debt - cash
+
+    nd_ebitda = None
+    if net_debt is not None and ebitda_ltm and ebitda_ltm > 0:
+        nd_ebitda = round(net_debt / ebitda_ltm, 1)
+
+    ebitda_margin = None
+    if ebitda_ltm is not None and rev_ltm and rev_ltm > 0:
+        ebitda_margin = round(ebitda_ltm / rev_ltm * 100, 1)
+
+    op_margin = None
+    if opi_ltm is not None and rev_ltm and rev_ltm > 0:
+        op_margin = round(opi_ltm / rev_ltm * 100, 1)
+
+    intex_ltm, _, _, intex_tag = _ltm_sum(facts, TAG_CHAINS["interest_expense"], is_q)
+    interest_coverage = None
+    if ebitda_ltm and intex_ltm and intex_ltm > 0:
+        interest_coverage = round(ebitda_ltm / intex_ltm, 1)
+
+    # Quarterly history uses the resolved tag for each metric (no cross-tag drift)
+    history = {
+        "revenue": _extract_quarterly_history_for_tag(facts, rev_tag),
+        "op_income": _extract_quarterly_history_for_tag(facts, opi_tag),
+        "da": _extract_quarterly_history_for_tag(facts, da_tag),
+        "ocf": _extract_quarterly_history_for_tag(facts, ocf_tag),
+        "capex": _extract_quarterly_history_for_tag(facts, capex_tag),
+        "interest_expense": _extract_quarterly_history_for_tag(facts, intex_tag),
+    }
+    balance_history = {
+        "cash": _extract_balance_history_for_tag(facts, cash_tag),
+        "lt_debt": _extract_balance_history_for_tag(facts, lt_tag),
+        "st_debt": _extract_balance_history_for_tag(facts, st_tag),
+    }
 
     return {
-        "value": latest["value"],
-        "as_of": latest["date"],
-        "prior_value": prior["value"] if prior else None,
-        "prior_as_of": prior["date"] if prior else None,
-        "change": change,
-        "change_pct": change_pct,
-        "yoy_change": yoy_change,
-        "yoy_change_pct": yoy_change_pct,
-        "ttm_total": ttm_total,
-        "history": observations,
+        "revenue_ltm": to_bn(rev_ltm),
+        "ebitda_ltm": to_bn(ebitda_ltm),
+        "fcf_ltm": to_bn(fcf_ltm),
+        "cash": to_bn(cash),
+        "lt_debt": to_bn(lt_debt),
+        "st_debt": to_bn(st_debt),
+        "total_debt": to_bn(total_debt),
+        "net_debt": to_bn(net_debt),
+        "nd_ebitda": nd_ebitda,
+        "ebitda_margin": ebitda_margin,
+        "op_margin": op_margin,
+        "revenue_yoy_pct": round(rev_yoy, 1) if rev_yoy is not None else None,
+        "interest_expense_ltm": to_bn(intex_ltm),
+        "interest_coverage": interest_coverage,
+        "_period_end": rev_end or opi_end or cash_end,
+        "_filing_form": rev_form or opi_form,
+        "_tags_used": {
+            "revenue": rev_tag, "op_income": opi_tag, "da": da_tag,
+            "ocf": ocf_tag, "capex": capex_tag, "cash": cash_tag,
+            "lt_debt": lt_tag, "st_debt": st_tag, "interest_expense": intex_tag,
+        },
+        "_history": history,
+        "_balance_history": balance_history,
     }
+
+
+# ---------------------------------------------------------------------------
+# Validation
+# ---------------------------------------------------------------------------
+
+def _validate(metrics, company):
+    """Run sanity-check rules. Return list of warnings."""
+    warnings = []
+    rev = metrics.get("revenue_ltm")
+    ebitda = metrics.get("ebitda_ltm")
+    cash = metrics.get("cash")
+    total_debt = metrics.get("total_debt")
+    nd_ebitda = metrics.get("nd_ebitda")
+    rev_yoy = metrics.get("revenue_yoy_pct")
+    ebitda_margin = metrics.get("ebitda_margin")
+    period_end = metrics.get("_period_end")
+
+    if rev is None:
+        warnings.append("Revenue LTM not found in SEC tags")
+    if ebitda is None:
+        warnings.append("EBITDA could not be constructed (missing op_income or D&A)")
+    if cash is None:
+        warnings.append("Cash not found in SEC tags")
+    if total_debt is None:
+        warnings.append("Total debt not found in SEC tags")
+    if nd_ebitda is not None and (nd_ebitda > 50 or nd_ebitda < -50):
+        warnings.append(f"ND/EBITDA = {nd_ebitda:.1f}x (outside plausible range)")
+    if rev_yoy is not None and abs(rev_yoy) > 50:
+        warnings.append(f"Revenue YoY = {rev_yoy:.1f}% (unusual; verify)")
+    if ebitda_margin is not None and (ebitda_margin > 80 or ebitda_margin < -50):
+        warnings.append(f"EBITDA margin = {ebitda_margin:.1f}% (outside plausible range)")
+    if cash is not None and cash < 0:
+        warnings.append(f"Cash is negative ({cash}) — likely parsing error")
+    if total_debt is not None and total_debt < 0:
+        warnings.append(f"Total debt is negative ({total_debt}) — likely parsing error")
+
+    # Stale-period guard: if period_end is more than 6 months old, flag it.
+    # Catches Comcast-style cases where data passes structural checks but is from years ago.
+    if period_end:
+        try:
+            pe = datetime.strptime(period_end, "%Y-%m-%d").date()
+            age = (datetime.now().date() - pe).days
+            if age > FRESHNESS_DAYS:
+                warnings.append(f"Period end {period_end} is {age} days old (stale)")
+        except Exception:
+            pass
+
+    return warnings
 
 
 # ---------------------------------------------------------------------------
@@ -344,26 +733,33 @@ def _save_cache(cache_path, data):
         with open(cache_path, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=2)
     except Exception as e:
-        print(f"WARNING: failed to write Census cache: {e}")
+        print(f"WARNING: failed to write cache: {e}")
 
 
 def _cache_is_fresh(cache):
+    """Return True if cache_last_full_refresh is within CACHE_TTL_DAYS AND has usable data."""
     if not cache:
         return False
-    last = cache.get("_fetched_at")
+    last = cache.get("_last_full_refresh")
     if not last:
         return False
     try:
-        last_dt = datetime.fromisoformat(last.replace("Z", "+00:00"))
-        age_hours = (datetime.now(timezone.utc) - last_dt).total_seconds() / 3600
-        if age_hours >= CACHE_TTL_HOURS:
+        last_dt = datetime.strptime(last, "%Y-%m-%d").date()
+        age = (datetime.now(timezone.utc).date() - last_dt).days
+        if age >= CACHE_TTL_DAYS:
             return False
     except Exception:
         return False
     real_entries = [v for k, v in cache.items()
                     if not k.startswith("_") and isinstance(v, dict)
-                    and v.get("value") is not None]
-    if len(real_entries) < 1:
+                    and v.get("revenue_ltm") is not None]
+    total_entries = sum(1 for k in cache if not k.startswith("_"))
+    if total_entries == 0:
+        return False
+    success_rate = len(real_entries) / total_entries
+    if success_rate < 0.5:
+        print(f"SEC EDGAR: cache exists but success rate is {success_rate:.0%} "
+              f"({len(real_entries)}/{total_entries}) — treating as stale.")
         return False
     return True
 
@@ -372,150 +768,152 @@ def _cache_is_fresh(cache):
 # Main entry point
 # ---------------------------------------------------------------------------
 
-def fetch_construction_data(cache_path="construction_cache.json", force_refresh=False, api_key=None):
+def fetch_financials(watchlist, cache_path="financials_cache.json", force_refresh=False):
     """
     Args:
+      watchlist: dict {company_name: {"ticker": ..., "filer_type": ..., "sector": ...}}
       cache_path: where to read/write the cache JSON
       force_refresh: bypass cache freshness check
-      api_key: Census API key (defaults to CENSUS_API_KEY env var)
 
     Returns:
-      construction_dict, warnings_list, metadata_dict
-
-    Behavior on missing API key: works without one (Census API is open), but
-    rate-limited after ~500 unkeyed calls per IP per day. We use ~7 calls per run.
+      financials_dict, warnings_list, metadata_dict
     """
     metadata = {
         "started_at": datetime.now(timezone.utc).isoformat(),
         "from_cache": False,
-        "categories_attempted": 0,
-        "categories_succeeded": 0,
-        "categories_failed": [],
-        "discovered_codes": [],
+        "names_attempted": 0,
+        "names_succeeded": 0,
+        "names_failed": [],
+        "names_no_sec_filer": [],
+        "total_warnings": 0,
     }
-
-    if api_key is None:
-        api_key = os.environ.get("CENSUS_API_KEY")
 
     cache = _load_cache(cache_path)
     if cache and _cache_is_fresh(cache) and not force_refresh:
-        print(f"Census VIP: cache is fresh (fetched {cache.get('_fetched_at')}); using cached data.")
+        print(f"SEC EDGAR: cache is fresh ({cache.get('_last_full_refresh')}); using cached data.")
         metadata["from_cache"] = True
         out = {k: v for k, v in cache.items() if not k.startswith("_")}
-        metadata["categories_succeeded"] = sum(1 for v in out.values()
-                                               if isinstance(v, dict) and v.get("value") is not None)
-        metadata["categories_attempted"] = len(out)
-        return out, [], metadata
+        warnings = []
+        for co, m in out.items():
+            for w in m.get("_warnings", []):
+                warnings.append(f"{co}: {w}")
+        metadata["names_succeeded"] = sum(1 for k in out if out[k].get("revenue_ltm") is not None)
+        metadata["names_attempted"] = len(out)
+        metadata["total_warnings"] = len(warnings)
+        return out, warnings, metadata
 
-    print("Census VIP: cache stale or force refresh — pulling construction data...")
-
-    # Optional discovery pass: if FORCE_DISCOVERY is set or we suspect the
-    # default category codes are wrong, enumerate what's available.
-    if FORCE_DISCOVERY:
-        print("Census VIP: discovery mode — enumerating available category codes...")
-        codes = _discover_categories(api_key=api_key)
-        metadata["discovered_codes"] = codes
-        if codes:
-            print(f"Census VIP: found {len(codes)} category codes: {codes}")
+    print("SEC EDGAR: cache stale or force refresh — pulling fresh data...")
+    try:
+        ticker_cik = _build_ticker_to_cik_map()
+        print(f"SEC EDGAR: loaded {len(ticker_cik)} ticker-CIK mappings")
+    except Exception as e:
+        print(f"SEC EDGAR: ticker map fetch failed: {e}")
+        if cache:
+            print("SEC EDGAR: falling back to stale cache.")
+            metadata["from_cache"] = True
+            metadata["names_attempted"] = sum(1 for k in cache if not k.startswith("_"))
+            out = {k: v for k, v in cache.items() if not k.startswith("_")}
+            return out, ["SEC ticker map fetch failed; using stale cache"], metadata
+        return {}, ["SEC ticker map fetch failed and no cache available"], metadata
 
     results = {}
     warnings_all = []
 
-    for key, cat_code, label, history_months in CATEGORIES:
-        metadata["categories_attempted"] += 1
+    for co, info in watchlist.items():
+        ticker = info.get("ticker", "").upper()
+        filer_type = info.get("filer_type")
+        metadata["names_attempted"] += 1
+
+        if filer_type is None:
+            metadata["names_no_sec_filer"].append(co)
+            results[co] = {"_no_sec_filer": True, "_ticker": ticker, "_warnings": ["Not an SEC filer"]}
+            continue
+
+        cik = ticker_cik.get(ticker)
+        if not cik:
+            metadata["names_failed"].append(f"{co} (no CIK for {ticker})")
+            results[co] = {"_warnings": [f"No CIK found for ticker {ticker}"]}
+            warnings_all.append(f"{co}: No CIK found for ticker {ticker}")
+            continue
+
         try:
-            obs = _fetch_category(cat_code, history_months, api_key=api_key)
-            time.sleep(0.2)
-            if not obs:
-                # Try discovery if first category fails — likely a code mismatch
-                if metadata["categories_succeeded"] == 0 and not metadata["discovered_codes"]:
-                    print(f"Census VIP: {cat_code} returned nothing; running discovery...")
-                    codes = _discover_categories(api_key=api_key)
-                    metadata["discovered_codes"] = codes
-                    if codes:
-                        print(f"Census VIP: available codes are: {codes}")
-                        warnings_all.append(
-                            f"Configured code '{cat_code}' not found. "
-                            f"Available: {', '.join(codes)}"
-                        )
-                metadata["categories_failed"].append(f"{key} ({cat_code})")
-                warnings_all.append(f"{key}: category code '{cat_code}' returned no data")
+            url = f"https://data.sec.gov/api/xbrl/companyfacts/CIK{cik}.json"
+            facts = _http_get(url)
+            time.sleep(0.12)  # SEC requests no more than 10/sec; we go ~8/sec
+            if facts is None:
+                metadata["names_failed"].append(f"{co} (no facts at SEC)")
+                results[co] = {"_warnings": ["No company facts at SEC"]}
+                warnings_all.append(f"{co}: No company facts at SEC")
                 continue
-
-            metrics = _compute_metrics(obs)
-            if not metrics:
-                metadata["categories_failed"].append(f"{key} ({cat_code})")
-                warnings_all.append(f"{key}: insufficient data to compute metrics")
-                continue
-
-            metrics["_category_code"] = cat_code
-            metrics["_label"] = label
-            metrics["_units"] = "$M"
-            metrics["_seasonal"] = "Not Seasonally Adjusted"
-            metrics["_data_type"] = DATA_TYPE_CODE
+            metrics = _extract_metrics(facts, filer_type)
+            metrics["_source"] = f"SEC:CIK{cik}"
+            metrics["_cik"] = cik
+            metrics["_ticker"] = ticker
+            metrics["_filer_type"] = filer_type
             metrics["_fetched_at"] = datetime.now(timezone.utc).isoformat()
-            results[key] = metrics
-            metadata["categories_succeeded"] += 1
-
+            validation = _validate(metrics, co)
+            metrics["_warnings"] = validation
+            for w in validation:
+                warnings_all.append(f"{co}: {w}")
+            results[co] = metrics
+            metadata["names_succeeded"] += 1
         except Exception as e:
-            metadata["categories_failed"].append(f"{key}: {str(e)[:80]}")
-            warnings_all.append(f"{key}: fetch error: {str(e)[:80]}")
+            metadata["names_failed"].append(f"{co}: {str(e)[:80]}")
+            results[co] = {"_warnings": [f"Fetch error: {str(e)[:120]}"]}
+            warnings_all.append(f"{co}: Fetch error: {str(e)[:80]}")
 
     cache_payload = dict(results)
-    cache_payload["_fetched_at"] = datetime.now(timezone.utc).isoformat()
     cache_payload["_last_full_refresh"] = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    cache_payload["_full_refresh_at"] = datetime.now(timezone.utc).isoformat()
     _save_cache(cache_path, cache_payload)
+    print(f"SEC EDGAR: refresh complete. Succeeded: {metadata['names_succeeded']}/{metadata['names_attempted']}, "
+          f"failed: {len(metadata['names_failed'])}, non-SEC: {len(metadata['names_no_sec_filer'])}, "
+          f"warnings: {len(warnings_all)}")
 
-    print(f"Census VIP: refresh complete. Succeeded: {metadata['categories_succeeded']}/{metadata['categories_attempted']}, "
-          f"failed: {len(metadata['categories_failed'])}, warnings: {len(warnings_all)}")
-
+    metadata["total_warnings"] = len(warnings_all)
     return results, warnings_all, metadata
 
 
 # ---------------------------------------------------------------------------
-# Dashboard helpers
+# Row override helper (unchanged interface)
 # ---------------------------------------------------------------------------
 
-def get_data_center_summary(construction_data):
+def apply_sec_overrides(rows, sec_data):
     """
-    Compact tile data for the data center pillar of the dashboard.
-    Includes data center + power (grid capacity is the supply-side constraint).
+    Overwrite financial fields in each row with SEC data where available.
+    Keep Claude's data as fallback if SEC didn't return values.
     """
-    out = []
-    for key in ("data_center", "power"):
-        m = construction_data.get(key)
-        if not m:
+    if not sec_data:
+        return rows
+    overridden = 0
+    fields_map = {
+        "revenue_ltm": "revenue_ltm",
+        "ebitda_margin": "ebitda_margin",
+        "fcf_ltm": "fcf_ltm",
+        "cash": "cash",
+        "total_debt": "total_debt",
+        "nd_ebitda": "nd_ebitda",
+        "revenue_yoy_pct": "revenue_yoy_pct",
+        "op_margin": "op_margin",
+        "interest_coverage": "interest_coverage",
+    }
+    for r in rows:
+        co = r.get("company", "")
+        m = sec_data.get(co)
+        if not m or m.get("_no_sec_filer"):
             continue
-        out.append({
-            "key": key,
-            "label": m.get("_label", key),
-            "value": m.get("value"),
-            "as_of": m.get("as_of"),
-            "units": m.get("_units", ""),
-            "yoy_change_pct": m.get("yoy_change_pct"),
-            "ttm_total": m.get("ttm_total"),
-        })
-    return out
+        applied_any = False
+        for src, dest in fields_map.items():
+            val = m.get(src)
+            if val is not None:
+                r[dest] = f"{val:.1f}" if isinstance(val, (int, float)) else str(val)
+                applied_any = True
+        if applied_any:
+            overridden += 1
+            r["_financials_source"] = m.get("_source", "SEC")
+            r["_period_end"] = m.get("_period_end")
+            r["_filing_form"] = m.get("_filing_form")
+            r["_fin_warnings"] = m.get("_warnings", [])
 
-
-def get_construction_comparison(construction_data):
-    """
-    Comparison view: data center vs office (the inflection story), plus power
-    and manufacturing for sector context. Returns list ordered for chart rendering.
-    """
-    keys_in_order = ["data_center", "office", "power", "manufacturing", "commercial"]
-    out = []
-    for key in keys_in_order:
-        m = construction_data.get(key)
-        if not m:
-            continue
-        out.append({
-            "key": key,
-            "label": m.get("_label", key),
-            "value": m.get("value"),
-            "as_of": m.get("as_of"),
-            "ttm_total": m.get("ttm_total"),
-            "yoy_change_pct": m.get("yoy_change_pct"),
-            "history": m.get("history", []),
-        })
-    return out
+    print(f"Applied SEC EDGAR financials to {overridden} companies.")
+    return rows
