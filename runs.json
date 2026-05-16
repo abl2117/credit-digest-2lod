@@ -165,6 +165,94 @@
         "html_bytes": 211052
       },
       "logged_at": "2026-05-16T00:28:01.742766+00:00"
+    },
+    {
+      "run_id": "2026-05-15-2035",
+      "run_started": "2026-05-16T00:35:53.341228+00:00",
+      "run_completed": "2026-05-16T00:41:03.334381+00:00",
+      "duration_seconds": 309,
+      "data_sources": {
+        "anthropic_claude": {
+          "model": "claude-sonnet-4-6",
+          "calls": 2,
+          "batches_succeeded": 2
+        },
+        "sec_edgar": {
+          "from_cache": true,
+          "names_attempted": 74,
+          "names_succeeded": 0,
+          "names_failed": [],
+          "names_no_sec_filer": [],
+          "total_warnings": 74
+        },
+        "yfinance": {
+          "market_data_companies": 73,
+          "commodities_indices": 6
+        }
+      },
+      "overrides_applied": {
+        "ratings_override": 4
+      },
+      "validation_warnings": [
+        "AT&T: No CIK found for ticker T",
+        "Verizon: No CIK found for ticker VZ",
+        "Comcast: No CIK found for ticker CMCSA",
+        "Disney: No CIK found for ticker DIS",
+        "Warner Bros. Discovery: No CIK found for ticker WBD",
+        "Netflix: No CIK found for ticker NFLX",
+        "Amazon: No CIK found for ticker AMZN",
+        "Alphabet: No CIK found for ticker GOOGL",
+        "Microsoft: No CIK found for ticker MSFT",
+        "Oracle: No CIK found for ticker ORCL",
+        "Salesforce: No CIK found for ticker CRM",
+        "IBM: No CIK found for ticker IBM",
+        "HP Inc: No CIK found for ticker HPQ",
+        "HPE: No CIK found for ticker HPE",
+        "Dell: No CIK found for ticker DELL",
+        "Nextracker: No CIK found for ticker NXT",
+        "Sanmina: No CIK found for ticker SANM",
+        "Flex Ltd: No CIK found for ticker FLEX",
+        "Jabil: No CIK found for ticker JBL",
+        "Arrow Electronics: No CIK found for ticker ARW",
+        "TD Synnex: No CIK found for ticker SNX",
+        "Ingram Micro: No CIK found for ticker INGM",
+        "Kyndryl: No CIK found for ticker KD",
+        "Cognizant: No CIK found for ticker CTSH",
+        "Equinix: No CIK found for ticker EQIX",
+        "Digital Realty: No CIK found for ticker DLR",
+        "American Tower: No CIK found for ticker AMT",
+        "PayPal: No CIK found for ticker PYPL",
+        "Corpay: No CIK found for ticker CPAY",
+        "Booking Holdings: No CIK found for ticker BKNG",
+        "Uber: No CIK found for ticker UBER",
+        "Delta: No CIK found for ticker DAL",
+        "Carnival: No CIK found for ticker CCL",
+        "Royal Caribbean: No CIK found for ticker RCL",
+        "Norwegian Cruise Line: No CIK found for ticker NCLH",
+        "General Motors: No CIK found for ticker GM",
+        "Tesla: No CIK found for ticker TSLA",
+        "Ford: No CIK found for ticker F",
+        "Toyota: No CIK found for ticker TM",
+        "Nissan: Not an SEC filer",
+        "Hyundai: Not an SEC filer",
+        "Boeing: No CIK found for ticker BA",
+        "GE Aerospace: No CIK found for ticker GE",
+        "Walmart: No CIK found for ticker WMT",
+        "AutoZone: No CIK found for ticker AZO",
+        "Genuine Parts: No CIK found for ticker GPC",
+        "Coca-Cola: No CIK found for ticker KO",
+        "Anheuser-Busch InBev: No CIK found for ticker BUD",
+        "Philip Morris: No CIK found for ticker PM",
+        "Altria: No CIK found for ticker MO"
+      ],
+      "output": {
+        "total_rows": 74,
+        "red_count": 13,
+        "amber_count": 18,
+        "green_count": 43,
+        "html_bytes": 208203
+      },
+      "logged_at": "2026-05-16T00:41:03.334458+00:00"
     }
   ]
 }
