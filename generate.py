@@ -11,6 +11,20 @@ except ImportError:
     YFINANCE_AVAILABLE = False
     print("WARNING: yfinance not installed; falling back to Claude-sourced market data.")
 
+# Local modules
+try:
+    import sec_edgar
+    SEC_EDGAR_AVAILABLE = True
+except ImportError:
+    SEC_EDGAR_AVAILABLE = False
+    print("WARNING: sec_edgar module not found; financials will use Claude data only.")
+
+try:
+    import run_log
+    RUN_LOG_AVAILABLE = True
+except ImportError:
+    RUN_LOG_AVAILABLE = False
+
 # Date/time
 et = pytz.timezone('America/New_York')
 now = datetime.now(et)
@@ -34,35 +48,89 @@ if os.path.exists('ratings_override.json'):
         print(f"WARNING: ratings_override.json failed to parse: {e}")
 
 # Watchlist mapping for yfinance market data pulls
-# (company name as it appears in Claude output -> yfinance ticker)
-TICKER_MAP = {
-    "AT&T": "T", "Verizon": "VZ", "Comcast": "CMCSA",
-    "Disney": "DIS", "Warner Bros. Discovery": "WBD", "Netflix": "NFLX",
-    "Amazon": "AMZN", "Alphabet": "GOOGL", "Microsoft": "MSFT",
-    "Oracle": "ORCL", "Salesforce": "CRM", "IBM": "IBM",
-    "HP Inc": "HPQ", "HPE": "HPE", "Dell": "DELL", "Nextracker": "NXT",
-    "Sanmina": "SANM", "Flex Ltd": "FLEX", "Jabil": "JBL",
-    "Arrow Electronics": "ARW", "TD Synnex": "SNX", "Ingram Micro": "INGM",
-    "Kyndryl": "KD", "Cognizant": "CTSH",
-    "Equinix": "EQIX", "Digital Realty": "DLR", "American Tower": "AMT",
-    "PayPal": "PYPL", "Corpay": "CPAY",
-    "Booking Holdings": "BKNG", "Uber": "UBER", "Delta": "DAL",
-    "Carnival": "CCL", "Royal Caribbean": "RCL", "Norwegian Cruise Line": "NCLH",
-    "General Motors": "GM", "Tesla": "TSLA", "Ford": "F",
-    "Toyota": "TM", "Nissan": "NSANY", "Hyundai": "HYMTF",
-    "Boeing": "BA", "GE Aerospace": "GE",
-    "Walmart": "WMT", "AutoZone": "AZO", "Genuine Parts": "GPC",
-    "Coca-Cola": "KO", "Anheuser-Busch InBev": "BUD",
-    "Philip Morris": "PM", "Altria": "MO", "Imperial Brands": "IMBBY",
-    "Universal Corporation": "UVV",
-    "Nike": "NKE", "Kimberly-Clark": "KMB", "Whirlpool": "WHR", "Mondelez": "MDLZ",
-    "Ball Corp": "BALL", "Crown Holdings": "CCK", "International Paper": "IP",
-    "Chevron": "CVX", "BP": "BP", "Exxon": "XOM",
-    "NextEra Energy": "NEE", "Duke Energy": "DUK", "Sempra Energy": "SRE",
-    "Caterpillar": "CAT", "Deere": "DE", "Danaher": "DHR",
-    "GE Vernova": "GEV", "Honeywell": "HON", "Otis": "OTIS",
-    "Air Products": "APD", "Corteva": "CTVA", "DuPont": "DD",
+# Watchlist with US-listed tickers and SEC filer type
+# filer_type: "10-K" = US domestic filer with quarterly 10-Qs
+#             "20-F" = Foreign private issuer (annual only)
+#             None   = Non-SEC filer (limited financial data)
+WATCHLIST = {
+    "AT&T":                    {"ticker": "T",     "filer_type": "10-K", "sector": "Telecom"},
+    "Verizon":                 {"ticker": "VZ",    "filer_type": "10-K", "sector": "Telecom"},
+    "Comcast":                 {"ticker": "CMCSA", "filer_type": "10-K", "sector": "Telecom"},
+    "Disney":                  {"ticker": "DIS",   "filer_type": "10-K", "sector": "Media"},
+    "Warner Bros. Discovery":  {"ticker": "WBD",   "filer_type": "10-K", "sector": "Media"},
+    "Netflix":                 {"ticker": "NFLX",  "filer_type": "10-K", "sector": "Media"},
+    "Amazon":                  {"ticker": "AMZN",  "filer_type": "10-K", "sector": "Tech"},
+    "Alphabet":                {"ticker": "GOOGL", "filer_type": "10-K", "sector": "Tech"},
+    "Microsoft":               {"ticker": "MSFT",  "filer_type": "10-K", "sector": "Tech"},
+    "Oracle":                  {"ticker": "ORCL",  "filer_type": "10-K", "sector": "Tech"},
+    "Salesforce":              {"ticker": "CRM",   "filer_type": "10-K", "sector": "Tech"},
+    "IBM":                     {"ticker": "IBM",   "filer_type": "10-K", "sector": "Tech"},
+    "HP Inc":                  {"ticker": "HPQ",   "filer_type": "10-K", "sector": "Hardware"},
+    "HPE":                     {"ticker": "HPE",   "filer_type": "10-K", "sector": "Hardware"},
+    "Dell":                    {"ticker": "DELL",  "filer_type": "10-K", "sector": "Hardware"},
+    "Nextracker":              {"ticker": "NXT",   "filer_type": "10-K", "sector": "Hardware"},
+    "Sanmina":                 {"ticker": "SANM",  "filer_type": "10-K", "sector": "EMS"},
+    "Flex Ltd":                {"ticker": "FLEX",  "filer_type": "10-K", "sector": "EMS"},
+    "Jabil":                   {"ticker": "JBL",   "filer_type": "10-K", "sector": "EMS"},
+    "Arrow Electronics":       {"ticker": "ARW",   "filer_type": "10-K", "sector": "Distribution"},
+    "TD Synnex":               {"ticker": "SNX",   "filer_type": "10-K", "sector": "Distribution"},
+    "Ingram Micro":            {"ticker": "INGM",  "filer_type": "10-K", "sector": "Distribution"},
+    "Kyndryl":                 {"ticker": "KD",    "filer_type": "10-K", "sector": "IT Services"},
+    "Cognizant":               {"ticker": "CTSH",  "filer_type": "10-K", "sector": "IT Services"},
+    "Equinix":                 {"ticker": "EQIX",  "filer_type": "10-K", "sector": "Datacenter"},
+    "Digital Realty":          {"ticker": "DLR",   "filer_type": "10-K", "sector": "Datacenter"},
+    "American Tower":          {"ticker": "AMT",   "filer_type": "10-K", "sector": "Towers"},
+    "PayPal":                  {"ticker": "PYPL",  "filer_type": "10-K", "sector": "Payments"},
+    "Corpay":                  {"ticker": "CPAY",  "filer_type": "10-K", "sector": "Payments"},
+    "Booking Holdings":        {"ticker": "BKNG",  "filer_type": "10-K", "sector": "Travel"},
+    "Uber":                    {"ticker": "UBER",  "filer_type": "10-K", "sector": "Travel"},
+    "Delta":                   {"ticker": "DAL",   "filer_type": "10-K", "sector": "Travel"},
+    "Carnival":                {"ticker": "CCL",   "filer_type": "10-K", "sector": "Travel"},
+    "Royal Caribbean":         {"ticker": "RCL",   "filer_type": "10-K", "sector": "Travel"},
+    "Norwegian Cruise Line":   {"ticker": "NCLH",  "filer_type": "10-K", "sector": "Travel"},
+    "General Motors":          {"ticker": "GM",    "filer_type": "10-K", "sector": "Auto"},
+    "Tesla":                   {"ticker": "TSLA",  "filer_type": "10-K", "sector": "Auto"},
+    "Ford":                    {"ticker": "F",     "filer_type": "10-K", "sector": "Auto"},
+    "Toyota":                  {"ticker": "TM",    "filer_type": "20-F", "sector": "Auto"},
+    "Nissan":                  {"ticker": "NSANY", "filer_type": None,   "sector": "Auto"},
+    "Hyundai":                 {"ticker": "HYMTF", "filer_type": None,   "sector": "Auto"},
+    "Boeing":                  {"ticker": "BA",    "filer_type": "10-K", "sector": "Aerospace"},
+    "GE Aerospace":            {"ticker": "GE",    "filer_type": "10-K", "sector": "Aerospace"},
+    "Walmart":                 {"ticker": "WMT",   "filer_type": "10-K", "sector": "Retail"},
+    "AutoZone":                {"ticker": "AZO",   "filer_type": "10-K", "sector": "Retail"},
+    "Genuine Parts":           {"ticker": "GPC",   "filer_type": "10-K", "sector": "Retail"},
+    "Coca-Cola":               {"ticker": "KO",    "filer_type": "10-K", "sector": "Beverage"},
+    "Anheuser-Busch InBev":    {"ticker": "BUD",   "filer_type": "20-F", "sector": "Beverage"},
+    "Philip Morris":           {"ticker": "PM",    "filer_type": "10-K", "sector": "Tobacco"},
+    "Altria":                  {"ticker": "MO",    "filer_type": "10-K", "sector": "Tobacco"},
+    "Imperial Brands":         {"ticker": "IMBBY", "filer_type": None,   "sector": "Tobacco"},
+    "Universal Corporation":   {"ticker": "UVV",   "filer_type": "10-K", "sector": "Tobacco"},
+    "Nike":                    {"ticker": "NKE",   "filer_type": "10-K", "sector": "Consumer"},
+    "Kimberly-Clark":          {"ticker": "KMB",   "filer_type": "10-K", "sector": "Consumer"},
+    "Whirlpool":               {"ticker": "WHR",   "filer_type": "10-K", "sector": "Consumer"},
+    "Mondelez":                {"ticker": "MDLZ",  "filer_type": "10-K", "sector": "Consumer"},
+    "Ball Corp":               {"ticker": "BALL",  "filer_type": "10-K", "sector": "Packaging"},
+    "Crown Holdings":          {"ticker": "CCK",   "filer_type": "10-K", "sector": "Packaging"},
+    "International Paper":     {"ticker": "IP",    "filer_type": "10-K", "sector": "Packaging"},
+    "Chevron":                 {"ticker": "CVX",   "filer_type": "10-K", "sector": "Energy"},
+    "BP":                      {"ticker": "BP",    "filer_type": "20-F", "sector": "Energy"},
+    "Exxon":                   {"ticker": "XOM",   "filer_type": "10-K", "sector": "Energy"},
+    "NextEra Energy":          {"ticker": "NEE",   "filer_type": "10-K", "sector": "Utilities"},
+    "Duke Energy":             {"ticker": "DUK",   "filer_type": "10-K", "sector": "Utilities"},
+    "Sempra Energy":           {"ticker": "SRE",   "filer_type": "10-K", "sector": "Utilities"},
+    "Caterpillar":             {"ticker": "CAT",   "filer_type": "10-K", "sector": "Industrials"},
+    "Deere":                   {"ticker": "DE",    "filer_type": "10-K", "sector": "Industrials"},
+    "Danaher":                 {"ticker": "DHR",   "filer_type": "10-K", "sector": "Industrials"},
+    "GE Vernova":              {"ticker": "GEV",   "filer_type": "10-K", "sector": "Industrials"},
+    "Honeywell":               {"ticker": "HON",   "filer_type": "10-K", "sector": "Industrials"},
+    "Otis":                    {"ticker": "OTIS",  "filer_type": "10-K", "sector": "Industrials"},
+    "Air Products":            {"ticker": "APD",   "filer_type": "10-K", "sector": "Industrials"},
+    "Corteva":                 {"ticker": "CTVA",  "filer_type": "10-K", "sector": "Industrials"},
+    "DuPont":                  {"ticker": "DD",    "filer_type": "10-K", "sector": "Industrials"},
 }
+
+# Derived for backward compatibility with existing yfinance fetcher
+TICKER_MAP = {co: info["ticker"] for co, info in WATCHLIST.items()}
 
 
 def fetch_market_data():
@@ -134,6 +202,15 @@ def fetch_market_data():
                 "week52_high": f"{wk52_high:.2f}",
                 "week52_low": f"{wk52_low:.2f}",
             }
+            # Try to pull market cap from yfinance fast_info (cheap, reliable)
+            try:
+                fi = yf.Ticker(ticker).fast_info
+                mcap_raw = getattr(fi, 'market_cap', None)
+                if mcap_raw and mcap_raw > 0:
+                    # Convert to $Bn with 1 decimal
+                    result[company]["mkt_cap"] = f"{mcap_raw/1e9:.1f}"
+            except Exception:
+                pass  # mkt_cap stays as whatever Claude returned
             success += 1
         except Exception as e:
             failed.append(f"{ticker} ({str(e)[:60]})")
@@ -149,6 +226,7 @@ def apply_market_overrides(rows, market_data):
     if not market_data:
         return rows
     applied = 0
+    mcap_applied = 0
     for r in rows:
         co = r.get('company', '')
         if co in market_data:
@@ -159,32 +237,137 @@ def apply_market_overrides(rows, market_data):
             r['stock_ytd'] = md['stock_ytd']
             r['week52_high'] = md['week52_high']
             r['week52_low'] = md['week52_low']
+            if 'mkt_cap' in md:
+                r['mkt_cap'] = md['mkt_cap']
+                mcap_applied += 1
             applied += 1
-    print(f"Applied yfinance market data to {applied} companies.")
+    print(f"Applied yfinance market data to {applied} companies (mkt_cap: {mcap_applied}).")
     return rows
+
+
+def compute_status_from_data(rows):
+    """
+    Override Claude's status assignment with a deterministic rule-based status
+    derived from the underlying data. Returns count of overrides made.
+
+    Rules (first match wins):
+      RED if:
+        - concern_score >= 70
+        - action in [Review, Escalate, Reduce, Sell]
+        - 2+ agency outlooks Negative (or RUR)
+        - YTD stock drop > 30%
+        - leverage > 5x AND FCF LTM negative
+      AMBER if:
+        - concern_score >= 30
+        - action == Watch
+        - 1 negative outlook
+        - leverage > 5x
+        - FCF LTM negative
+        - YTD stock drop > 20%
+        - 1M stock drop > 15%
+      Else GREEN.
+    """
+    def to_float(v):
+        try:
+            return float(str(v).replace(',','').replace('+','').replace('%','').strip())
+        except:
+            return None
+
+    def is_neg_outlook(o):
+        return str(o or '').strip().lower() in ('negative', 'rur')
+
+    overrides = 0
+    overrides_detail = []
+    for r in rows:
+        original = (r.get('status') or 'green').lower()
+
+        # Gather signals
+        concern = to_float(r.get('concern_score')) or 0
+        action = (r.get('action') or '').strip().lower()
+        neg_count = sum(1 for f in ('moodys_outlook','sp_outlook','fitch_outlook')
+                        if is_neg_outlook(r.get(f)))
+        ytd = to_float(r.get('stock_ytd'))
+        m1 = to_float(r.get('stock_1m'))
+        leverage = to_float(r.get('nd_ebitda'))
+        fcf = to_float(r.get('fcf_ltm'))
+
+        red_triggers = []
+        amber_triggers = []
+
+        # RED triggers
+        if concern >= 70:
+            red_triggers.append(f"concern_score={concern:.0f}")
+        if action in ('review', 'escalate', 'reduce', 'sell'):
+            red_triggers.append(f"action={action}")
+        if neg_count >= 2:
+            red_triggers.append(f"{neg_count} negative outlooks")
+        if ytd is not None and ytd < -30:
+            red_triggers.append(f"YTD {ytd:.0f}%")
+        if leverage is not None and leverage > 5 and fcf is not None and fcf < 0:
+            red_triggers.append(f"leverage {leverage:.1f}x & FCF neg")
+
+        if red_triggers:
+            computed = 'red'
+        else:
+            # AMBER triggers
+            if concern >= 30:
+                amber_triggers.append(f"concern={concern:.0f}")
+            if action == 'watch':
+                amber_triggers.append("action=watch")
+            if neg_count == 1:
+                amber_triggers.append("1 negative outlook")
+            if leverage is not None and leverage > 5:
+                amber_triggers.append(f"leverage {leverage:.1f}x")
+            if fcf is not None and fcf < 0:
+                amber_triggers.append("FCF negative")
+            if ytd is not None and ytd < -20:
+                amber_triggers.append(f"YTD {ytd:.0f}%")
+            if m1 is not None and m1 < -15:
+                amber_triggers.append(f"1M {m1:.0f}%")
+
+            computed = 'amber' if amber_triggers else 'green'
+
+        if computed != original:
+            overrides += 1
+            triggers_str = ", ".join(red_triggers or amber_triggers) or "no triggers fired"
+            overrides_detail.append(f"  {r.get('company','')}: {original} -> {computed} ({triggers_str})")
+
+        r['status'] = computed
+        r['_status_source'] = 'computed'
+
+    print(f"Status recomputed from data: {overrides} of {len(rows)} rows changed.")
+    if overrides_detail:
+        for d in overrides_detail[:15]:
+            print(d)
+        if len(overrides_detail) > 15:
+            print(f"  ... and {len(overrides_detail)-15} more")
+    return rows
+
 
 
 def fetch_commodities_fx():
     """
-    Pull WTI, Brent, Gold, EUR/USD from yfinance.
+    Pull WTI, Brent, Gold, EUR/USD, Nasdaq, Dow from yfinance.
     Returns dict with current value and 1-day percent change for each.
     """
     if not YFINANCE_AVAILABLE:
         return {}
 
     tickers = {
-        "wti":    "CL=F",
-        "brent":  "BZ=F",
-        "gold":   "GC=F",
-        "eurusd": "EURUSD=X",
+        "wti":     "CL=F",
+        "brent":   "BZ=F",
+        "gold":    "GC=F",
+        "eurusd":  "EURUSD=X",
+        "nasdaq":  "^IXIC",
+        "dow":     "^DJI",
     }
-    print(f"Fetching commodities and FX from yfinance...")
+    print(f"Fetching commodities, FX, and indices from yfinance...")
     try:
         hist = yf.download(" ".join(tickers.values()), period="5d", interval="1d",
                            group_by="ticker", auto_adjust=True,
                            progress=False, threads=True)
     except Exception as e:
-        print(f"WARNING: commodities/FX fetch failed: {e}")
+        print(f"WARNING: commodities/FX/indices fetch failed: {e}")
         return {}
 
     result = {}
@@ -207,12 +390,15 @@ def fetch_commodities_fx():
                 pct = f"{sign}{abs(p):.1f}"
             if key == "eurusd":
                 result[key] = {"value": f"{current:.4f}", "change": pct}
+            elif key in ("nasdaq", "dow"):
+                # Indices: integer with comma
+                result[key] = {"value": f"{int(current):,}", "change": pct}
             else:
                 result[key] = {"value": f"{current:.2f}", "change": pct}
         except Exception as e:
             print(f"  {ticker} ({key}): {str(e)[:80]}")
 
-    print(f"Commodities/FX: {len(result)}/4 succeeded.")
+    print(f"Commodities/FX/indices: {len(result)}/{len(tickers)} succeeded.")
     return result
 
 
@@ -235,7 +421,7 @@ Travel: Booking Holdings, Uber, Delta, Carnival, Royal Caribbean, Norwegian Crui
 For each company gather the data below using these source priorities:
 
 FINANCIAL METRICS (Market Cap, Net Debt/EBITDA, EBITDA Margin, FCF LTM, Cash, Total Debt):
-Source from stockanalysis.com, macrotrends.net, or the company's most recent 10-Q on sec.gov. Use LTM (trailing twelve months) where applicable.
+Return your best estimates if known, but NOTE: For US 10-K and 10-Q filers, financial fields are programmatically overridden by SEC EDGAR after your response. For non-SEC filers (Nissan, Hyundai, Imperial Brands) and 20-F filers (Toyota, BP, AB InBev), your estimates may stand. Focus your effort primarily on status, ratings, action, key developments, and news.
 
 STOCK DATA (1-day, 1-month, YTD percentage changes, 52-week high, 52-week low):
 Return your best estimates if known. NOTE: These fields are programmatically overridden by yfinance after your response, so accuracy is less critical here. Focus your effort on status, ratings, key developments, and financial metrics.
@@ -320,7 +506,7 @@ Industrials: Caterpillar, Deere, Danaher, GE Vernova, Honeywell, Otis, Air Produ
 For each company gather the data below using these source priorities:
 
 FINANCIAL METRICS (Market Cap, Net Debt/EBITDA, EBITDA Margin, FCF LTM, Cash, Total Debt):
-Source from stockanalysis.com, macrotrends.net, or the company's most recent 10-Q on sec.gov. Use LTM (trailing twelve months) where applicable.
+Return your best estimates if known, but NOTE: For US 10-K and 10-Q filers, financial fields are programmatically overridden by SEC EDGAR after your response. For non-SEC filers (Nissan, Hyundai, Imperial Brands) and 20-F filers (Toyota, BP, AB InBev), your estimates may stand. Focus your effort primarily on status, ratings, action, key developments, and news.
 
 STOCK DATA (1-day, 1-month, YTD percentage changes, 52-week high, 52-week low):
 Return your best estimates if known. NOTE: These fields are programmatically overridden by yfinance after your response, so accuracy is less critical here. Focus your effort on status, ratings, key developments, and financial metrics.
@@ -683,12 +869,29 @@ def build_html(all_rows, macro, top3, datetime_str, commodities=None):
             + '</tr>'
         )
 
-        # MARKET row — with current price column added
+        # Compute Enterprise Value = Mkt Cap + Total Debt - Cash (all in $Bn)
+        def _to_f(v):
+            try:
+                return float(str(v).replace(',','').replace('+','').replace('$','').strip())
+            except:
+                return None
+        mc = _to_f(r.get('mkt_cap'))
+        td = _to_f(r.get('total_debt'))
+        cs = _to_f(r.get('cash'))
+        if mc is not None and td is not None and cs is not None:
+            ev_val = mc + td - cs
+            ev_str = f"{ev_val:.1f}"
+        else:
+            ev_str = "n/a"
+
+        # MARKET row — Mkt Cap and EV inserted after Sector, before Status
         market_rows.append(
             f'<tr data-status="{status}" data-company="{r.get("company","").lower()}" data-sector="{r.get("sector","")}">'
             f'<td class="co-cell">{r.get("company","")}</td>'
             f'<td><span class="sector-tag">{r.get("sector","")}</span></td>'
-            f'<td class="status {status}">{status.upper()}</td>'
+            + num_cell(r.get('mkt_cap'))
+            + num_cell(ev_str)
+            + f'<td class="status {status}">{status.upper()}</td>'
             + price_cell(r.get('price'))
             + stock_cell(r.get('stock_1d'))
             + stock_cell(r.get('stock_1m'))
@@ -699,15 +902,32 @@ def build_html(all_rows, macro, top3, datetime_str, commodities=None):
             + '</tr>'
         )
 
-        # FINANCIALS row
+        # FINANCIALS row — Revenue + YoY added, Mkt Cap removed (moved to Market Data tab)
+        # Source indicator and warning icon
+        fin_source = r.get('_financials_source', '')
+        fin_warnings = r.get('_fin_warnings') or []
+        filing_form = r.get('_filing_form', '')
+        period_end = r.get('_period_end', '')
+        if fin_source.startswith('SEC'):
+            form_label = filing_form if filing_form else ""
+            period_label = period_end if period_end else "unknown"
+            source_marker = f'<span class="src-tag sec" title="Source: SEC EDGAR {form_label} as of {period_label}">SEC</span>'
+        else:
+            source_marker = '<span class="src-tag claude" title="Source: Claude web search (less reliable than SEC EDGAR)">EST</span>'
+        warning_marker = ''
+        if fin_warnings:
+            warning_marker = f' <span class="data-warn" title="{"; ".join(fin_warnings)[:200]}">&#9888;</span>'
+
         fin_rows.append(
             f'<tr data-status="{status}" data-company="{r.get("company","").lower()}" data-sector="{r.get("sector","")}">'
-            f'<td class="co-cell">{r.get("company","")}</td>'
+            f'<td class="co-cell">{r.get("company","")} {source_marker}{warning_marker}</td>'
             f'<td><span class="sector-tag">{r.get("sector","")}</span></td>'
             f'<td class="status {status}">{status.upper()}</td>'
-            + num_cell(r.get('mkt_cap'))
+            + num_cell(r.get('revenue_ltm'))
+            + num_cell(r.get('revenue_yoy_pct'), '%')
             + num_cell(r.get('nd_ebitda'))
             + num_cell(r.get('ebitda_margin'),'%')
+            + num_cell(r.get('op_margin'),'%')
             + num_cell(r.get('fcf_ltm'))
             + num_cell(r.get('cash'))
             + num_cell(r.get('total_debt'))
@@ -723,6 +943,14 @@ def build_html(all_rows, macro, top3, datetime_str, commodities=None):
     t10y = macro.get('treasury_10y','n/a'); t2y = macro.get('treasury_2y','n/a')
     vix = macro.get('vix','n/a'); sp500 = macro.get('sp500','n/a')
     sp500_1d = macro.get('sp500_1d',''); sp500_up = str(sp500_1d).startswith('+')
+
+    # Format S&P 500 with comma thousands and $ prefix
+    sp500_display = sp500
+    try:
+        sp500_int = int(str(sp500).replace(',','').replace('$','').strip())
+        sp500_display = f"${sp500_int:,}"
+    except:
+        sp500_display = str(sp500)
 
     def macro_item(label, value, change=None, up=None):
         change_html = ''
@@ -747,7 +975,9 @@ def build_html(all_rows, macro, top3, datetime_str, commodities=None):
         + macro_item('10Y UST', f'{t10y}%')
         + macro_item('2Y UST', f'{t2y}%')
         + macro_item('VIX', vix)
-        + macro_item('S&amp;P 500', sp500, sp500_1d, sp500_up)
+        + macro_item('S&amp;P 500', sp500_display, sp500_1d, sp500_up)
+        + commodity_item('Nasdaq', 'nasdaq', prefix='')
+        + commodity_item('Dow', 'dow', prefix='')
         + commodity_item('WTI', 'wti')
         + commodity_item('Brent', 'brent')
         + commodity_item('Gold', 'gold')
@@ -855,6 +1085,10 @@ tbody tr:hover{background:#0d1520}
 .action-redesigned.amber{background:#2a1a00;color:#f0b429;border:1px solid #8b6200}
 .action-redesigned.green{background:#001a0a;color:#4ec38a;border:1px solid #1a5c32}
 .price-cell{font-weight:700;color:#a0c4e8}
+.src-tag{display:inline-block;font-family:"IBM Plex Mono",monospace;font-size:8px;letter-spacing:.5px;padding:1px 4px;border-radius:2px;margin-left:6px;vertical-align:middle;cursor:help}
+.src-tag.sec{background:#001a0a;color:#4ec38a;border:1px solid #1a5c32}
+.src-tag.claude{background:#0d1520;color:#7090a8;border:1px solid #1e2a3a}
+.data-warn{color:#f0b429;font-size:12px;cursor:help;margin-left:2px}
 
 .placeholder-pane{padding:80px 28px;text-align:center;color:#4a6080;font-family:"IBM Plex Mono",monospace;font-size:13px;letter-spacing:1px}
 .placeholder-pane .ph-title{font-size:16px;color:#a0b4c8;margin-bottom:10px;letter-spacing:2px}
@@ -1016,11 +1250,13 @@ footer li strong{color:#ffaaaa}
 <div class="pane" id="pane-market">
 <table>
 <colgroup>
-<col style="width:15%"><col style="width:10%"><col style="width:7%"><col style="width:9%"><col style="width:8%"><col style="width:8%"><col style="width:8%"><col style="width:10%"><col style="width:10%"><col style="width:15%">
+<col style="width:13%"><col style="width:9%"><col style="width:8%"><col style="width:8%"><col style="width:6%"><col style="width:7%"><col style="width:7%"><col style="width:7%"><col style="width:7%"><col style="width:8%"><col style="width:8%"><col style="width:12%">
 </colgroup>
 <thead><tr>
   <th data-type="text">Company</th>
   <th data-type="text">Sector</th>
+  <th data-type="num">Mkt Cap $Bn</th>
+  <th data-type="num">EV $Bn</th>
   <th data-type="text">Status</th>
   <th data-type="num">Price $</th>
   <th data-type="num">1D %</th>
@@ -1037,15 +1273,17 @@ footer li strong{color:#ffaaaa}
 <div class="pane" id="pane-financials">
 <table>
 <colgroup>
-<col style="width:16%"><col style="width:11%"><col style="width:8%"><col style="width:10%"><col style="width:11%"><col style="width:11%"><col style="width:11%"><col style="width:10%"><col style="width:12%">
+<col style="width:15%"><col style="width:10%"><col style="width:7%"><col style="width:9%"><col style="width:8%"><col style="width:8%"><col style="width:8%"><col style="width:8%"><col style="width:9%"><col style="width:8%"><col style="width:10%">
 </colgroup>
 <thead><tr>
   <th data-type="text">Company</th>
   <th data-type="text">Sector</th>
   <th data-type="text">Status</th>
-  <th data-type="num">Mkt Cap $Bn</th>
+  <th data-type="num">Revenue LTM $Bn</th>
+  <th data-type="num">Rev YoY %</th>
   <th data-type="num">ND/EBITDA</th>
   <th data-type="num">EBITDA Mgn %</th>
+  <th data-type="num">Op Mgn %</th>
   <th data-type="num">FCF LTM $Bn</th>
   <th data-type="num">Cash $Bn</th>
   <th data-type="num">Tot Debt $Bn</th>
@@ -1065,10 +1303,11 @@ footer li strong{color:#ffaaaa}
 <div class="methodology-content">
 
   <h2>Status Definitions</h2>
+  <p>Status is <strong>computed deterministically</strong> from the underlying data after each run &mdash; it is not Claude&apos;s judgment.</p>
   <table class="methodology-table">
-    <tr><td><span class="status-badge green">GREEN</span></td><td>No material concerns; routine monitoring.</td></tr>
-    <tr><td><span class="status-badge amber">AMBER</span></td><td>Elevated attention warranted; watch list.</td></tr>
-    <tr><td><span class="status-badge red">RED</span></td><td>Active concern; escalation or review required.</td></tr>
+    <tr><td><span class="status-badge red">RED</span></td><td>Triggered if any of: concern score &ge; 70, action is Review/Escalate, 2+ negative agency outlooks, YTD stock drop &gt; 30%, or leverage &gt; 5x AND FCF negative.</td></tr>
+    <tr><td><span class="status-badge amber">AMBER</span></td><td>Triggered if any of: concern score &ge; 30, action is Watch, 1 negative outlook, leverage &gt; 5x, FCF negative, YTD drop &gt; 20%, or 1M drop &gt; 15%.</td></tr>
+    <tr><td><span class="status-badge green">GREEN</span></td><td>None of the above triggers fired. Routine monitoring.</td></tr>
   </table>
 
   <h2>Action Tiers</h2>
@@ -1114,6 +1353,8 @@ footer li strong{color:#ffaaaa}
   <ul>
     <li>Source: Yahoo Finance via <code>yfinance</code> library</li>
     <li>Current price: latest available close</li>
+    <li>Market Cap: pulled from yfinance (price &times; shares outstanding); refreshes daily</li>
+    <li>Enterprise Value (EV) = Market Cap + Total Debt &minus; Cash. Calculated row by row using yfinance market cap plus Claude-sourced debt/cash (Phase 2 will move debt/cash to SEC EDGAR).</li>
     <li>1D / 1M / YTD: calculated from closing prices</li>
     <li>52W high / low: trailing 52-week trading range</li>
     <li>Refresh: daily</li>
@@ -1125,20 +1366,38 @@ footer li strong{color:#ffaaaa}
     <li>10Y / 2Y UST: US Treasury closing yields</li>
     <li>VIX: CBOE Volatility Index</li>
     <li>S&amp;P 500: index level &amp; 1-day change</li>
+    <li>Nasdaq: Nasdaq Composite index (^IXIC) &amp; 1-day change</li>
+    <li>Dow: Dow Jones Industrial Average (^DJI) &amp; 1-day change</li>
     <li>WTI / Brent: front-month crude oil futures (CL=F, BZ=F)</li>
     <li>Gold: front-month gold futures (GC=F)</li>
     <li>EUR/USD: spot FX</li>
-    <li>Sources: spreads, yields, VIX, S&amp;P 500 via Claude web search; commodities &amp; FX via yfinance</li>
+    <li>Sources: spreads, yields, VIX, S&amp;P 500 level via Claude web search; equity indices (Nasdaq, Dow), commodities &amp; FX via yfinance</li>
   </ul>
 
   <h2>Financials</h2>
   <ul>
-    <li>Source: Currently Claude web search. Phase 2 will move to direct SEC EDGAR XBRL pulls.</li>
-    <li>Net Debt = Total Debt &minus; Cash &amp; Equivalents</li>
-    <li>EBITDA = Operating Income + D&amp;A (GAAP construction, no company-reported adjustments)</li>
-    <li>FCF = Operating Cash Flow &minus; CapEx</li>
-    <li>ND/EBITDA = Net Debt / LTM EBITDA</li>
-    <li>All dollar figures in $Bn unless otherwise indicated</li>
+    <li><strong>Source:</strong> SEC EDGAR XBRL data, pulled directly from <code>data.sec.gov</code>. No paid feeds, no Claude estimates for the metrics below (for US 10-K filers and 20-F annual filers).</li>
+    <li><strong>Refresh:</strong> Weekly &mdash; cache is refreshed if older than 6 days. Manual refresh via workflow input.</li>
+    <li><strong>LTM construction:</strong> Sum of the 4 most recent non-overlapping quarterly facts. For 20-F annual filers, the latest annual figure is used (labeled).</li>
+    <li><strong>Net Debt</strong> = Long-Term Debt + Short-Term Debt &minus; Cash &amp; Equivalents</li>
+    <li><strong>EBITDA</strong> = Operating Income + Depreciation &amp; Amortization (GAAP construction, no company-reported adjustments)</li>
+    <li><strong>FCF</strong> = Operating Cash Flow &minus; CapEx</li>
+    <li><strong>ND/EBITDA</strong> = Net Debt / LTM EBITDA</li>
+    <li><strong>Revenue YoY %</strong> = LTM Revenue vs. trailing 4-quarter sum from a year earlier</li>
+    <li>All dollar figures in $Bn</li>
+    <li>Each row carries a source tag: <span class="src-tag sec">SEC</span> = direct SEC EDGAR data, <span class="src-tag claude">EST</span> = Claude estimate (used for non-SEC filers)</li>
+    <li>A <span style="color:#f0b429">&#9888;</span> icon on a row indicates data quality warnings &mdash; hover to see the specific issue (e.g., "Cash not found", "Revenue YoY = -55% verify")</li>
+    <li>Market Cap moved to the Market Data tab (it&apos;s a price-derived market metric, not a filing-derived financial)</li>
+  </ul>
+
+  <h2>SEC EDGAR Data Quality</h2>
+  <ul>
+    <li><strong>Authoritative:</strong> XBRL-tagged GAAP data from actual filings. Same numbers as in the 10-K/10-Q.</li>
+    <li><strong>Tag fallback chains:</strong> Companies tag concepts slightly differently. We try the primary tag (e.g., <code>Revenues</code>), then fall back to alternatives (e.g., <code>RevenueFromContractWithCustomerExcludingAssessedTax</code>) if missing.</li>
+    <li><strong>Validation:</strong> Implausible values (cash &gt; assets, ND/EBITDA outside &plusmn;50x, etc.) trigger warnings shown as &#9888; on the row.</li>
+    <li><strong>20-F filers</strong> (Toyota, BP, AB InBev): annual data only; quarterly fields show the most recent annual figure.</li>
+    <li><strong>Non-SEC filers</strong> (Nissan, Hyundai, Imperial Brands): no SEC data available; financials fall back to Claude web-search estimates.</li>
+    <li><strong>Cache file:</strong> <code>financials_cache.json</code> in the repo &mdash; auditable record of what data was used.</li>
   </ul>
 
   <h2>Red Flags <span class="meth-note">(framework pending &mdash; Phase 3)</span></h2>
@@ -1147,8 +1406,17 @@ footer li strong{color:#ffaaaa}
   <h2>Refresh Cadence</h2>
   <ul>
     <li>Dashboard runs daily at 8:00 AM ET on weekdays</li>
+    <li><strong>Daily refresh:</strong> Market data, commodities/FX, equity indices (yfinance); ratings, news, top 3 (Claude); status compute</li>
+    <li><strong>Weekly refresh:</strong> SEC EDGAR financials (cache TTL = 6 days; refreshes on first run after expiry)</li>
     <li>Manual override file (<code>ratings_override.json</code>) applies after auto-pull</li>
-    <li>Phase 2: Financials will refresh weekly (Mondays); other data refreshes daily</li>
+  </ul>
+
+  <h2>Audit Trail</h2>
+  <ul>
+    <li><strong><code>runs.json</code></strong> in the repo: rolling log of the last 60 runs, capturing data sources called, success/failure counts, validation warnings, output stats, and timing. Auto-trimmed.</li>
+    <li><strong><code>financials_cache.json</code></strong> in the repo: snapshot of the SEC data used for the current run. Inspectable.</li>
+    <li><strong>Row-level provenance:</strong> each financial cell carries a source tag (<span class="src-tag sec">SEC</span> or <span class="src-tag claude">EST</span>) and a warning marker (<span style="color:#f0b429">&#9888;</span>) where validation rules fired.</li>
+    <li><strong>Validation rules:</strong> impossible values (cash &gt; assets, ND/EBITDA &gt; 50x, EBITDA margin &gt; 80%, etc.) trigger row warnings. Hover to see the specific rule that fired.</li>
   </ul>
 
   <h2>Data Limitations</h2>
@@ -1172,6 +1440,8 @@ footer li strong{color:#ffaaaa}
 
 
 def main():
+    run_start = datetime.now(pytz.utc)
+
     raw_a = call_claude(PROMPT_A, "Batch A")
     raw_b = call_claude(PROMPT_B, "Batch B")
 
@@ -1190,12 +1460,22 @@ def main():
     # Apply manual overrides for ratings
     all_rows = apply_overrides(all_rows)
 
+    # Pull authoritative financials from SEC EDGAR (cached weekly)
+    sec_metadata = {"from_cache": False, "names_succeeded": 0, "names_attempted": 0}
+    sec_warnings = []
+    if SEC_EDGAR_AVAILABLE:
+        sec_data, sec_warnings, sec_metadata = sec_edgar.fetch_financials(WATCHLIST)
+        all_rows = sec_edgar.apply_sec_overrides(all_rows, sec_data)
+
     # Pull authoritative market data from yfinance and override Claude's stock fields
     market_data = fetch_market_data()
     all_rows = apply_market_overrides(all_rows, market_data)
 
-    # Pull commodities and FX from yfinance
+    # Pull commodities, FX, and equity indices from yfinance
     commodities = fetch_commodities_fx()
+
+    # Recompute status deterministically from the data (overrides Claude's call)
+    all_rows = compute_status_from_data(all_rows)
 
     print(f"Batch A: {len(rows_a)} rows, Batch B: {len(rows_b)} rows, Total: {len(all_rows)}")
 
@@ -1205,6 +1485,50 @@ def main():
         f.write(html)
 
     print("index.html written successfully.")
+
+    # Write run log
+    if RUN_LOG_AVAILABLE:
+        run_end = datetime.now(pytz.utc)
+        red_count = sum(1 for r in all_rows if str(r.get('status','')).lower()=='red')
+        amber_count = sum(1 for r in all_rows if str(r.get('status','')).lower()=='amber')
+        green_count = sum(1 for r in all_rows if str(r.get('status','')).lower()=='green')
+        log_entry = {
+            "run_id": now.strftime("%Y-%m-%d-%H%M"),
+            "run_started": run_start.isoformat(),
+            "run_completed": run_end.isoformat(),
+            "duration_seconds": int((run_end - run_start).total_seconds()),
+            "data_sources": {
+                "anthropic_claude": {
+                    "model": "claude-sonnet-4-6",
+                    "calls": 2,
+                    "batches_succeeded": (1 if data_a else 0) + (1 if data_b else 0),
+                },
+                "sec_edgar": {
+                    "from_cache": sec_metadata.get("from_cache", False),
+                    "names_attempted": sec_metadata.get("names_attempted", 0),
+                    "names_succeeded": sec_metadata.get("names_succeeded", 0),
+                    "names_failed": sec_metadata.get("names_failed", []),
+                    "names_no_sec_filer": sec_metadata.get("names_no_sec_filer", []),
+                    "total_warnings": sec_metadata.get("total_warnings", 0),
+                },
+                "yfinance": {
+                    "market_data_companies": len(market_data) if market_data else 0,
+                    "commodities_indices": len(commodities) if commodities else 0,
+                },
+            },
+            "overrides_applied": {
+                "ratings_override": sum(1 for k in RATINGS_OVERRIDE if not k.startswith('_')),
+            },
+            "validation_warnings": sec_warnings[:50],  # cap at 50 to keep log compact
+            "output": {
+                "total_rows": len(all_rows),
+                "red_count": red_count,
+                "amber_count": amber_count,
+                "green_count": green_count,
+                "html_bytes": len(html),
+            },
+        }
+        run_log.append_run_log(log_entry, path="runs.json", keep_last=60)
 
 
 if __name__ == '__main__':
