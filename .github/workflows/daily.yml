@@ -24,8 +24,9 @@ jobs:
         run: pip install anthropic requests pytz yfinance pandas
 
       - name: Generate dashboard
-        env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+       env:
+  ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+  FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
         run: python generate.py
 
       - name: Commit and push
