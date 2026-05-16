@@ -45,7 +45,13 @@ SEC_USER_AGENT = "Credit Digest Personal Research contact@example.com"
 # Cache freshness: refresh full dataset if cache is older than this
 CACHE_TTL_DAYS = 6
 
-# Concept tag fallback chains (try in order, take first available)
+# Freshness gates for tag candidates. A candidate tag's latest fact must be within
+# these windows to be accepted as current; otherwise the fallback chain advances.
+# Worst-case quarterly filing lag is ~80 days, so 180 leaves comfortable headroom.
+FRESHNESS_DAYS = 180
+ANNUAL_FRESHNESS_DAYS = 540  # ~18 months for 20-F annual-only filers
+
+# Concept tag fallback chains (try in order, take first that produces usable data).
 TAG_CHAINS = {
     "revenue": [
         "Revenues",
@@ -97,6 +103,10 @@ TAG_CHAINS = {
 }
 
 
+# ---------------------------------------------------------------------------
+# HTTP
+# ---------------------------------------------------------------------------
+
 def _http_get(url, retries=3, sleep=0.5):
     """SEC requires User-Agent; rate limit is generous but we throttle anyway."""
     req = urllib.request.Request(url, headers={
@@ -110,7 +120,6 @@ def _http_get(url, retries=3, sleep=0.5):
         try:
             with urllib.request.urlopen(req, timeout=30) as r:
                 content = r.read()
-                # Handle gzip if needed
                 if r.headers.get('Content-Encoding') == 'gzip':
                     import gzip
                     content = gzip.decompress(content)
@@ -120,14 +129,13 @@ def _http_get(url, retries=3, sleep=0.5):
             try:
                 body = e.read().decode('utf-8', errors='replace')[:200]
                 last_err += f" body={body}"
-            except:
+            except Exception:
                 pass
             if e.code == 404:
-                return None  # company has no facts; surface as missing
+                return None
             if e.code in (429, 503):
                 time.sleep(sleep * (2 ** attempt))
                 continue
-            # Other HTTP errors - log and bail
             print(f"  SEC HTTP error on {url}: {last_err}")
             return None
         except Exception as e:
@@ -153,58 +161,40 @@ def _build_ticker_to_cik_map():
     return out
 
 
-def _pick_period_end(fact_units, prefer_quarterly=True):
-    """
-    From SEC's per-unit list of fact instances, dedupe by end date keeping the most
-    recently filed instance (handles restatements), filter to facts filed within
-    last 3 years, and return list sorted newest first.
-    """
-    if not fact_units:
-        return []
-    today = datetime.now().date()
-    cutoff = today - timedelta(days=3 * 365)
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
 
-    def filing_date(f):
-        try:
-            return datetime.strptime(f.get("filed", ""), "%Y-%m-%d").date()
-        except Exception:
-            return None
+def _filing_date(f):
+    try:
+        return datetime.strptime(f.get("filed", ""), "%Y-%m-%d").date()
+    except Exception:
+        return None
 
-    # Filter and dedupe
+
+def _dedupe_by_end(facts_list):
+    """Keep the most recently filed instance for each period-end (handles restatements)."""
     by_end = {}
-    for f in fact_units:
+    for f in facts_list:
         end = f.get("end")
         if not end:
-            continue
-        # Skip ancient filings
-        fd = filing_date(f)
-        if fd and fd < cutoff:
-            continue
-        try:
-            ed = datetime.strptime(end, "%Y-%m-%d").date()
-        except Exception:
-            continue
-        if ed < cutoff:
             continue
         existing = by_end.get(end)
         if existing is None:
             by_end[end] = f
             continue
-        existing_filed = filing_date(existing)
-        new_filed = filing_date(f)
+        existing_filed = _filing_date(existing)
+        new_filed = _filing_date(f)
         if new_filed and (not existing_filed or new_filed > existing_filed):
             by_end[end] = f
-
-    items = list(by_end.values())
-    items.sort(key=lambda x: x.get("end", ""), reverse=True)
-    return items
+    return list(by_end.values())
 
 
-def _get_concept(facts, tag_chain, taxonomy="us-gaap"):
+def _iter_concept_candidates(facts, tag_chain, taxonomy="us-gaap"):
     """
-    Walk fallback tags. Returns (units_list, tag_used) for the first tag found,
-    where units_list is the list of fact instances in USD (or the only unit if no USD).
-    Skips non-USD denominations to avoid Toyota-style FX mismatches.
+    Yield (units_list, tag) for each tag in the chain that has USD data.
+    Callers should iterate and accept the first tag whose data is *usable*,
+    rather than the first tag that merely exists.
     """
     facts_taxonomy = facts.get("facts", {}).get(taxonomy, {})
     for tag in tag_chain:
@@ -214,58 +204,94 @@ def _get_concept(facts, tag_chain, taxonomy="us-gaap"):
         units = node.get("units", {})
         if not units:
             continue
-        # Only use USD facts. If only non-USD is available, return None to flag the issue.
         if "USD" in units:
-            return units["USD"], tag
-        # Continue to next tag in chain rather than using foreign currency
-        continue
+            yield units["USD"], tag
+        # Skip non-USD denominations (avoids Toyota-style FX mismatches)
+
+
+def _get_concept(facts, tag_chain, taxonomy="us-gaap"):
+    """
+    Legacy single-tag selector: returns first tag with USD data, no usability check.
+    Kept only for backwards compatibility; prefer _iter_concept_candidates.
+    """
+    for units, tag in _iter_concept_candidates(facts, tag_chain, taxonomy):
+        return units, tag
     return None, None
 
 
-def _latest_balance_sheet(facts, tag_chain):
-    """Returns (value, period_end, tag_used) for the most recent balance-sheet instant."""
-    units, tag = _get_concept(facts, tag_chain)
-    if not units:
-        return None, None, None
-    items = _pick_period_end(units)
-    if not items:
-        return None, None, None
-    f = items[0]
-    return f.get("val"), f.get("end"), tag
+# ---------------------------------------------------------------------------
+# Balance-sheet (instant) extraction
+# ---------------------------------------------------------------------------
 
-
-def _ltm_sum(facts, tag_chain, is_quarterly_filer=True):
+def _pick_period_end_for_units(units):
     """
-    Sum the last twelve months for a flow item (revenue, op income, OCF, etc.).
-    Strategy:
-      - Dedupe quarterly facts by end-date, keeping the most recently filed instance
-        (this handles restatements: a quarter republished in a later 10-K should win
-        over the original 10-Q filing).
-      - Filter to facts filed within the last ~3 years (anything older is stale data).
-      - For 10-K/10-Q filers (quarterly): take 4 most recent non-overlapping
-        quarterly facts (start/end span ~90 days each) and sum.
-      - For 20-F filers (annual only): take the most recent annual fact.
-    Returns (ltm_value, latest_period_end, form_type, tag_used).
+    Dedupe instant facts by end date keeping the most recently filed instance,
+    filter to facts filed within the last 3 years, and return newest first.
     """
-    units, tag = _get_concept(facts, tag_chain)
     if not units:
-        return None, None, None, None
-
-    # Filter out stale facts: must have been filed within last 3 years
+        return []
     today = datetime.now().date()
     cutoff = today - timedelta(days=3 * 365)
-
-    def filing_date(f):
-        try:
-            return datetime.strptime(f.get("filed", ""), "%Y-%m-%d").date()
-        except Exception:
-            return None
-
-    # Separate quarterly (~90 days) and annual (~365 days) periods
-    quarterly_raw = []
-    annual_raw = []
+    items = []
     for f in units:
-        start = f.get("start"); end = f.get("end")
+        end = f.get("end")
+        if not end:
+            continue
+        try:
+            ed = datetime.strptime(end, "%Y-%m-%d").date()
+        except Exception:
+            continue
+        if ed < cutoff:
+            continue
+        fd = _filing_date(f)
+        if fd and fd < cutoff:
+            continue
+        items.append(f)
+    deduped = _dedupe_by_end(items)
+    deduped.sort(key=lambda x: x.get("end", ""), reverse=True)
+    return deduped
+
+
+def _pick_period_end(fact_units, prefer_quarterly=True):
+    """Legacy wrapper for backwards compatibility."""
+    return _pick_period_end_for_units(fact_units)
+
+
+def _latest_balance_sheet(facts, tag_chain):
+    """
+    Iterate through fallback chain; return first tag whose latest fact is within
+    the freshness window. Returns (value, period_end, tag_used).
+    """
+    today = datetime.now().date()
+    for units, tag in _iter_concept_candidates(facts, tag_chain):
+        items = _pick_period_end_for_units(units)
+        if not items:
+            continue
+        f = items[0]
+        try:
+            ed = datetime.strptime(f.get("end", ""), "%Y-%m-%d").date()
+        except Exception:
+            continue
+        if (today - ed).days > FRESHNESS_DAYS:
+            continue
+        return f.get("val"), f.get("end"), tag
+    return None, None, None
+
+
+# ---------------------------------------------------------------------------
+# LTM (flow) extraction with fallback chain validation
+# ---------------------------------------------------------------------------
+
+def _ltm_sum_for_units(units, today, cutoff):
+    """
+    Build LTM from one tag's USD units.
+    Returns (ltm, end, form) or (None, None, None) if no usable LTM can be built.
+    The latest quarterly fact must be within FRESHNESS_DAYS of today (or ANNUAL_FRESHNESS_DAYS
+    for annual-only filers) so stale tags don't return data that looks current.
+    """
+    quarterly_raw, annual_raw = [], []
+    for f in units:
+        start, end = f.get("start"), f.get("end")
         if not start or not end:
             continue
         try:
@@ -274,12 +300,9 @@ def _ltm_sum(facts, tag_chain, is_quarterly_filer=True):
             days = (ed - sd).days
         except Exception:
             continue
-        f["_days"] = days
-        # Drop ancient filings
-        fd = filing_date(f)
+        fd = _filing_date(f)
         if fd and fd < cutoff:
             continue
-        # Also drop facts where the period itself is far older than the cutoff
         if ed < cutoff:
             continue
         if 80 <= days <= 100:
@@ -287,75 +310,68 @@ def _ltm_sum(facts, tag_chain, is_quarterly_filer=True):
         elif 350 <= days <= 380:
             annual_raw.append(f)
 
-    # Dedupe quarterly facts by end date: keep the most recently filed instance
-    # (this handles restatements where a quarter is republished in a later filing)
-    def dedupe_by_end(facts_list):
-        by_end = {}
-        for f in facts_list:
-            end = f.get("end")
-            existing = by_end.get(end)
-            if existing is None:
-                by_end[end] = f
-                continue
-            existing_filed = filing_date(existing)
-            new_filed = filing_date(f)
-            if new_filed and (not existing_filed or new_filed > existing_filed):
-                by_end[end] = f
-        return list(by_end.values())
+    quarterly = _dedupe_by_end(quarterly_raw)
+    annual = _dedupe_by_end(annual_raw)
 
-    quarterly = dedupe_by_end(quarterly_raw)
-    annual = dedupe_by_end(annual_raw)
-
-    # Strategy 1: 4 most recent non-overlapping quarters
+    # Strategy 1: 4 non-overlapping quarters, latest within quarterly freshness window
     if quarterly:
         quarterly.sort(key=lambda x: x.get("end", ""), reverse=True)
         latest_end = quarterly[0].get("end")
-        # Take 4 most recent non-overlapping quarters
-        picked = [quarterly[0]]
-        for q in quarterly[1:]:
-            if len(picked) >= 4:
-                break
-            try:
-                prev_start = datetime.strptime(picked[-1].get("start"), "%Y-%m-%d").date()
-                this_end = datetime.strptime(q.get("end"), "%Y-%m-%d").date()
-                if this_end <= prev_start:
-                    picked.append(q)
-            except Exception:
-                continue
-        if len(picked) == 4:
-            ltm = sum(f.get("val", 0) for f in picked)
-            form = picked[0].get("form", "10-Q")
-            return ltm, latest_end, form, tag
-        # Fall through to annual if we can't get 4 quarters
+        try:
+            latest_date = datetime.strptime(latest_end, "%Y-%m-%d").date()
+        except Exception:
+            latest_date = None
 
-    # Strategy 2: latest annual
+        if latest_date and (today - latest_date).days <= FRESHNESS_DAYS:
+            picked = [quarterly[0]]
+            for q in quarterly[1:]:
+                if len(picked) >= 4:
+                    break
+                try:
+                    prev_start = datetime.strptime(picked[-1].get("start"), "%Y-%m-%d").date()
+                    this_end = datetime.strptime(q.get("end"), "%Y-%m-%d").date()
+                    if this_end <= prev_start:
+                        picked.append(q)
+                except Exception:
+                    continue
+            if len(picked) == 4:
+                ltm = sum(f.get("val", 0) for f in picked)
+                form = picked[0].get("form", "10-Q")
+                return ltm, latest_end, form
+
+    # Strategy 2: latest annual, within annual freshness window (for 20-F filers)
     if annual:
         annual.sort(key=lambda x: x.get("end", ""), reverse=True)
         f = annual[0]
-        return f.get("val"), f.get("end"), f.get("form", "10-K"), tag
+        try:
+            latest_date = datetime.strptime(f.get("end", ""), "%Y-%m-%d").date()
+        except Exception:
+            return None, None, None
+        if (today - latest_date).days <= ANNUAL_FRESHNESS_DAYS:
+            return f.get("val"), f.get("end"), f.get("form", "10-K")
 
-    return None, None, None, tag
+    return None, None, None
 
 
-def _ltm_revenue_yoy(facts, tag_chain):
-    """Return YoY percent change in LTM revenue, comparing to 4 quarters earlier."""
-    units, _ = _get_concept(facts, tag_chain)
-    if not units:
-        return None
-
+def _ltm_sum(facts, tag_chain, is_quarterly_filer=True):
+    """
+    Iterate fallback chain; return first tag that produces a usable LTM.
+    Returns (ltm_value, latest_period_end, form_type, tag_used).
+    """
     today = datetime.now().date()
     cutoff = today - timedelta(days=3 * 365)
+    for units, tag in _iter_concept_candidates(facts, tag_chain):
+        ltm, end, form = _ltm_sum_for_units(units, today, cutoff)
+        if ltm is not None:
+            return ltm, end, form, tag
+    return None, None, None, None
 
-    def filing_date(f):
-        try:
-            return datetime.strptime(f.get("filed", ""), "%Y-%m-%d").date()
-        except Exception:
-            return None
 
-    # Collect quarterly facts within recency window
+def _yoy_for_units(units, today, cutoff):
+    """Compute YoY % change in LTM revenue from one tag's USD units. None if not feasible."""
     quarterly_raw = []
     for f in units:
-        start = f.get("start"); end = f.get("end")
+        start, end = f.get("start"), f.get("end")
         if not start or not end:
             continue
         try:
@@ -364,31 +380,27 @@ def _ltm_revenue_yoy(facts, tag_chain):
             days = (ed - sd).days
         except Exception:
             continue
-        if 80 <= days <= 100:
-            fd = filing_date(f)
-            if fd and fd < cutoff:
-                continue
-            if ed < cutoff:
-                continue
-            quarterly_raw.append(f)
-
-    # Dedupe by end date, keep most recently filed
-    by_end = {}
-    for f in quarterly_raw:
-        end = f.get("end")
-        existing = by_end.get(end)
-        if existing is None:
-            by_end[end] = f
+        if not (80 <= days <= 100):
             continue
-        existing_filed = filing_date(existing)
-        new_filed = filing_date(f)
-        if new_filed and (not existing_filed or new_filed > existing_filed):
-            by_end[end] = f
-    quarterly = list(by_end.values())
+        fd = _filing_date(f)
+        if fd and fd < cutoff:
+            continue
+        if ed < cutoff:
+            continue
+        quarterly_raw.append(f)
 
+    quarterly = _dedupe_by_end(quarterly_raw)
     if len(quarterly) < 8:
         return None
     quarterly.sort(key=lambda x: x.get("end", ""), reverse=True)
+
+    # Latest fact must be reasonably current
+    try:
+        latest_end = datetime.strptime(quarterly[0].get("end", ""), "%Y-%m-%d").date()
+    except Exception:
+        return None
+    if (today - latest_end).days > FRESHNESS_DAYS:
+        return None
 
     def non_overlapping_4(start_idx):
         picked = [quarterly[start_idx]]
@@ -399,7 +411,7 @@ def _ltm_revenue_yoy(facts, tag_chain):
                 this_end = datetime.strptime(quarterly[i].get("end"), "%Y-%m-%d").date()
                 if this_end <= prev_start:
                     picked.append(quarterly[i])
-            except:
+            except Exception:
                 pass
             i += 1
         return picked if len(picked) == 4 else None
@@ -407,11 +419,10 @@ def _ltm_revenue_yoy(facts, tag_chain):
     current = non_overlapping_4(0)
     if not current:
         return None
-    # Find the index where the previous 4-quarter block starts
     last_start = current[-1].get("start")
     try:
         last_start_date = datetime.strptime(last_start, "%Y-%m-%d").date()
-    except:
+    except Exception:
         return None
     prev_idx = None
     for i, q in enumerate(quarterly):
@@ -420,7 +431,7 @@ def _ltm_revenue_yoy(facts, tag_chain):
             if qe <= last_start_date:
                 prev_idx = i
                 break
-        except:
+        except Exception:
             continue
     if prev_idx is None:
         return None
@@ -434,28 +445,45 @@ def _ltm_revenue_yoy(facts, tag_chain):
     return (curr_sum - prev_sum) / prev_sum * 100
 
 
-def _extract_quarterly_history(facts, tag_chain, max_quarters=12):
+def _ltm_revenue_yoy(facts, tag_chain):
+    """Iterate fallback chain; return first tag that produces a usable YoY figure."""
+    today = datetime.now().date()
+    cutoff = today - timedelta(days=3 * 365)
+    for units, _tag in _iter_concept_candidates(facts, tag_chain):
+        yoy = _yoy_for_units(units, today, cutoff)
+        if yoy is not None:
+            return yoy
+    return None
+
+
+# ---------------------------------------------------------------------------
+# History extraction (uses the resolved tag, not the chain)
+# ---------------------------------------------------------------------------
+
+def _history_units_for_tag(facts, tag, taxonomy="us-gaap"):
+    """Return the USD units list for a specific tag, or None."""
+    if not tag:
+        return None
+    node = facts.get("facts", {}).get(taxonomy, {}).get(tag)
+    if not node:
+        return None
+    units = node.get("units", {})
+    return units.get("USD")
+
+
+def _extract_quarterly_history_for_tag(facts, tag, max_quarters=12):
     """
-    Return list of quarterly facts (~90 days) sorted newest first, capped to max_quarters.
-    Filtered to facts within last 3 years, deduped by period-end keeping most recently filed.
-    Each entry: {"period_end": "YYYY-MM-DD", "value": float, "form": "10-Q" or "10-K"}.
+    Return list of quarterly facts (~90 days) for the *resolved* tag, newest first.
+    Keeps history consistent with the LTM metric (no cross-tag inconsistency).
     """
-    units, _ = _get_concept(facts, tag_chain)
+    units = _history_units_for_tag(facts, tag)
     if not units:
         return []
     today = datetime.now().date()
     cutoff = today - timedelta(days=3 * 365)
-
-    def filing_date(f):
-        try:
-            return datetime.strptime(f.get("filed", ""), "%Y-%m-%d").date()
-        except Exception:
-            return None
-
-    # Collect raw quarterly facts within recency window
     raw = []
     for f in units:
-        start = f.get("start"); end = f.get("end")
+        start, end = f.get("start"), f.get("end")
         if not start or not end:
             continue
         try:
@@ -466,52 +494,28 @@ def _extract_quarterly_history(facts, tag_chain, max_quarters=12):
             continue
         if not (80 <= days <= 100):
             continue
-        fd = filing_date(f)
+        fd = _filing_date(f)
         if fd and fd < cutoff:
             continue
         if ed < cutoff:
             continue
         raw.append(f)
-
-    # Dedupe by end date keeping most recently filed
-    by_end = {}
-    for f in raw:
-        end = f.get("end")
-        existing = by_end.get(end)
-        if existing is None:
-            by_end[end] = f
-            continue
-        existing_filed = filing_date(existing)
-        new_filed = filing_date(f)
-        if new_filed and (not existing_filed or new_filed > existing_filed):
-            by_end[end] = f
-
-    deduped = [
+    deduped = _dedupe_by_end(raw)
+    out = [
         {"period_end": f.get("end"), "value": f.get("val"), "form": f.get("form", "10-Q")}
-        for f in by_end.values()
+        for f in deduped
     ]
-    deduped.sort(key=lambda x: x["period_end"], reverse=True)
-    return deduped[:max_quarters]
+    out.sort(key=lambda x: x["period_end"], reverse=True)
+    return out[:max_quarters]
 
 
-def _extract_balance_history(facts, tag_chain, max_periods=12):
-    """
-    Return list of balance-sheet (instant) facts sorted newest first.
-    Filtered to facts within last 3 years, deduped by period-end keeping most recently filed.
-    Each entry: {"period_end": "YYYY-MM-DD", "value": float, "form": ...}.
-    """
-    units, _ = _get_concept(facts, tag_chain)
+def _extract_balance_history_for_tag(facts, tag, max_periods=12):
+    """Return balance-sheet (instant) history for the *resolved* tag, newest first."""
+    units = _history_units_for_tag(facts, tag)
     if not units:
         return []
     today = datetime.now().date()
     cutoff = today - timedelta(days=3 * 365)
-
-    def filing_date(f):
-        try:
-            return datetime.strptime(f.get("filed", ""), "%Y-%m-%d").date()
-        except Exception:
-            return None
-
     raw = []
     for f in units:
         end = f.get("end")
@@ -523,31 +527,40 @@ def _extract_balance_history(facts, tag_chain, max_periods=12):
             continue
         if ed < cutoff:
             continue
-        fd = filing_date(f)
+        fd = _filing_date(f)
         if fd and fd < cutoff:
             continue
         raw.append(f)
-
-    by_end = {}
-    for f in raw:
-        end = f.get("end")
-        existing = by_end.get(end)
-        if existing is None:
-            by_end[end] = f
-            continue
-        existing_filed = filing_date(existing)
-        new_filed = filing_date(f)
-        if new_filed and (not existing_filed or new_filed > existing_filed):
-            by_end[end] = f
-
-    deduped = [
+    deduped = _dedupe_by_end(raw)
+    out = [
         {"period_end": f.get("end"), "value": f.get("val"), "form": f.get("form", "10-Q")}
-        for f in by_end.values()
+        for f in deduped
     ]
-    deduped.sort(key=lambda x: x["period_end"], reverse=True)
-    return deduped[:max_periods]
+    out.sort(key=lambda x: x["period_end"], reverse=True)
+    return out[:max_periods]
 
 
+# Legacy chain-based helpers kept for any external callers; route through the
+# tag-resolved versions by picking the first tag that yields data.
+def _extract_quarterly_history(facts, tag_chain, max_quarters=12):
+    for _units, tag in _iter_concept_candidates(facts, tag_chain):
+        hist = _extract_quarterly_history_for_tag(facts, tag, max_quarters)
+        if hist:
+            return hist
+    return []
+
+
+def _extract_balance_history(facts, tag_chain, max_periods=12):
+    for _units, tag in _iter_concept_candidates(facts, tag_chain):
+        hist = _extract_balance_history_for_tag(facts, tag, max_periods)
+        if hist:
+            return hist
+    return []
+
+
+# ---------------------------------------------------------------------------
+# Metric extraction (per company)
+# ---------------------------------------------------------------------------
 
 def _extract_metrics(facts, filer_type):
     """
@@ -570,7 +583,7 @@ def _extract_metrics(facts, filer_type):
 
     rev_yoy = _ltm_revenue_yoy(facts, TAG_CHAINS["revenue"])
 
-    # Construct derived metrics (all values converted to $Bn, rounded 1dp)
+    # Derived metrics (values converted to $Bn, rounded 1dp where applicable)
     def to_bn(v):
         if v is None:
             return None
@@ -582,8 +595,7 @@ def _extract_metrics(facts, filer_type):
 
     fcf_ltm = None
     if ocf_ltm is not None and capex_ltm is not None:
-        # capex in SEC is typically reported as a positive outflow, but some companies sign it negative
-        # FCF = OCF - |capex|
+        # capex reported as positive outflow in SEC XBRL; subtract absolute value
         fcf_ltm = ocf_ltm - abs(capex_ltm)
 
     total_debt = None
@@ -606,26 +618,24 @@ def _extract_metrics(facts, filer_type):
     if opi_ltm is not None and rev_ltm and rev_ltm > 0:
         op_margin = round(opi_ltm / rev_ltm * 100, 1)
 
-    # Interest expense LTM + coverage ratio
     intex_ltm, _, _, intex_tag = _ltm_sum(facts, TAG_CHAINS["interest_expense"], is_q)
     interest_coverage = None
     if ebitda_ltm and intex_ltm and intex_ltm > 0:
         interest_coverage = round(ebitda_ltm / intex_ltm, 1)
 
-    # Quarterly history (last 12 quarters) for flow items
+    # Quarterly history uses the resolved tag for each metric (no cross-tag drift)
     history = {
-        "revenue": _extract_quarterly_history(facts, TAG_CHAINS["revenue"]),
-        "op_income": _extract_quarterly_history(facts, TAG_CHAINS["op_income"]),
-        "da": _extract_quarterly_history(facts, TAG_CHAINS["da"]),
-        "ocf": _extract_quarterly_history(facts, TAG_CHAINS["ocf"]),
-        "capex": _extract_quarterly_history(facts, TAG_CHAINS["capex"]),
-        "interest_expense": _extract_quarterly_history(facts, TAG_CHAINS["interest_expense"]),
+        "revenue": _extract_quarterly_history_for_tag(facts, rev_tag),
+        "op_income": _extract_quarterly_history_for_tag(facts, opi_tag),
+        "da": _extract_quarterly_history_for_tag(facts, da_tag),
+        "ocf": _extract_quarterly_history_for_tag(facts, ocf_tag),
+        "capex": _extract_quarterly_history_for_tag(facts, capex_tag),
+        "interest_expense": _extract_quarterly_history_for_tag(facts, intex_tag),
     }
-    # Balance-sheet history (period-end snapshots) for stock items
     balance_history = {
-        "cash": _extract_balance_history(facts, TAG_CHAINS["cash"]),
-        "lt_debt": _extract_balance_history(facts, TAG_CHAINS["lt_debt"]),
-        "st_debt": _extract_balance_history(facts, TAG_CHAINS["st_debt"]),
+        "cash": _extract_balance_history_for_tag(facts, cash_tag),
+        "lt_debt": _extract_balance_history_for_tag(facts, lt_tag),
+        "st_debt": _extract_balance_history_for_tag(facts, st_tag),
     }
 
     return {
@@ -655,6 +665,10 @@ def _extract_metrics(facts, filer_type):
     }
 
 
+# ---------------------------------------------------------------------------
+# Validation
+# ---------------------------------------------------------------------------
+
 def _validate(metrics, company):
     """Run sanity-check rules. Return list of warnings."""
     warnings = []
@@ -665,7 +679,7 @@ def _validate(metrics, company):
     nd_ebitda = metrics.get("nd_ebitda")
     rev_yoy = metrics.get("revenue_yoy_pct")
     ebitda_margin = metrics.get("ebitda_margin")
-    op_margin = metrics.get("op_margin")
+    period_end = metrics.get("_period_end")
 
     if rev is None:
         warnings.append("Revenue LTM not found in SEC tags")
@@ -685,8 +699,24 @@ def _validate(metrics, company):
         warnings.append(f"Cash is negative ({cash}) — likely parsing error")
     if total_debt is not None and total_debt < 0:
         warnings.append(f"Total debt is negative ({total_debt}) — likely parsing error")
+
+    # Stale-period guard: if period_end is more than 6 months old, flag it.
+    # Catches Comcast-style cases where data passes structural checks but is from years ago.
+    if period_end:
+        try:
+            pe = datetime.strptime(period_end, "%Y-%m-%d").date()
+            age = (datetime.now().date() - pe).days
+            if age > FRESHNESS_DAYS:
+                warnings.append(f"Period end {period_end} is {age} days old (stale)")
+        except Exception:
+            pass
+
     return warnings
 
+
+# ---------------------------------------------------------------------------
+# Cache management
+# ---------------------------------------------------------------------------
 
 def _load_cache(cache_path):
     if not os.path.exists(cache_path):
@@ -720,7 +750,6 @@ def _cache_is_fresh(cache):
             return False
     except Exception:
         return False
-    # Sanity check: cache must have at least some companies with real data
     real_entries = [v for k, v in cache.items()
                     if not k.startswith("_") and isinstance(v, dict)
                     and v.get("revenue_ltm") is not None]
@@ -729,15 +758,18 @@ def _cache_is_fresh(cache):
         return False
     success_rate = len(real_entries) / total_entries
     if success_rate < 0.5:
-        print(f"SEC EDGAR: cache exists but success rate is {success_rate:.0%} ({len(real_entries)}/{total_entries}) — treating as stale.")
+        print(f"SEC EDGAR: cache exists but success rate is {success_rate:.0%} "
+              f"({len(real_entries)}/{total_entries}) — treating as stale.")
         return False
     return True
 
 
+# ---------------------------------------------------------------------------
+# Main entry point
+# ---------------------------------------------------------------------------
+
 def fetch_financials(watchlist, cache_path="financials_cache.json", force_refresh=False):
     """
-    Main entry point.
-
     Args:
       watchlist: dict {company_name: {"ticker": ..., "filer_type": ..., "sector": ...}}
       cache_path: where to read/write the cache JSON
@@ -760,7 +792,6 @@ def fetch_financials(watchlist, cache_path="financials_cache.json", force_refres
     if cache and _cache_is_fresh(cache) and not force_refresh:
         print(f"SEC EDGAR: cache is fresh ({cache.get('_last_full_refresh')}); using cached data.")
         metadata["from_cache"] = True
-        # Strip metadata keys from cache when returning
         out = {k: v for k, v in cache.items() if not k.startswith("_")}
         warnings = []
         for co, m in out.items():
@@ -771,7 +802,6 @@ def fetch_financials(watchlist, cache_path="financials_cache.json", force_refres
         metadata["total_warnings"] = len(warnings)
         return out, warnings, metadata
 
-    # Full refresh
     print("SEC EDGAR: cache stale or force refresh — pulling fresh data...")
     try:
         ticker_cik = _build_ticker_to_cik_map()
@@ -832,7 +862,6 @@ def fetch_financials(watchlist, cache_path="financials_cache.json", force_refres
             results[co] = {"_warnings": [f"Fetch error: {str(e)[:120]}"]}
             warnings_all.append(f"{co}: Fetch error: {str(e)[:80]}")
 
-    # Save to cache
     cache_payload = dict(results)
     cache_payload["_last_full_refresh"] = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     cache_payload["_full_refresh_at"] = datetime.now(timezone.utc).isoformat()
@@ -844,6 +873,10 @@ def fetch_financials(watchlist, cache_path="financials_cache.json", force_refres
     metadata["total_warnings"] = len(warnings_all)
     return results, warnings_all, metadata
 
+
+# ---------------------------------------------------------------------------
+# Row override helper (unchanged interface)
+# ---------------------------------------------------------------------------
 
 def apply_sec_overrides(rows, sec_data):
     """
@@ -873,7 +906,6 @@ def apply_sec_overrides(rows, sec_data):
         for src, dest in fields_map.items():
             val = m.get(src)
             if val is not None:
-                # Format consistently: 1dp string for nums
                 r[dest] = f"{val:.1f}" if isinstance(val, (int, float)) else str(val)
                 applied_any = True
         if applied_any:
