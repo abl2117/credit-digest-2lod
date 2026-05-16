@@ -549,6 +549,7 @@ def _extract_balance_history(facts, tag_chain, max_periods=12):
 
 
 
+def _extract_metrics(facts, filer_type):
     """
     Given the raw companyfacts JSON, extract all metrics we need.
     Returns dict of values + provenance metadata.
