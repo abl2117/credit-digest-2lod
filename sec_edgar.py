@@ -38,8 +38,9 @@ import urllib.request
 import urllib.error
 from datetime import datetime, timedelta, timezone
 
-# SEC requires identifying User-Agent. Edit the email in generate.py before running.
-SEC_USER_AGENT = "Credit Digest 2LOD credit-digest@github.com"
+# SEC requires identifying User-Agent: "Sample Company Name AdminContact@samplecompany.com"
+# Format must include human-readable name + contact email separated by a space
+SEC_USER_AGENT = "Credit Digest Personal Research contact@example.com"
 
 # Cache freshness: refresh full dataset if cache is older than this
 CACHE_TTL_DAYS = 6
@@ -89,30 +90,50 @@ TAG_CHAINS = {
 
 def _http_get(url, retries=3, sleep=0.5):
     """SEC requires User-Agent; rate limit is generous but we throttle anyway."""
-    req = urllib.request.Request(url, headers={"User-Agent": SEC_USER_AGENT, "Accept": "application/json"})
+    req = urllib.request.Request(url, headers={
+        "User-Agent": SEC_USER_AGENT,
+        "Accept": "application/json",
+        "Accept-Encoding": "gzip, deflate",
+        "Host": url.split("/")[2] if "://" in url else "www.sec.gov",
+    })
     last_err = None
     for attempt in range(retries):
         try:
             with urllib.request.urlopen(req, timeout=30) as r:
-                return json.loads(r.read())
+                content = r.read()
+                # Handle gzip if needed
+                if r.headers.get('Content-Encoding') == 'gzip':
+                    import gzip
+                    content = gzip.decompress(content)
+                return json.loads(content)
         except urllib.error.HTTPError as e:
-            last_err = f"HTTP {e.code}"
+            last_err = f"HTTP {e.code} {e.reason}"
+            try:
+                body = e.read().decode('utf-8', errors='replace')[:200]
+                last_err += f" body={body}"
+            except:
+                pass
             if e.code == 404:
                 return None  # company has no facts; surface as missing
             if e.code in (429, 503):
                 time.sleep(sleep * (2 ** attempt))
                 continue
+            # Other HTTP errors - log and bail
+            print(f"  SEC HTTP error on {url}: {last_err}")
             return None
         except Exception as e:
-            last_err = str(e)[:120]
+            last_err = f"{type(e).__name__}: {str(e)[:120]}"
+            print(f"  SEC fetch error on {url}: {last_err}")
             time.sleep(sleep)
     raise RuntimeError(f"SEC fetch failed after {retries} attempts: {last_err}")
 
 
 def _build_ticker_to_cik_map():
     """Returns dict: TICKER (upper) -> CIK (zero-padded 10-digit string)."""
+    print(f"SEC EDGAR: fetching company_tickers.json with User-Agent='{SEC_USER_AGENT}'")
     data = _http_get("https://www.sec.gov/files/company_tickers.json")
     if not data:
+        print("SEC EDGAR: company_tickers.json returned None (see error above)")
         return {}
     out = {}
     for _, entry in data.items():
