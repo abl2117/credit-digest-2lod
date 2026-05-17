@@ -119,6 +119,14 @@ TAG_CHAINS = {
         "InterestExpenseDebt",
         "InterestAndDebtExpense",
     ],
+    # Revenue Remaining Performance Obligation (RPO) - the contracted-but-not-yet-recognized
+    # revenue disclosure required under ASC 606. Used as a forward demand signal for
+    # hyperscalers and SaaS names. Most large software issuers tag this consistently.
+    "revenue_backlog": [
+        "RevenueRemainingPerformanceObligation",
+        "RemainingPerformanceObligation",
+        "ContractWithCustomerLiability",
+    ],
 }
 
 
@@ -597,6 +605,10 @@ def _extract_metrics(facts, filer_type):
     if ebitda_ltm and intex_ltm and intex_ltm > 0:
         interest_coverage = round(ebitda_ltm / intex_ltm, 1)
 
+    # Revenue Remaining Performance Obligation (RPO). Instant fact at period end.
+    # Companies that don't tag this (most hardware/industrial names) return None.
+    rpo, rpo_end, rpo_tag = _latest_balance_sheet(facts, TAG_CHAINS["revenue_backlog"])
+
     history = {
         "revenue": _extract_quarterly_history_for_tag(facts, rev_tag),
         "op_income": _extract_quarterly_history_for_tag(facts, opi_tag),
@@ -609,6 +621,7 @@ def _extract_metrics(facts, filer_type):
         "cash": _extract_balance_history_for_tag(facts, cash_tag),
         "lt_debt": _extract_balance_history_for_tag(facts, lt_tag),
         "st_debt": _extract_balance_history_for_tag(facts, st_tag),
+        "revenue_backlog": _extract_balance_history_for_tag(facts, rpo_tag),
     }
 
     return {
@@ -626,12 +639,14 @@ def _extract_metrics(facts, filer_type):
         "revenue_yoy_pct": round(rev_yoy, 1) if rev_yoy is not None else None,
         "interest_expense_ltm": to_bn(intex_ltm),
         "interest_coverage": interest_coverage,
+        "revenue_backlog": to_bn(rpo),
         "_period_end": rev_end or opi_end or cash_end,
         "_filing_form": rev_form or opi_form,
         "_tags_used": {
             "revenue": rev_tag, "op_income": opi_tag, "da": da_tag,
             "ocf": ocf_tag, "capex": capex_tag, "cash": cash_tag,
             "lt_debt": lt_tag, "st_debt": st_tag, "interest_expense": intex_tag,
+            "revenue_backlog": rpo_tag,
         },
         "_history": history,
         "_balance_history": balance_history,
