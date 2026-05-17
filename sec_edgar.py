@@ -74,9 +74,15 @@ TAG_CHAINS = {
         "NetCashProvidedByUsedInOperatingActivities",
         "NetCashProvidedByUsedInOperatingActivitiesContinuingOperations",
     ],
+    # CapEx: expanded to cover Amazon (which uses PaymentsToAcquireProductiveAssets
+    # in some periods) and other variants used across tech and capital-intensive issuers.
     "capex": [
         "PaymentsToAcquirePropertyPlantAndEquipment",
+        "PaymentsToAcquireProductiveAssets",
         "PaymentsForCapitalImprovements",
+        "PurchaseOfPropertyAndEquipment",
+        "PaymentsToAcquireMachineryAndEquipment",
+        "PaymentsToAcquireBuildings",
     ],
     "cash": [
         "CashAndCashEquivalentsAtCarryingValue",
