@@ -74,10 +74,13 @@ TAG_CHAINS = {
         "NetCashProvidedByUsedInOperatingActivities",
         "NetCashProvidedByUsedInOperatingActivitiesContinuingOperations",
     ],
-    # CapEx: expanded to cover Amazon (which uses PaymentsToAcquireProductiveAssets
-    # in some periods) and other variants used across tech and capital-intensive issuers.
+    # CapEx: expanded to cover Amazon (which uses PaymentsToAcquirePropertyPlantAndEquipmentExcludingCapitalLeases
+    # in recent quarters reflecting their split between purchases and leases),
+    # plus other variants used across tech and capital-intensive issuers.
     "capex": [
         "PaymentsToAcquirePropertyPlantAndEquipment",
+        "PaymentsToAcquirePropertyPlantAndEquipmentExcludingCapitalLeases",
+        "PaymentsForAcquisitionOfPropertyEquipmentAndInternalUseSoftware",
         "PaymentsToAcquireProductiveAssets",
         "PaymentsForCapitalImprovements",
         "PurchaseOfPropertyAndEquipment",
@@ -127,11 +130,19 @@ TAG_CHAINS = {
     ],
     # Revenue Remaining Performance Obligation (RPO) - the contracted-but-not-yet-recognized
     # revenue disclosure required under ASC 606. Used as a forward demand signal for
-    # hyperscalers and SaaS names. Most large software issuers tag this consistently.
+    # hyperscalers and SaaS names. Companies tag this with significant variation; expanded
+    # chain covers Microsoft (RevenueRemainingPerformanceObligation), Alphabet
+    # (RemainingPerformanceObligation), Oracle (uses both formats), and Amazon (when
+    # they disclose AWS backlog separately under a different tag).
     "revenue_backlog": [
         "RevenueRemainingPerformanceObligation",
         "RemainingPerformanceObligation",
+        "RevenueRemainingPerformanceObligationAmount",
+        "RemainingPerformanceObligationAmount",
         "ContractWithCustomerLiability",
+        "ContractWithCustomerLiabilityCurrent",
+        "DeferredRevenue",
+        "ContractWithCustomerLiabilityRevenueRecognized",
     ],
 }
 
