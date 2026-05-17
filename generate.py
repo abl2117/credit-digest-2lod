@@ -1441,12 +1441,13 @@ def _build_hyperscaler_chart_html(sec_data, chart_id="hyperCapexChart"):
     if not history or not contributors:
         return ""
 
-    # Color map matching the dashboard's accent palette
+    # Color map: professional credit-research palette with distinct hues per name.
+    # MSFT navy, GOOGL green, AMZN orange, ORCL purple.
     color_map = {
-        "Microsoft": "#a0c4e8",
-        "Alphabet": "#7ba7d3",
-        "Amazon": "#5a8db8",
-        "Oracle": "#3d6e9a",
+        "Microsoft": "#2C5282",   # deep navy - MSFT
+        "Alphabet": "#38A169",    # forest green - GOOGL
+        "Amazon": "#DD6B20",      # burnt orange - AMZN
+        "Oracle": "#805AD5",      # purple - ORCL
     }
     short_label = {"Microsoft": "MSFT", "Alphabet": "GOOGL", "Amazon": "AMZN", "Oracle": "ORCL"}
 
@@ -1607,10 +1608,10 @@ def _build_rpo_chart_html(sec_data, chart_id="rpoChart"):
         return ""
 
     color_map = {
-        "Microsoft": "#a0c4e8",
-        "Alphabet": "#7ba7d3",
-        "Amazon": "#5a8db8",
-        "Oracle": "#3d6e9a",
+        "Microsoft": "#2C5282",   # deep navy - MSFT
+        "Alphabet": "#38A169",    # forest green - GOOGL
+        "Amazon": "#DD6B20",      # burnt orange - AMZN
+        "Oracle": "#805AD5",      # purple - ORCL
     }
     short_label = {"Microsoft": "MSFT", "Alphabet": "GOOGL", "Amazon": "AMZN", "Oracle": "ORCL"}
 
