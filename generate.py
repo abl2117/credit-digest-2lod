@@ -1508,6 +1508,175 @@ def _build_hyperscaler_chart_html(sec_data, chart_id="hyperCapexChart"):
 
 
 # ----------------------------------------------------------------------
+# Hyperscaler Revenue Backlog (RPO) chart - forward demand signal
+# Source: SEC EDGAR XBRL RevenueRemainingPerformanceObligation tag
+# Names included: only those in watchlist with material RPO disclosure.
+# ----------------------------------------------------------------------
+def _hyperscaler_rpo_history(sec_data):
+    """
+    Build quarterly RPO history for hyperscalers in the watchlist.
+    Returns list of dicts: [{period_label, Microsoft, Alphabet, Amazon, Oracle, total}, ...]
+    Oldest first, last is the latest reported quarter.
+    Names without RPO data are simply absent from contributors_present.
+    """
+    hyperscalers = ["Microsoft", "Alphabet", "Amazon", "Oracle"]
+    if not sec_data:
+        return [], []
+
+    # Find the set of distinct period_end dates across the 4 names. Take the
+    # most recent 8 quarters that appear across at least one name.
+    all_periods = set()
+    rpo_by_company = {}
+    for co in hyperscalers:
+        sec = (sec_data or {}).get(co, {})
+        if not sec:
+            continue
+        rpo_hist = (sec.get("_balance_history", {}) or {}).get("revenue_backlog", []) or []
+        if not rpo_hist:
+            continue
+        # rpo_hist is newest first; build period->value map
+        company_map = {}
+        for entry in rpo_hist:
+            pd = entry.get("period_end")
+            val = entry.get("value")
+            if pd and val is not None:
+                company_map[pd] = val
+                all_periods.add(pd)
+        if company_map:
+            rpo_by_company[co] = company_map
+
+    if not rpo_by_company:
+        return [], []
+
+    # Keep the most recent 8 quarters across all names
+    sorted_periods = sorted(all_periods, reverse=True)[:8]
+    sorted_periods.reverse()  # oldest first for chart
+
+    rows = []
+    contributors_present = []
+    for period in sorted_periods:
+        # Convert YYYY-MM-DD to e.g. "Q1 26" for readability
+        try:
+            dt = datetime.strptime(period, "%Y-%m-%d").date()
+            q = (dt.month - 1) // 3 + 1
+            label = f"Q{q} '{str(dt.year)[2:]}"
+        except (ValueError, TypeError):
+            label = period
+        row = {"period_label": label, "period_end": period}
+        period_total = 0.0
+        period_has_data = False
+        for co in hyperscalers:
+            company_map = rpo_by_company.get(co, {})
+            val = company_map.get(period)
+            if val is not None:
+                val_bn = val / 1e9
+                row[co] = round(val_bn, 1)
+                period_total += val_bn
+                period_has_data = True
+                if co not in contributors_present:
+                    contributors_present.append(co)
+            else:
+                row[co] = None
+        row["total"] = round(period_total, 1) if period_has_data else None
+        if period_has_data:
+            rows.append(row)
+
+    return rows, contributors_present
+
+
+def _build_rpo_chart_html(sec_data, chart_id="rpoChart"):
+    """Build the Hyperscaler RPO stacked bar chart section. Only renders when
+    at least one hyperscaler has data."""
+    history, contributors = _hyperscaler_rpo_history(sec_data)
+    if not history or not contributors:
+        return ""
+
+    color_map = {
+        "Microsoft": "#a0c4e8",
+        "Alphabet": "#7ba7d3",
+        "Amazon": "#5a8db8",
+        "Oracle": "#3d6e9a",
+    }
+    short_label = {"Microsoft": "MSFT", "Alphabet": "GOOGL", "Amazon": "AMZN", "Oracle": "ORCL"}
+
+    labels_json = json.dumps([r["period_label"] for r in history])
+    datasets = []
+    for co in contributors:
+        data_list = [r.get(co) if r.get(co) is not None else None for r in history]
+        datasets.append({
+            "label": short_label.get(co, co),
+            "data": data_list,
+            "backgroundColor": color_map.get(co, "#7090a8"),
+            "borderColor": color_map.get(co, "#7090a8"),
+            "borderWidth": 0,
+            "stack": "rpo",
+        })
+    datasets_json = json.dumps(datasets)
+
+    # Latest period total + YoY (5 quarters back) callout
+    latest = history[-1] if history else None
+    prior_year = history[-5] if len(history) >= 5 else None
+    callout_total = latest.get("total") if latest else 0
+    callout_yoy_html = ""
+    if latest and prior_year and prior_year.get("total") and prior_year["total"] > 0:
+        yoy = (latest["total"] - prior_year["total"]) / prior_year["total"] * 100
+        sign = "+" if yoy >= 0 else ""
+        cls = "stock-up" if yoy >= 0 else "stock-down"
+        callout_yoy_html = f'<span class="{cls}">{sign}{yoy:.0f}% YoY</span>'
+
+    # Build contributors list for subtitle (so users see which names are included)
+    contributors_str = ", ".join(short_label.get(c, c) for c in contributors)
+    excluded = [c for c in ("Microsoft", "Alphabet", "Amazon", "Oracle") if c not in contributors]
+    excluded_note = ""
+    if excluded:
+        excluded_labels = ", ".join(short_label.get(c, c) for c in excluded)
+        excluded_note = f' (not disclosed: {excluded_labels})'
+
+    return f"""
+    <div class="hyper-chart-section">
+      <div class="hyper-chart-header">
+        <div>
+          <h3 class="tmt-section-title">Hyperscaler Revenue Backlog (RPO, Stacked)</h3>
+          <div class="tmt-section-subtitle">Remaining Performance Obligation, last 8 quarters. Forward demand signal: contracted-but-not-yet-recognized cloud revenue. Includes {contributors_str}{excluded_note}.</div>
+        </div>
+        <div class="hyper-chart-callout">
+          <div class="hyper-chart-callout-label">Latest quarter total</div>
+          <div class="hyper-chart-callout-value">${callout_total:,.0f}Bn</div>
+          {callout_yoy_html}
+        </div>
+      </div>
+      <div class="hyper-chart-wrap">
+        <canvas id="{chart_id}"></canvas>
+      </div>
+    </div>
+    <script>
+      (function(){{
+        if (typeof Chart === 'undefined') {{ return; }}
+        var labels = {labels_json};
+        var datasets = {datasets_json};
+        var ctx = document.getElementById('{chart_id}');
+        if (!ctx) return;
+        new Chart(ctx, {{
+          type: 'bar',
+          data: {{ labels: labels, datasets: datasets }},
+          options: {{
+            responsive: true, maintainAspectRatio: false,
+            plugins: {{
+              legend: {{ position: 'top', labels: {{ color: '#a0b4c8', font: {{ size: 11 }} }} }},
+              tooltip: {{ callbacks: {{ label: function(ctx) {{ return ctx.dataset.label + ': $' + (ctx.parsed.y||0).toFixed(1) + 'Bn'; }} }} }}
+            }},
+            scales: {{
+              x: {{ stacked: true, ticks: {{ color: '#7090a8' }}, grid: {{ color: '#1e2a3a' }} }},
+              y: {{ stacked: true, ticks: {{ color: '#7090a8', callback: function(v) {{ return '$' + v + 'B'; }} }}, grid: {{ color: '#1e2a3a' }} }}
+            }}
+          }}
+        }});
+      }})();
+    </script>
+    """
+
+
+# ----------------------------------------------------------------------
 # US Data Center Construction chart (Census Bureau via census_construction module)
 # ----------------------------------------------------------------------
 def _build_data_center_construction_html(census_data, chart_id_lvl="dcConstructionLevel", chart_id_mom="dcConstructionMom"):
@@ -1680,6 +1849,7 @@ def build_tmt_tab(all_rows, sec_data, census_data):
     """Build the full TMT tab content with all sections."""
     dc_chart_html = _build_data_center_construction_html(census_data)
     hyper_chart_html = _build_hyperscaler_chart_html(sec_data)
+    rpo_chart_html = _build_rpo_chart_html(sec_data)
 
     sections_html = []
     for sub in TMT_SUBSECTIONS:
@@ -1704,8 +1874,8 @@ def build_tmt_tab(all_rows, sec_data, census_data):
         )
     return (
         f'<div class="tmt-tab-content">'
-        f'<div class="tmt-intro">TMT sector deep-dive. Data center construction is the macro demand signal; hyperscaler CapEx is the public-company subset driving it. Company tables follow.</div>'
-        f'{dc_chart_html}{hyper_chart_html}{"".join(sections_html)}</div>'
+        f'<div class="tmt-intro">TMT sector deep-dive. Data center construction is the macro demand signal; hyperscaler CapEx is the public-company supply commitment; revenue backlog is the contracted demand. Company tables follow.</div>'
+        f'{dc_chart_html}{hyper_chart_html}{rpo_chart_html}{"".join(sections_html)}</div>'
     )
 
 
@@ -2464,12 +2634,14 @@ footer li strong{color:#ffaaaa}
   <p>Summary row shows LTM metrics. Click any row with a &#9656; to expand historical detail showing the last 3 fiscal years plus LTM. Income Statement &amp; Cash Flow plus Capital Structure tables with YoY and trend columns. Historical years are reconstructed from quarterly XBRL data by summing 4 non-overlapping quarters ending at each fiscal year-end.</p>
 
   <h2>TMT Tab</h2>
-  <p>Sector deep-dive with three layers, top to bottom:</p>
+  <p>Sector deep-dive with four chart layers and five subsection tables, top to bottom:</p>
   <ul>
-    <li><strong>US Data Center Construction</strong>: monthly private construction put-in-place spending, sourced from US Census Bureau VIP via Our World in Data. Values inflation-adjusted to constant 2021 US$ using BLS PPI for new office building construction. Lagged ~6 weeks. Charts show monthly level and month-over-month change. KPI tiles show latest value, YoY %, 3-month average MoM, and 5-year growth.</li>
-    <li><strong>Hyperscaler CapEx (Stacked, Historical)</strong>: annual CapEx for Microsoft, Alphabet, Amazon, and Oracle going back 4 fiscal years plus LTM. Stacked bars sum to the latest period total shown in the callout box. The public-company subset driving data center construction demand.</li>
+    <li><strong>US Data Center Construction</strong>: monthly private construction put-in-place spending, sourced from US Census Bureau VIP via Our World in Data. Values inflation-adjusted to constant 2021 US$ using BLS PPI for new office building construction. Lagged ~6 weeks. Charts show monthly level and month-over-month change. KPI tiles show latest value, YoY %, 3-month average MoM, and 5-year growth. <em>Macro demand signal.</em></li>
+    <li><strong>Hyperscaler CapEx (Stacked, Historical)</strong>: annual CapEx for Microsoft, Alphabet, Amazon, and Oracle going back 4 fiscal years plus LTM. <em>Public-company supply commitment.</em></li>
+    <li><strong>Hyperscaler Revenue Backlog (RPO)</strong>: quarterly Remaining Performance Obligation for the same 4 hyperscalers, last 8 quarters. From SEC EDGAR XBRL <code>RevenueRemainingPerformanceObligation</code> tag. <em>Contracted demand: revenue under signed contracts but not yet recognized. Forward demand signal.</em> Names with no RPO disclosure are noted in the chart subtitle.</li>
     <li><strong>Five subsection tables</strong>: Hyperscalers, Data Center &amp; Tower REITs, Telecom, Hardware &amp; EMS, Software/Payments/Services. Filter pills (Red/Amber/Green) apply across all subsections.</li>
   </ul>
+  <p><strong>How the three charts work together</strong>: data center construction shows what's being physically built. Hyperscaler CapEx shows the public-company portion of that spend. RPO shows the contracted demand that buildout is serving. Rising construction and CapEx with rising RPO is a healthy expansion. Rising construction and CapEx with flat or falling RPO is the classic overbuild signal.</p>
 
   <h2>Red Flags Framework (15 Flags)</h2>
   <p>Universal 15-flag framework, 11 deterministically computed each run, 4 pending future data sources. The heat map renders all 15 columns with pending flags shown as N/A so the framework is honest about coverage.</p>
