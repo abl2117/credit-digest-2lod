@@ -137,6 +137,14 @@ WATCHLIST = {
     "Air Products":            {"ticker": "APD",   "filer_type": "10-K", "sector": "Industrials"},
     "Corteva":                 {"ticker": "CTVA",  "filer_type": "10-K", "sector": "Industrials"},
     "DuPont":                  {"ticker": "DD",    "filer_type": "10-K", "sector": "Industrials"},
+    "Apple":                   {"ticker": "AAPL",  "filer_type": "10-K", "sector": "Tech"},
+    "Nutanix":                 {"ticker": "NTNX",  "filer_type": "10-K", "sector": "Software"},
+    "Mastercard":              {"ticker": "MA",    "filer_type": "10-K", "sector": "Payments"},
+    "Visa":                    {"ticker": "V",     "filer_type": "10-K", "sector": "Payments"},
+    "Avnet":                   {"ticker": "AVT",   "filer_type": "10-K", "sector": "Distribution"},
+    "CDW":                     {"ticker": "CDW",   "filer_type": "10-K", "sector": "Distribution"},
+    "Amrize":                  {"ticker": "AMRZ",  "filer_type": "10-K", "sector": "Materials"},
+    "CEMEX":                   {"ticker": "CX",    "filer_type": "20-F", "sector": "Materials"},
 }
 
 TMT_SUBSECTIONS = [
@@ -147,9 +155,9 @@ TMT_SUBSECTIONS = [
     {"id": "telecom", "title": "Telecom", "subtitle": "US wireline and wireless carriers",
      "names": ["AT&T", "Verizon", "Comcast"]},
     {"id": "hardware_ems", "title": "Hardware & EMS", "subtitle": "Servers, networking, contract manufacturing, distribution",
-     "names": ["HPE", "Dell", "HP Inc", "IBM", "Jabil", "Flex Ltd", "Sanmina", "Nextracker", "Arrow Electronics", "TD Synnex", "Ingram Micro"]},
+     "names": ["HPE", "Dell", "HP Inc", "IBM", "Jabil", "Flex Ltd", "Sanmina", "Nextracker", "Arrow Electronics", "Avnet", "TD Synnex", "Ingram Micro", "CDW"]},
     {"id": "software_payments_services", "title": "Software, Payments & Services", "subtitle": "SaaS, payments, IT services, online travel",
-     "names": ["Salesforce", "Cognizant", "Kyndryl", "PayPal", "Corpay", "Booking Holdings"]},
+     "names": ["Salesforce", "Nutanix", "Cognizant", "Kyndryl", "PayPal", "Mastercard", "Visa", "Corpay", "Booking Holdings"]},
 ]
 
 TICKER_MAP = {co: info["ticker"] for co, info in WATCHLIST.items()}
@@ -410,17 +418,18 @@ def fetch_commodities_fx():
 
 PROMPT_A = f"""Today is {datetime_str}. You are generating structured data for a morning credit intelligence dashboard for publicly listed US and global corporates.
 
-Watchlist - BATCH A (38 names):
+Watchlist - BATCH A (44 names):
 Telecom: AT&T, Verizon, Comcast
 Media: Disney, Warner Bros. Discovery, Netflix
-Tech: Amazon, Alphabet, Microsoft, Oracle, Salesforce, IBM
+Tech: Amazon, Alphabet, Microsoft, Oracle, Salesforce, IBM, Apple
+Software: Nutanix
 Hardware: HP Inc, HPE, Dell, Nextracker
 EMS: Sanmina, Flex Ltd, Jabil
-Distribution: Arrow Electronics, TD Synnex, Ingram Micro
+Distribution: Arrow Electronics, Avnet, TD Synnex, Ingram Micro, CDW
 IT Services: Kyndryl, Cognizant
 Datacenter: Equinix, Digital Realty
 Towers: American Tower
-Payments: PayPal, Corpay
+Payments: PayPal, Corpay, Mastercard, Visa
 Travel: Booking Holdings, Uber, Delta, Carnival, Royal Caribbean, Norwegian Cruise Line
 
 For each company gather the data below using these source priorities:
@@ -479,7 +488,7 @@ OUTPUT FORMAT: Your ENTIRE response must be ONLY a single JSON object. Start wit
 {{"rows": [{{"company": "Company Name", "sector": "Sector", "status": "red|amber|green", "mkt_cap": "12.5", "nd_ebitda": "2.4", "ebitda_margin": "18.5", "fcf_ltm": "1.8", "cash": "5.2", "total_debt": "15.0", "earnings": "Jul 23", "stock_1d": "+1.2", "stock_1m": "+1.2", "stock_ytd": "+1.2", "week52_high": "185.50", "week52_low": "112.30", "moodys_rating": "Baa2", "moodys_outlook": "Stable", "moodys_date": "2025-10-15", "sp_rating": "BBB", "sp_outlook": "Stable", "sp_date": "2025-09-22", "fitch_rating": "BBB", "fitch_outlook": "Stable", "fitch_date": "2025-08-10", "concern_score": 35, "key_dev": "No material news.", "action": "Monitor"}}]}}
 
 Rules:
-- All 38 names must appear in rows.
+- All 44 names must appear in rows.
 - All dollar figures in $Bn. Round to one decimal.
 - Net Debt/EBITDA: number only, no "x".
 - EBITDA Margin: number only, no % sign.
@@ -496,7 +505,7 @@ Rules:
 
 PROMPT_B = f"""Today is {datetime_str}. You are generating structured data for a morning credit intelligence dashboard for publicly listed US and global corporates.
 
-Watchlist - BATCH B (36 names):
+Watchlist - BATCH B (38 names):
 Auto: General Motors, Tesla, Ford, Toyota, Nissan
 Aerospace: Boeing, GE Aerospace
 Retail: Walmart, AutoZone, Genuine Parts
@@ -506,6 +515,7 @@ Consumer: Nike, Kimberly-Clark, Whirlpool, Mondelez
 Packaging: Ball Corp, Crown Holdings, International Paper
 Energy: Chevron, BP, Exxon
 Utilities: NextEra Energy, Duke Energy, Sempra Energy
+Materials: Amrize, CEMEX
 Industrials: Caterpillar, Deere, Danaher, GE Vernova, Honeywell, Otis, Air Products, Corteva, DuPont
 
 For each company gather the data below using these source priorities:
@@ -556,7 +566,7 @@ OUTPUT FORMAT: Your ENTIRE response must be ONLY a single JSON object. Start wit
 {{"macro": {{"hy_oas": "n/a", "ig_oas": "n/a", "treasury_10y": "n/a", "treasury_2y": "n/a", "vix": "18.2", "sp500": "5234", "sp500_1d": "+0.8"}}, "rows": [{{"company": "Company Name", "sector": "Sector", "status": "red|amber|green", "mkt_cap": "12.5", "nd_ebitda": "2.4", "ebitda_margin": "18.5", "fcf_ltm": "1.8", "cash": "5.2", "total_debt": "15.0", "earnings": "Jul 23", "stock_1d": "+1.2", "stock_1m": "+1.2", "stock_ytd": "+1.2", "week52_high": "185.50", "week52_low": "112.30", "moodys_rating": "Baa2", "moodys_outlook": "Stable", "moodys_date": "2025-10-15", "sp_rating": "BBB", "sp_outlook": "Stable", "sp_date": "2025-09-22", "fitch_rating": "BBB", "fitch_outlook": "Stable", "fitch_date": "2025-08-10", "concern_score": 35, "key_dev": "No material news.", "action": "Monitor"}}], "top3": [{{"name": "Company A", "note": "Short reason"}}]}}
 
 Rules:
-- All 36 names must appear in rows.
+- All 38 names must appear in rows.
 - All dollar figures in $Bn. Round to one decimal.
 - Net Debt/EBITDA: number only, no "x".
 - EBITDA Margin: number only, no % sign.
@@ -2485,7 +2495,7 @@ footer li strong{color:#ffaaaa}
 <header>
   <div>
     <div class="title">MORNING CREDIT DIGEST</div>
-    <div class="subtitle">2LOD Credit Surveillance &nbsp;&bull;&nbsp; US Corporate Watchlist &nbsp;&bull;&nbsp; 74 Names</div>
+    <div class="subtitle">2LOD Credit Surveillance &nbsp;&bull;&nbsp; US Corporate Watchlist &nbsp;&bull;&nbsp; 82 Names</div>
   </div>
   <div class="right-block">
     <div class="pills">
@@ -2641,7 +2651,7 @@ footer li strong{color:#ffaaaa}
   <h2>TMT Tab</h2>
   <p>Sector deep-dive with four chart layers and five subsection tables, top to bottom:</p>
   <ul>
-    <li><strong>US Data Center Construction</strong>: monthly private construction put-in-place spending, sourced from US Census Bureau VIP via Our World in Data. Values inflation-adjusted to constant 2021 US$ using BLS PPI for new office building construction. Lagged ~6 weeks. Charts show monthly level and month-over-month change. KPI tiles show latest value, YoY %, 3-month average MoM, and 5-year growth. <em>Macro demand signal.</em></li>
+    <li><strong>US Data Center Construction</strong>: monthly dollar value of private data center construction put in place in the US. Sourced from the US Census Bureau Value of Construction Put in Place (VIP) report via Our World in Data. The number represents the dollar value of construction work performed during the month (materials installed, labor performed) on private-sector data center projects nationwide. Includes new construction, additions, alterations, and major replacements; excludes maintenance and government-owned projects. Values are inflation-adjusted to constant 2021 US dollars using BLS Producer Price Index for new office building construction. Reported in millions of dollars per month. Lagged approximately 6 weeks (the May release covers March data). Chart shows monthly level and month-over-month change. KPI tiles show latest value, YoY %, 3-month average MoM change, and 5-year cumulative growth. <em>Why it matters for credit:</em> this is the macro demand signal for the entire data center buildout cycle. Rising values mean more physical construction; flattening values would signal cycle deceleration before it shows in hyperscaler earnings.</li>
     <li><strong>Hyperscaler CapEx (Stacked, Quarterly)</strong>: quarterly CapEx for Microsoft, Alphabet, Amazon, and Oracle going back up to 16 quarters. Bars synchronize on calendar quarter end. <em>Public-company supply commitment, quarterly cadence to surface inflection points.</em></li>
     <li><strong>Hyperscaler Revenue Backlog (RPO)</strong>: quarterly Remaining Performance Obligation for the same 4 hyperscalers, last 8 quarters. From SEC EDGAR XBRL <code>RevenueRemainingPerformanceObligation</code> tag. <em>Contracted demand: revenue under signed contracts but not yet recognized. Forward demand signal.</em> Names with no RPO disclosure are noted in the chart subtitle.</li>
     <li><strong>Five subsection tables</strong>: Hyperscalers, Data Center &amp; Tower REITs, Telecom, Hardware &amp; EMS, Software/Payments/Services. Filter pills (Red/Amber/Green) apply across all subsections.</li>
