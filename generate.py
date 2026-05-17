@@ -39,6 +39,13 @@ except ImportError:
     FRED_AVAILABLE = False
     print("WARNING: fred module not found; Macro tab will be empty.")
 
+try:
+    import census_construction
+    CENSUS_AVAILABLE = True
+except ImportError:
+    CENSUS_AVAILABLE = False
+    print("WARNING: census_construction module not found; Data Center construction chart will be empty.")
+
 et = pytz.timezone('America/New_York')
 now = datetime.now(et)
 datetime_str = now.strftime('%B %d, %Y at %I:%M %p ET')
@@ -448,25 +455,12 @@ NEWS (last 24 to 48 hours):
 Source from reuters.com, bloomberg.com, wsj.com, ft.com, agency press releases, or sec.gov 8-K filings.
 
 CREDIT RATINGS - CRITICAL ACCURACY RULES:
-For each agency (Moody's, S&P, Fitch) for EACH company, you MUST perform multiple targeted searches. Required search sequence per agency per company:
-1. First search: "[Company] [Agency] rating action 2026"
-2. Second search if needed: "[Company] [Agency] credit rating 2025"
-3. Third search if needed: "[Company] credit rating [Agency] downgrade upgrade outlook"
+For each agency (Moody's, S&P, Fitch) for EACH company, you MUST perform multiple targeted searches.
 
 Source priority (use in this order):
-1. Agency press releases (moodys.com, spglobal.com, fitchratings.com) - most authoritative
+1. Agency press releases (moodys.com, spglobal.com, fitchratings.com)
 2. Reuters, Bloomberg, Investing.com, Yahoo Finance rating action articles
 3. Company 10-K, prospectus, or IR page disclosures
-
-CRITICAL ACCURACY REQUIREMENTS:
-- Always return the date of the MOST RECENT rating action found (YYYY-MM-DD format)
-- Compare dates across sources - use the source with the most recent date
-- If two sources disagree on rating, use the one with the most recent date
-- Distinguish issuer/corporate family rating from issue-specific (bond-level) ratings - use the ISSUER rating
-- For Moody's: use issuer rating or Corporate Family Rating (CFR), NOT senior unsecured if different
-- Do NOT confuse outlook with rating - outlook is Stable/Positive/Negative/RUR, separate from the letter grade
-- A rating action includes: upgrade, downgrade, affirmation, outlook change, or watch placement
-- For each rating, the date should reflect the most recent rating action (including outlook revisions or affirmations), not the date of original rating assignment
 
 MACRO INDICATORS (FALLBACK ONLY - HY OAS and IG OAS pulled from FRED, NOT from this prompt):
 DO NOT search for HY OAS or IG OAS. Always return "n/a" for those fields. Source only the items below:
@@ -656,16 +650,6 @@ def fcf_cell(v):
         return f'<td class="num-cell">{v}</td>'
 
 
-def score_cell(v):
-    try:
-        score = int(v)
-    except:
-        return '<td class="num-cell stock-flat">n/a</td>'
-    color = '#ff6b6b' if score >= 70 else ('#f0b429' if score >= 40 else '#4ec38a')
-    bar = f'<div class="score-bar"><div style="background:{color};width:{min(score,100)}%"></div></div>'
-    return f'<td class="num-cell" style="color:{color};font-weight:700">{score}{bar}</td>'
-
-
 def ratings_cell_compact(r):
     agencies = [('moodys_rating','moodys_outlook','M'),
                 ('sp_rating','sp_outlook','S'),
@@ -796,7 +780,7 @@ def money_cell(v, decimals=1):
         return f'<td class="num-cell">{v}</td>'
 
 
-# Red Flag rendering FIXED: td uses table-cell layout; span carries the pill styling
+# Red flag rendering
 def redflag_cell(state):
     if state == "FLAGGED":
         return '<td class="rf-cell"><span class="rf-pill rf-flagged" title="FLAGGED">&#9888;</span></td>'
@@ -850,7 +834,12 @@ def build_redflag_rows(rows):
     return rf_rows
 
 
-# Historical snapshot helpers
+# ----------------------------------------------------------------------
+# Historical snapshots - FIXED to walk full tag chain for each metric.
+# Old version only looked at one resolved tag per metric in _history.
+# New version: if first key has no data for the target year, try all
+# alternative keys that might have been used historically.
+# ----------------------------------------------------------------------
 def _to_float_safe(v):
     if v is None: return None
     try:
@@ -862,18 +851,35 @@ def _to_float_safe(v):
 
 
 def _detect_fiscal_year_ends(sec_for_co, max_count=3):
+    """
+    Find the last N fiscal year-end dates. Walks all balance history keys
+    (cash, lt_debt, st_debt) and accepts any 10-K filing period_end.
+    """
     bh = sec_for_co.get("_balance_history", {}) or {}
     candidates = []
     for source in ("lt_debt", "cash", "st_debt"):
         for entry in bh.get(source, []) or []:
             form = (entry.get("form") or "").upper()
-            if form in ("10-K", "10-K/A"):
+            if form in ("10-K", "10-K/A", "20-F"):
                 pd = entry.get("period_end")
                 if pd: candidates.append(pd)
+    if not candidates:
+        # Fallback: any 10-K from flow history
+        h = sec_for_co.get("_history", {}) or {}
+        for source in ("revenue", "op_income"):
+            for entry in h.get(source, []) or []:
+                form = (entry.get("form") or "").upper()
+                if form in ("10-K", "10-K/A", "20-F"):
+                    pd = entry.get("period_end")
+                    if pd: candidates.append(pd)
     return sorted(set(candidates), reverse=True)[:max_count]
 
 
-def _annual_sum_around(history, year_end_date, window_days=370):
+def _annual_sum_around(history, year_end_date, window_days=400):
+    """
+    Sum 4 quarters ending at or before year_end_date within window_days.
+    Returns dollar sum or None.
+    """
     if not history: return None
     try:
         target = datetime.strptime(year_end_date, "%Y-%m-%d").date()
@@ -892,10 +898,12 @@ def _annual_sum_around(history, year_end_date, window_days=370):
             matching.append((pd, q.get("value")))
     if len(matching) < 4: return None
     matching.sort(key=lambda x: x[0], reverse=True)
+    # Pick 4 non-overlapping
     return sum(v for _, v in matching[:4])
 
 
-def _balance_at(history, year_end_date):
+def _balance_at(history, year_end_date, tolerance_days=60):
+    """Get balance sheet value at or closest before year_end_date within tolerance."""
     if not history: return None
     try:
         target = datetime.strptime(year_end_date, "%Y-%m-%d").date()
@@ -912,6 +920,7 @@ def _balance_at(history, year_end_date):
             continue
         if pd > target: continue
         gap = (target - pd).days
+        if gap > tolerance_days: continue
         if best is None or gap < best_gap:
             best = q.get("value")
             best_gap = gap
@@ -920,6 +929,10 @@ def _balance_at(history, year_end_date):
 
 
 def historical_snapshots(sec_for_co):
+    """
+    Build year-by-year snapshots: Year-3, Year-2, Year-1, LTM.
+    Uses _history (flow) and _balance_history (instant) from SEC cache.
+    """
     if not sec_for_co: return []
     year_ends = _detect_fiscal_year_ends(sec_for_co, max_count=3)
     history = sec_for_co.get("_history", {}) or {}
@@ -1101,74 +1114,329 @@ def fin_detail_html(co_name, sec_for_co):
     )
 
 
-def _hyperscaler_capex_callout(sec_data):
+# ----------------------------------------------------------------------
+# Hyperscaler CapEx historical bar chart - 4 names stacked, 4 years + LTM
+# ----------------------------------------------------------------------
+def _hyperscaler_capex_history(sec_data):
+    """
+    Build annual CapEx history for MSFT, GOOGL, AMZN, ORCL.
+    Returns list of dicts: [{period_label, msft, googl, amzn, orcl, total}, ...]
+    Oldest first, LTM last.
+    """
     hyperscalers = ["Microsoft", "Alphabet", "Amazon", "Oracle"]
-    capex_total_current = 0.0
-    capex_total_prior = 0.0
-    contributors = []
-    missing = []
+    if not sec_data:
+        return [], []
+
+    # Determine fiscal year-ends by looking across all 4 names; use the most common
+    # year-end set (most names share calendar year-end; Oracle and MSFT have non-CY)
+    all_year_ends = set()
+    for co in hyperscalers:
+        sec = (sec_data or {}).get(co, {})
+        if not sec: continue
+        for ye in _detect_fiscal_year_ends(sec, max_count=4):
+            all_year_ends.add(ye)
+
+    # Group year-ends by calendar year for cross-company alignment
+    by_cal_year = {}
+    for ye in all_year_ends:
+        try:
+            dt = datetime.strptime(ye, "%Y-%m-%d").date()
+            by_cal_year.setdefault(dt.year, []).append(ye)
+        except (ValueError, TypeError):
+            continue
+
+    # Use the most recent 4 calendar years
+    years_sorted = sorted(by_cal_year.keys(), reverse=True)[:4]
+    years_sorted.reverse()  # oldest first
+
+    rows = []
+    contributors_present = []
+
+    for cal_year in years_sorted:
+        row = {"period_label": str(cal_year)}
+        year_total = 0.0
+        year_has_data = False
+        for co in hyperscalers:
+            sec = (sec_data or {}).get(co, {})
+            if not sec:
+                row[co] = None
+                continue
+            capex_hist = (sec.get("_history", {}) or {}).get("capex", [])
+            # Find this company's year-end falling within this calendar year
+            target_ye = None
+            for ye in _detect_fiscal_year_ends(sec, max_count=5):
+                try:
+                    if datetime.strptime(ye, "%Y-%m-%d").date().year == cal_year:
+                        target_ye = ye
+                        break
+                except (ValueError, TypeError):
+                    continue
+            if target_ye:
+                val = _annual_sum_around(capex_hist, target_ye, window_days=400)
+                if val is not None:
+                    val_bn = abs(val) / 1e9
+                    row[co] = round(val_bn, 1)
+                    year_total += val_bn
+                    year_has_data = True
+                    if co not in contributors_present:
+                        contributors_present.append(co)
+                else:
+                    row[co] = None
+            else:
+                row[co] = None
+        row["total"] = round(year_total, 1) if year_has_data else None
+        if year_has_data:
+            rows.append(row)
+
+    # Append LTM column
+    ltm_row = {"period_label": "LTM"}
+    ltm_total = 0.0
+    ltm_has_data = False
     for co in hyperscalers:
         sec = (sec_data or {}).get(co, {})
         if not sec:
-            missing.append(co)
+            ltm_row[co] = None
             continue
-        history = sec.get("_history", {}) or {}
-        capex_hist = history.get("capex", [])
+        capex_hist = (sec.get("_history", {}) or {}).get("capex", [])
         if len(capex_hist) >= 4:
-            current = sum(abs(q.get("value", 0)) for q in capex_hist[:4] if q.get("value") is not None)
-            current_bn = current / 1e9
-        elif len(capex_hist) >= 1:
-            current = abs(capex_hist[0].get("value", 0))
-            current_bn = current / 1e9
+            val = sum(abs(q.get("value", 0)) for q in capex_hist[:4] if q.get("value") is not None)
+            val_bn = val / 1e9
+            ltm_row[co] = round(val_bn, 1)
+            ltm_total += val_bn
+            ltm_has_data = True
+            if co not in contributors_present:
+                contributors_present.append(co)
         else:
-            missing.append(co)
-            continue
-        if len(capex_hist) >= 8:
-            prior = sum(abs(q.get("value", 0)) for q in capex_hist[4:8] if q.get("value") is not None)
-            prior_bn = prior / 1e9
-        elif len(capex_hist) >= 2:
-            prior_bn = abs(capex_hist[1].get("value", 0)) / 1e9
-        else:
-            prior_bn = None
-        capex_total_current += current_bn
-        if prior_bn is not None:
-            capex_total_prior += prior_bn
-        contributors.append((co, current_bn, prior_bn))
-    yoy_html = ""
-    if capex_total_prior > 0:
-        yoy_pct = (capex_total_current - capex_total_prior) / capex_total_prior * 100
-        yoy_cls = "stock-up" if yoy_pct >= 0 else "stock-down"
-        yoy_sign = "+" if yoy_pct >= 0 else ""
-        yoy_html = f'<div class="hyper-yoy"><span class="{yoy_cls}">{yoy_sign}{yoy_pct:.1f}%</span> YoY</div>'
-    contributor_html = ""
-    for co, cur, prior in contributors:
-        if prior and prior > 0:
-            pct = (cur - prior) / prior * 100
-            sign = "+" if pct >= 0 else ""
-            cls = "stock-up" if pct >= 0 else "stock-down"
-            contrib_yoy = f'<span class="{cls}">{sign}{pct:.0f}%</span>'
-        else:
-            contrib_yoy = '<span class="stock-flat">n/a</span>'
-        contributor_html += (
-            f'<div class="hyper-contrib">'
-            f'<div class="hyper-contrib-name">{co}</div>'
-            f'<div class="hyper-contrib-val">${cur:,.1f}Bn</div>'
-            f'<div class="hyper-contrib-yoy">{contrib_yoy}</div></div>'
+            ltm_row[co] = None
+    ltm_row["total"] = round(ltm_total, 1) if ltm_has_data else None
+    if ltm_has_data:
+        rows.append(ltm_row)
+
+    return rows, contributors_present
+
+
+def _build_hyperscaler_chart_html(sec_data, chart_id="hyperCapexChart"):
+    """Build the Hyperscaler CapEx historical bar chart section (uses Chart.js)."""
+    history, contributors = _hyperscaler_capex_history(sec_data)
+    if not history or not contributors:
+        return ""
+
+    # Color map matching the dashboard's accent palette
+    color_map = {
+        "Microsoft": "#a0c4e8",
+        "Alphabet": "#7ba7d3",
+        "Amazon": "#5a8db8",
+        "Oracle": "#3d6e9a",
+    }
+    short_label = {"Microsoft": "MSFT", "Alphabet": "GOOGL", "Amazon": "AMZN", "Oracle": "ORCL"}
+
+    labels_json = json.dumps([r["period_label"] for r in history])
+    datasets = []
+    for co in contributors:
+        data_list = [r.get(co) if r.get(co) is not None else None for r in history]
+        datasets.append({
+            "label": short_label.get(co, co),
+            "data": data_list,
+            "backgroundColor": color_map.get(co, "#7090a8"),
+            "borderColor": color_map.get(co, "#7090a8"),
+            "borderWidth": 0,
+            "stack": "capex",
+        })
+    datasets_json = json.dumps(datasets)
+    totals_json = json.dumps([r.get("total") for r in history])
+
+    # Most recent total + YoY
+    latest = history[-1] if history else None
+    prior = history[-2] if len(history) >= 2 else None
+    callout_total = latest.get("total") if latest else 0
+    callout_yoy_html = ""
+    if latest and prior and prior.get("total") and prior["total"] > 0:
+        yoy = (latest["total"] - prior["total"]) / prior["total"] * 100
+        sign = "+" if yoy >= 0 else ""
+        cls = "stock-up" if yoy >= 0 else "stock-down"
+        callout_yoy_html = f'<span class="{cls}">{sign}{yoy:.1f}% YoY</span>'
+
+    return f"""
+    <div class="hyper-chart-section">
+      <div class="hyper-chart-header">
+        <div>
+          <h3 class="tmt-section-title">Hyperscaler CapEx (Stacked, Historical)</h3>
+          <div class="tmt-section-subtitle">Annual CapEx for MSFT + GOOGL + AMZN + ORCL, fiscal year basis. LTM is sum of latest 4 quarters.</div>
+        </div>
+        <div class="hyper-chart-callout">
+          <div class="hyper-chart-callout-label">Latest period total</div>
+          <div class="hyper-chart-callout-value">${callout_total:,.1f}Bn</div>
+          {callout_yoy_html}
+        </div>
+      </div>
+      <div class="hyper-chart-wrap">
+        <canvas id="{chart_id}"></canvas>
+      </div>
+    </div>
+    <script>
+      (function(){{
+        if (typeof Chart === 'undefined') {{ return; }}
+        var labels = {labels_json};
+        var datasets = {datasets_json};
+        var totals = {totals_json};
+        var ctx = document.getElementById('{chart_id}');
+        if (!ctx) return;
+        new Chart(ctx, {{
+          type: 'bar',
+          data: {{ labels: labels, datasets: datasets }},
+          options: {{
+            responsive: true, maintainAspectRatio: false,
+            plugins: {{
+              legend: {{ position: 'top', labels: {{ color: '#a0b4c8', font: {{ size: 11 }} }} }},
+              tooltip: {{ callbacks: {{ label: function(ctx) {{ return ctx.dataset.label + ': $' + (ctx.parsed.y||0).toFixed(1) + 'Bn'; }} }} }}
+            }},
+            scales: {{
+              x: {{ stacked: true, ticks: {{ color: '#7090a8' }}, grid: {{ color: '#1e2a3a' }} }},
+              y: {{ stacked: true, ticks: {{ color: '#7090a8', callback: function(v) {{ return '$' + v + 'B'; }} }}, grid: {{ color: '#1e2a3a' }} }}
+            }}
+          }}
+        }});
+      }})();
+    </script>
+    """
+
+
+# ----------------------------------------------------------------------
+# US Data Center Construction chart (Census Bureau via census_construction module)
+# ----------------------------------------------------------------------
+def _build_data_center_construction_html(census_data, chart_id_lvl="dcConstructionLevel", chart_id_mom="dcConstructionMom"):
+    """Build the dual-chart section showing monthly level + MoM change."""
+    if not census_data or not census_data.get("series"):
+        return f"""
+        <div class="dc-construction-section">
+          <h3 class="tmt-section-title">US Data Center Construction</h3>
+          <div class="dc-construction-empty">Census Bureau data not yet available. The module attempts to discover the correct category_code on first run; check the workflow log for the value Census returned and we can hard-code it next iteration.</div>
+        </div>
+        """
+
+    series = census_data["series"]
+    # Render last 5 years (60 months) to match the reference screenshots
+    series_view = series[-60:] if len(series) > 60 else series
+    labels = [s["period"] for s in series_view]
+    values = [s["value"] for s in series_view]
+
+    # MoM deltas across the same window
+    mom_labels = labels[1:]
+    mom_values = [values[i] - values[i - 1] for i in range(1, len(values))]
+    mom_colors = ["#4ec38a" if v >= 0 else "#ff6b6b" for v in mom_values]
+
+    latest = census_data.get("latest", {})
+    yoy_pct = census_data.get("yoy_pct")
+    three_m = census_data.get("three_month_avg_mom")
+    five_y = census_data.get("five_year_growth_pct")
+
+    def kpi(label, value, color="#a0c4e8"):
+        return (
+            f'<div class="dc-kpi">'
+            f'<div class="dc-kpi-label">{label}</div>'
+            f'<div class="dc-kpi-value" style="color:{color}">{value}</div>'
+            f'</div>'
         )
-    missing_note = ""
-    if missing:
-        missing_note = f'<div class="hyper-missing">Note: {", ".join(missing)} excluded (insufficient CapEx history).</div>'
-    return (
-        f'<div class="hyperscaler-callout">'
-        f'<div class="hyper-headline">'
-        f'<div class="hyper-label">Hyperscaler CapEx (LTM Aggregate)</div>'
-        f'<div class="hyper-value">${capex_total_current:,.1f}Bn</div>'
-        f'{yoy_html}</div>'
-        f'<div class="hyper-contributors">{contributor_html}</div>'
-        f'{missing_note}</div>'
-    )
+
+    latest_str = f"${latest.get('value', 0):,.0f}M" if latest else "n/a"
+    latest_period = latest.get("period", "") if latest else ""
+    yoy_str = f"+{yoy_pct:.1f}%" if (yoy_pct is not None and yoy_pct >= 0) else (f"{yoy_pct:.1f}%" if yoy_pct is not None else "n/a")
+    yoy_color = "#4ec38a" if (yoy_pct is not None and yoy_pct >= 0) else ("#ff6b6b" if yoy_pct is not None else "#a0c4e8")
+    three_m_str = f"{'+' if three_m and three_m >= 0 else ''}${three_m:,.0f}M" if three_m is not None else "n/a"
+    three_m_color = "#4ec38a" if (three_m is not None and three_m >= 0) else ("#ff6b6b" if three_m is not None else "#a0c4e8")
+    five_y_str = f"+{five_y:.0f}%" if (five_y is not None and five_y >= 0) else (f"{five_y:.0f}%" if five_y is not None else "n/a")
+
+    labels_json = json.dumps(labels)
+    values_json = json.dumps(values)
+    mom_labels_json = json.dumps(mom_labels)
+    mom_values_json = json.dumps(mom_values)
+    mom_colors_json = json.dumps(mom_colors)
+
+    return f"""
+    <div class="dc-construction-section">
+      <div class="dc-construction-header">
+        <div>
+          <h3 class="tmt-section-title">US Data Center Construction</h3>
+          <div class="tmt-section-subtitle">Monthly private construction put-in-place spending, US Census Bureau. Lagged ~6 weeks. Last 5 years shown.</div>
+        </div>
+        <div class="dc-source">Source: Census Bureau VIP</div>
+      </div>
+      <div class="dc-kpi-row">
+        {kpi(f"Latest ({latest_period})", latest_str)}
+        {kpi("YoY change", yoy_str, yoy_color)}
+        {kpi("3M avg MoM", three_m_str, three_m_color)}
+        {kpi("5Y growth", five_y_str, "#4ec38a")}
+      </div>
+      <div class="dc-chart-label">Monthly spending level ($M)</div>
+      <div class="dc-chart-wrap"><canvas id="{chart_id_lvl}"></canvas></div>
+      <div class="dc-chart-label">Month-over-month change ($M)</div>
+      <div class="dc-chart-wrap-short"><canvas id="{chart_id_mom}"></canvas></div>
+    </div>
+    <script>
+      (function(){{
+        if (typeof Chart === 'undefined') {{ return; }}
+        var ctx1 = document.getElementById('{chart_id_lvl}');
+        if (ctx1) {{
+          new Chart(ctx1, {{
+            type: 'line',
+            data: {{
+              labels: {labels_json},
+              datasets: [{{
+                label: 'Spend',
+                data: {values_json},
+                borderColor: '#a0c4e8',
+                backgroundColor: 'rgba(160, 196, 232, 0.08)',
+                fill: true, tension: 0.25, borderWidth: 2,
+                pointRadius: 2, pointHoverRadius: 5
+              }}]
+            }},
+            options: {{
+              responsive: true, maintainAspectRatio: false,
+              plugins: {{
+                legend: {{ display: false }},
+                tooltip: {{ callbacks: {{ label: function(c){{ return '$' + c.parsed.y.toLocaleString() + 'M'; }} }} }}
+              }},
+              scales: {{
+                x: {{ ticks: {{ color: '#7090a8', autoSkip: true, maxRotation: 45, font: {{ size: 9 }} }}, grid: {{ color: '#1e2a3a' }} }},
+                y: {{ ticks: {{ color: '#7090a8', callback: function(v) {{ return '$' + v.toLocaleString(); }} }}, grid: {{ color: '#1e2a3a' }}, beginAtZero: true }}
+              }}
+            }}
+          }});
+        }}
+        var ctx2 = document.getElementById('{chart_id_mom}');
+        if (ctx2) {{
+          new Chart(ctx2, {{
+            type: 'bar',
+            data: {{
+              labels: {mom_labels_json},
+              datasets: [{{
+                label: 'MoM',
+                data: {mom_values_json},
+                backgroundColor: {mom_colors_json},
+                borderWidth: 0
+              }}]
+            }},
+            options: {{
+              responsive: true, maintainAspectRatio: false,
+              plugins: {{
+                legend: {{ display: false }},
+                tooltip: {{ callbacks: {{ label: function(c){{ var v = c.parsed.y; return (v < 0 ? '-$' : '+$') + Math.abs(v).toFixed(0) + 'M'; }} }} }}
+              }},
+              scales: {{
+                x: {{ ticks: {{ color: '#7090a8', autoSkip: true, maxRotation: 45, font: {{ size: 9 }} }}, grid: {{ color: '#1e2a3a' }} }},
+                y: {{ ticks: {{ color: '#7090a8', callback: function(v) {{ return (v < 0 ? '-$' : '$') + Math.abs(v); }} }}, grid: {{ color: '#1e2a3a' }} }}
+              }}
+            }}
+          }});
+        }}
+      }})();
+    </script>
+    """
 
 
+# ----------------------------------------------------------------------
+# TMT tab company row + subsection builder (unchanged from prior version)
+# ----------------------------------------------------------------------
 def _tmt_company_row(co_name, all_rows, sec_data):
     row = next((r for r in all_rows if r.get("company") == co_name), None)
     if not row:
@@ -1200,8 +1468,11 @@ def _tmt_company_row(co_name, all_rows, sec_data):
     )
 
 
-def build_tmt_tab(all_rows, sec_data):
-    callout_html = _hyperscaler_capex_callout(sec_data)
+def build_tmt_tab(all_rows, sec_data, census_data):
+    """Build the full TMT tab content with all sections."""
+    dc_chart_html = _build_data_center_construction_html(census_data)
+    hyper_chart_html = _build_hyperscaler_chart_html(sec_data)
+
     sections_html = []
     for sub in TMT_SUBSECTIONS:
         rows_html = "".join(_tmt_company_row(co, all_rows, sec_data) for co in sub["names"])
@@ -1225,8 +1496,8 @@ def build_tmt_tab(all_rows, sec_data):
         )
     return (
         f'<div class="tmt-tab-content">'
-        f'<div class="tmt-intro">TMT sector deep-dive across the watchlist. Hyperscaler CapEx anchors the demand picture for downstream data center, networking, EMS, and software names. All figures sourced from SEC EDGAR.</div>'
-        f'{callout_html}{"".join(sections_html)}</div>'
+        f'<div class="tmt-intro">TMT sector deep-dive. Data center construction is the macro demand signal; hyperscaler CapEx is the public-company subset driving it. Company tables follow.</div>'
+        f'{dc_chart_html}{hyper_chart_html}{"".join(sections_html)}</div>'
     )
 
 
@@ -1318,10 +1589,11 @@ def _fred_value(fred_data, key, mode="percent"):
         return "n/a"
 
 
-def build_html(all_rows, macro, top3, datetime_str, commodities=None, fred_data=None, sec_data=None):
+def build_html(all_rows, macro, top3, datetime_str, commodities=None, fred_data=None, sec_data=None, census_data=None):
     commodities = commodities or {}
     fred_data = fred_data or {}
     sec_data = sec_data or {}
+    census_data = census_data or {}
     overview_rows, market_rows, fin_summary_rows, fin_detail_rows = [], [], [], []
     g_count = a_count = r_count = 0
 
@@ -1439,7 +1711,7 @@ def build_html(all_rows, macro, top3, datetime_str, commodities=None, fred_data=
     except ImportError:
         rf_headers = ""
 
-    tmt_tab_html = build_tmt_tab(all_rows, sec_data)
+    tmt_tab_html = build_tmt_tab(all_rows, sec_data, census_data)
     macro_tab_html = build_macro_tab(fred_data)
 
     hy_oas = _fred_value(fred_data, 'hy_oas', mode='bps')
@@ -1540,8 +1812,6 @@ tbody tr:hover{background:#0d1520}
 .stock-flat{color:#3a4a5a;font-family:"IBM Plex Mono",monospace}
 .lev-amber{color:#f0b429;font-weight:700;font-family:"IBM Plex Mono",monospace}
 .num-cell{text-align:right;font-variant-numeric:tabular-nums;font-family:"IBM Plex Mono",monospace;font-size:12px}
-.score-bar{background:#21262d;border-radius:3px;height:4px;margin-top:3px;width:60px;display:inline-block;overflow:hidden}
-.score-bar div{height:100%;border-radius:3px}
 .overview-table tbody td{padding:12px 14px;vertical-align:middle}
 .overview-table tbody td:not(:nth-child(1)):not(:nth-child(6)),
 .overview-table thead th:not(:nth-child(1)):not(:nth-child(6)){text-align:center}
@@ -1636,21 +1906,26 @@ tbody tr:hover{background:#0d1520}
 .data-warn{color:#f0b429;font-size:12px;cursor:help;margin-left:2px}
 .tmt-tab-content{padding:24px 28px}
 .tmt-intro{color:#a0b4c8;font-size:12px;line-height:1.5;margin-bottom:20px;padding-bottom:14px;border-bottom:1px solid #1e2a3a;max-width:960px}
-.hyperscaler-callout{background:linear-gradient(135deg,#0d1520 0%,#0a0e14 100%);border:1px solid #1e3a5f;border-left:3px solid #8B0000;border-radius:4px;padding:20px 24px;margin-bottom:28px;display:flex;align-items:center;gap:32px;flex-wrap:wrap}
-.hyper-headline{display:flex;flex-direction:column;gap:4px;min-width:220px}
-.hyper-label{font-family:"IBM Plex Mono",monospace;font-size:10px;color:#8B0000;text-transform:uppercase;letter-spacing:1.5px;font-weight:700}
-.hyper-value{font-family:"IBM Plex Mono",monospace;font-size:32px;color:#e6edf3;font-weight:700;letter-spacing:1px;line-height:1.1}
-.hyper-yoy{font-family:"IBM Plex Mono",monospace;font-size:13px;color:#a0c4e8;font-weight:600;margin-top:2px}
-.hyper-yoy .stock-up,.hyper-yoy .stock-down{font-size:13px}
-.hyper-contributors{display:flex;gap:24px;flex-wrap:wrap;flex:1}
-.hyper-contrib{display:flex;flex-direction:column;gap:2px;min-width:90px;padding-left:20px;border-left:1px solid #1e2a3a}
-.hyper-contrib-name{font-family:"IBM Plex Mono",monospace;font-size:10px;color:#7090a8;text-transform:uppercase;letter-spacing:.5px}
-.hyper-contrib-val{font-family:"IBM Plex Mono",monospace;font-size:15px;color:#a0c4e8;font-weight:600}
-.hyper-contrib-yoy{font-family:"IBM Plex Mono",monospace;font-size:10px;font-weight:600}
-.hyper-missing{flex-basis:100%;font-size:10px;color:#4a6080;font-style:italic;margin-top:10px;padding-top:10px;border-top:1px solid #1e2a3a}
+.dc-construction-section{margin-bottom:36px;padding:20px;background:linear-gradient(135deg,#0d1520 0%,#0a0e14 100%);border:1px solid #1e3a5f;border-left:3px solid #8B0000;border-radius:4px}
+.dc-construction-header{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid #1e2a3a}
+.dc-construction-empty{padding:30px;text-align:center;color:#4a6080;font-family:"IBM Plex Mono",monospace;font-size:12px;font-style:italic}
+.dc-source{font-family:"IBM Plex Mono",monospace;font-size:10px;color:#7090a8;letter-spacing:.5px}
+.dc-kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}
+.dc-kpi{background:#0a0e14;border:1px solid #1e2a3a;border-radius:4px;padding:14px}
+.dc-kpi-label{font-family:"IBM Plex Mono",monospace;font-size:9px;color:#7090a8;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+.dc-kpi-value{font-family:"IBM Plex Mono",monospace;font-size:20px;font-weight:700;letter-spacing:.5px}
+.dc-chart-label{font-family:"IBM Plex Mono",monospace;font-size:9px;color:#7090a8;text-transform:uppercase;letter-spacing:1px;margin:14px 0 6px}
+.dc-chart-wrap{position:relative;width:100%;height:240px;margin-bottom:6px}
+.dc-chart-wrap-short{position:relative;width:100%;height:200px;margin-bottom:6px}
+.hyper-chart-section{margin-bottom:36px}
+.hyper-chart-header{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:14px;padding-bottom:6px;border-bottom:1px solid #1e2a3a}
+.hyper-chart-callout{text-align:right;padding:8px 14px;background:#0d1520;border:1px solid #1e2a3a;border-radius:4px;min-width:180px}
+.hyper-chart-callout-label{font-family:"IBM Plex Mono",monospace;font-size:9px;color:#7090a8;text-transform:uppercase;letter-spacing:1px}
+.hyper-chart-callout-value{font-family:"IBM Plex Mono",monospace;font-size:22px;color:#a0c4e8;font-weight:700;margin:4px 0}
+.hyper-chart-wrap{position:relative;width:100%;height:280px}
 .tmt-section{margin-bottom:28px}
 .tmt-section-header{display:flex;align-items:baseline;gap:14px;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid #1e2a3a;flex-wrap:wrap}
-.tmt-section-title{font-family:"IBM Plex Mono",monospace;font-size:13px;color:#8B0000;text-transform:uppercase;letter-spacing:1.5px;font-weight:700}
+.tmt-section-title{font-family:"IBM Plex Mono",monospace;font-size:13px;color:#8B0000;text-transform:uppercase;letter-spacing:1.5px;font-weight:700;margin:0}
 .tmt-section-subtitle{font-size:11px;color:#7090a8;font-style:italic}
 .tmt-table{width:100%;border-collapse:collapse;table-layout:auto}
 .tmt-table th{background:#0d1117;color:#4a6080;padding:8px 10px;font-size:10px;letter-spacing:.5px;text-transform:uppercase;border-bottom:1px solid #1e2a3a;font-family:"IBM Plex Mono",monospace;font-weight:600;text-align:right;cursor:pointer;white-space:nowrap}
@@ -1663,12 +1938,10 @@ tbody tr:hover{background:#0d1520}
 .tmt-missing{color:#3a4a5a;font-size:11px;font-style:italic;text-align:left;padding-left:10px}
 .macro-tab-content{padding:24px 28px}
 .macro-tab-intro{color:#a0b4c8;font-size:12px;line-height:1.5;margin-bottom:24px;padding-bottom:14px;border-bottom:1px solid #1e2a3a;max-width:960px}
-.macro-tab-intro p{margin:0}
 .macro-section{margin-bottom:28px}
 .macro-section-title{font-family:"IBM Plex Mono",monospace;font-size:11px;color:#8B0000;text-transform:uppercase;letter-spacing:1.5px;font-weight:700;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #1e2a3a}
 .macro-table{width:auto;min-width:560px;border-collapse:collapse}
 .macro-table th{background:#0d1117;color:#4a6080;padding:8px 14px;text-align:left;font-size:10px;letter-spacing:1px;text-transform:uppercase;font-family:"IBM Plex Mono",monospace;font-weight:600;border-bottom:1px solid #1e2a3a;cursor:default}
-.macro-table th:hover{background:#0d1117;color:#4a6080}
 .macro-table td{padding:8px 14px;border-bottom:1px solid #0d1520;font-size:12px;color:#a0b4c8;vertical-align:middle;font-family:"IBM Plex Mono",monospace}
 .macro-row-label{color:#e6edf3;font-family:"IBM Plex Sans",sans-serif !important;font-weight:500}
 .macro-row-value{color:#a0c4e8;font-weight:700;text-align:right}
@@ -1715,7 +1988,6 @@ footer li strong{color:#ffaaaa}
     var pane=panes[t.dataset.tab];if(pane)pane.classList.add('active');
   });});
 
-  // Financials expand/collapse: clicking a summary row toggles its detail row
   document.querySelectorAll('.fin-summary-row.clickable').forEach(function(row){
     row.addEventListener('click',function(e){
       var slug=row.dataset.coSlug;
@@ -1733,7 +2005,6 @@ footer li strong{color:#ffaaaa}
     });
   });
 
-  // Filter pills + search + sector filter applied across all panes that have data-status rows
   var btns=document.querySelectorAll('.controls button[data-filter]');
   var search=document.getElementById('searchBox');
   var sel=document.getElementById('sectorFilter');
@@ -1744,7 +2015,7 @@ footer li strong{color:#ffaaaa}
     var sv=sel.value;
     var g=0,a=0,r=0;
     document.querySelectorAll('.pane tbody tr[data-status]').forEach(function(row){
-      if(row.classList.contains('fin-detail-row'))return; // skip detail rows
+      if(row.classList.contains('fin-detail-row'))return;
       var st=(row.dataset.status||'').toLowerCase();
       var co=(row.dataset.company||'');
       var sc=(row.dataset.sector||'');
@@ -1753,7 +2024,6 @@ footer li strong{color:#ffaaaa}
       var psc=sv==='all'||sc===sv;
       var sh=pf&&ps&&psc;
       row.style.display=sh?'':'none';
-      // If we hide a summary row, also hide its detail row
       if(row.classList.contains('fin-summary-row')){
         var slug=row.dataset.coSlug;
         if(slug){
@@ -1791,7 +2061,6 @@ footer li strong{color:#ffaaaa}
     var o=document.createElement('option');o.value=x;o.textContent=x;sel.appendChild(o);
   });
 
-  // Sort: skip Financials and TMT (Financials has detail rows that would break the sort)
   document.querySelectorAll('.pane table').forEach(function(tbl){
     if(tbl.closest('#pane-financials'))return;
     var ths=tbl.querySelectorAll('thead th');
@@ -1822,6 +2091,7 @@ footer li strong{color:#ffaaaa}
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Morning Credit Digest</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <style>{css}</style>
 </head>
 <body>
@@ -1934,7 +2204,7 @@ footer li strong{color:#ffaaaa}
 <div class="pane" id="pane-methodology">
 <div class="methodology-content">
   <h2>Status Definitions</h2>
-  <p>Status is computed deterministically from underlying data after each run, not Claude&apos;s judgment.</p>
+  <p>Status is computed deterministically from underlying data after each run.</p>
   <table class="methodology-table">
     <tr><td><span class="status-badge red">RED</span></td><td>Concern &ge; 70, action Review/Escalate, 2+ negative outlooks, YTD &lt; -30%, or leverage &gt;5x AND FCF negative.</td></tr>
     <tr><td><span class="status-badge amber">AMBER</span></td><td>Concern &ge; 30, action Watch, 1 negative outlook, leverage &gt; 5x, FCF negative, YTD &lt; -20%, or 1M &lt; -15%.</td></tr>
@@ -1942,17 +2212,15 @@ footer li strong{color:#ffaaaa}
   </table>
 
   <h2>Financials Tab</h2>
-  <p>Summary row shows LTM metrics with intuitive headers. Click any row with a &#9656; to expand a historical drill-down: Year-3, Year-2, Year-1, and LTM in the Section 04 format with Income Statement &amp; Cash Flow plus Capital Structure tables, each with YoY and trend columns.</p>
-  <ul>
-    <li>YoY for currency: percentage change LTM vs Year-1</li>
-    <li>YoY for margins: basis-point change LTM vs Year-1</li>
-    <li>YoY for leverage: change in turns LTM vs Year-1</li>
-    <li>Trend arrow: direction across periods, colored by credit-direction (lower-is-better for debt and leverage)</li>
-    <li>20-F filers and non-SEC filers show only LTM (no drill-down)</li>
-  </ul>
+  <p>Summary row shows LTM metrics. Click any row with a &#9656; to expand historical detail showing the last 3 fiscal years plus LTM. Income Statement &amp; Cash Flow plus Capital Structure tables with YoY and trend columns.</p>
 
   <h2>TMT Tab</h2>
-  <p>Five subsections covering Hyperscalers, Data Center &amp; Tower REITs, Telecom, Hardware &amp; EMS, and Software/Payments/Services. Hyperscaler CapEx aggregate callout sums LTM CapEx across MSFT, GOOGL, AMZN, and ORCL with YoY change. Filter pills apply across all subsections.</p>
+  <p>Sector deep-dive. Three sections:</p>
+  <ul>
+    <li><strong>US Data Center Construction</strong> at top: monthly Census Bureau VIP data showing total private construction put-in-place spending. The macro demand signal for the entire TMT portfolio. Includes monthly level chart and month-over-month change chart.</li>
+    <li><strong>Hyperscaler CapEx (Stacked, Historical)</strong>: annual CapEx for MSFT + GOOGL + AMZN + ORCL going back 4 fiscal years plus LTM. The public-company subset driving data center demand.</li>
+    <li><strong>Five subsection tables</strong>: Hyperscalers, Data Center &amp; Tower REITs, Telecom, Hardware &amp; EMS, and Software/Payments/Services. Filter pills apply across all subsections.</li>
+  </ul>
 
   <h2>Red Flags Framework</h2>
   <p>9 of 12 universal flags computed each run from SEC EDGAR, yfinance, and ratings data.</p>
@@ -1970,15 +2238,13 @@ footer li strong{color:#ffaaaa}
   </table>
 
   <h2>Macro Indicators</h2>
-  <p>HY OAS, IG OAS, 10Y UST, and 2Y UST in the header strip pull directly from FRED (BAMLH0A0HYM2, BAMLC0A0CM, DGS10, DGS2). Spreads converted from percent to basis points for the header tile; the Macro tab displays the same FRED observations in their native percent format. One source, one number, no risk of mismatch between header and Macro tab.</p>
-  <p>VIX and S&amp;P 500 come from Claude web search. Nasdaq, Dow, WTI, Brent, Gold, EUR/USD come from yfinance.</p>
+  <p>HY OAS, IG OAS, 10Y UST, and 2Y UST in the header strip pull directly from FRED. Spreads converted from percent to basis points for the header tile; the Macro tab displays the same FRED observations in their native percent format. One source, one number.</p>
 
   <h2>Refresh Cadence</h2>
   <ul>
     <li>Daily 8:00 AM ET on weekdays</li>
-    <li>Daily: market data, commodities/FX, equity indices (yfinance); ratings, news, top 3 (Claude); FRED macro (TTL 20 hours)</li>
+    <li>Daily: market data, FX, indices (yfinance); ratings, news, top 3 (Claude); FRED macro (TTL 20h); Census data center construction (TTL 24h)</li>
     <li>Weekly: SEC EDGAR financials (TTL 6 days)</li>
-    <li>Manual override file (<code>ratings_override.json</code>) applies after auto-pull</li>
   </ul>
 </div>
 </div>
@@ -2035,6 +2301,17 @@ def main():
         )
         print(f"FRED: {fred_metadata.get('series_succeeded',0)}/{fred_metadata.get('series_attempted',0)} series succeeded")
 
+    census_metadata = {"from_cache": False, "rows_returned": 0}
+    census_warnings = []
+    census_data = {}
+    if CENSUS_AVAILABLE:
+        print("Calling Census Bureau for data center construction...")
+        census_data, census_warnings, census_metadata = census_construction.fetch_data_center_construction(
+            cache_path="data_center_cache.json",
+            force_refresh=False,
+        )
+        print(f"Census: {census_metadata.get('rows_returned', 0)} monthly observations")
+
     all_rows = compute_status_from_data(all_rows)
 
     flag_summary = None
@@ -2045,7 +2322,7 @@ def main():
 
     print(f"Batch A: {len(rows_a)} rows, Batch B: {len(rows_b)} rows, Total: {len(all_rows)}")
 
-    html = build_html(all_rows, macro, top3, datetime_str, commodities, fred_data, sec_data)
+    html = build_html(all_rows, macro, top3, datetime_str, commodities, fred_data, sec_data, census_data)
 
     with open('index.html', 'w', encoding='utf-8') as f:
         f.write(html)
@@ -2085,6 +2362,11 @@ def main():
                     "series_succeeded": fred_metadata.get("series_succeeded", 0),
                     "series_failed": fred_metadata.get("series_failed", []),
                     "warnings": fred_warnings[:20],
+                },
+                "census": {
+                    "from_cache": census_metadata.get("from_cache", False),
+                    "rows_returned": census_metadata.get("rows_returned", 0),
+                    "warnings": census_warnings[:5],
                 },
             },
             "overrides_applied": {
