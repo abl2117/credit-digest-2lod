@@ -589,28 +589,92 @@ def call_claude(prompt, batch_name):
 
 
 def parse_json(raw, label):
+    """
+    Defensive JSON extraction. Claude sometimes prefixes responses with preamble
+    text or wraps in markdown code blocks despite explicit prompting. This
+    function tries multiple strategies in order:
+      1. Parse as-is (works when Claude obeyed the prompt)
+      2. Strip markdown code fences
+      3. Find the largest balanced {...} block using a proper bracket counter
+         (handles preamble before AND trailing text after the JSON)
+      4. Scan for multiple candidate JSON objects and pick the largest valid one
+    """
     if not raw:
         return None, f"JSON parse error in {label}: empty response"
     cleaned = raw.strip()
-    if cleaned.startswith('```'):
-        lines = cleaned.split('\n')
-        cleaned = '\n'.join(lines[1:-1] if lines[-1].strip() == '```' else lines[1:])
-        cleaned = cleaned.strip()
+
+    # Strategy 1: parse as-is
     try:
         return json.loads(cleaned), None
     except Exception:
         pass
+
+    # Strategy 2: strip markdown code fences if present
+    if '```' in cleaned:
+        # Find content between triple backticks (with or without language tag)
+        m = re.search(r'```(?:json)?\s*(.+?)```', cleaned, re.DOTALL)
+        if m:
+            try:
+                return json.loads(m.group(1).strip()), None
+            except Exception:
+                pass
+
+    # Strategy 3: find largest balanced {...} block using bracket counter
+    # This properly handles preamble before and trailing text after the JSON,
+    # even if the preamble contains stray { or } characters in code/examples.
+    best_candidate = None
+    best_length = 0
+    depth = 0
+    start_idx = -1
+    in_string = False
+    escape_next = False
+    for i, ch in enumerate(cleaned):
+        if escape_next:
+            escape_next = False
+            continue
+        if ch == '\\' and in_string:
+            escape_next = True
+            continue
+        if ch == '"':
+            in_string = not in_string
+            continue
+        if in_string:
+            continue
+        if ch == '{':
+            if depth == 0:
+                start_idx = i
+            depth += 1
+        elif ch == '}':
+            if depth > 0:
+                depth -= 1
+                if depth == 0 and start_idx != -1:
+                    candidate_str = cleaned[start_idx:i+1]
+                    candidate_len = len(candidate_str)
+                    # Try parsing this candidate; keep the largest valid one
+                    try:
+                        parsed = json.loads(candidate_str)
+                        if candidate_len > best_length:
+                            best_candidate = parsed
+                            best_length = candidate_len
+                    except Exception:
+                        pass
+                    start_idx = -1
+    if best_candidate is not None:
+        return best_candidate, None
+
+    # Strategy 4: salvage attempt - find first { and last } and try with truncation
     start = cleaned.find('{')
     end = cleaned.rfind('}')
     if start != -1 and end != -1 and end > start:
         candidate = cleaned[start:end+1]
+        # Strip everything before "rows" key if it looks like data is there
         try:
             return json.loads(candidate), None
         except Exception as e:
-            preview = cleaned[:300].replace('\n',' ')
-            return None, f"JSON parse error in {label}: {str(e)[:150]} | First 300 chars: {preview}"
-    preview = cleaned[:300].replace('\n',' ')
-    return None, f"JSON parse error in {label}: no JSON object found | First 300 chars: {preview}"
+            preview = cleaned[:400].replace('\n', ' ')
+            return None, f"JSON parse error in {label}: {str(e)[:150]} | First 400 chars: {preview}"
+    preview = cleaned[:400].replace('\n', ' ')
+    return None, f"JSON parse error in {label}: no JSON object found | First 400 chars: {preview}"
 
 
 def apply_overrides(rows):
