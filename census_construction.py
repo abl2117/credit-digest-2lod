@@ -129,15 +129,24 @@ def _parse_csv(text):
     if not fieldnames:
         return []
 
-    # Identify the value column. OWID grapher CSVs have Entity, Code, Year, then
-    # the indicator column (which has a long descriptive name).
-    standard_cols = {"Entity", "Code", "Year"}
+    # Identify the time column. OWID grapher CSVs use one of: "Year" (annual data),
+    # "Day" (sub-annual data with YYYY-MM-DD strings), "Date", or similar.
+    time_col = None
+    for candidate in ("Day", "Year", "Date", "Month"):
+        if candidate in fieldnames:
+            time_col = candidate
+            break
+    if not time_col:
+        print(f"  OWID CSV no recognizable time column. Fieldnames: {fieldnames}")
+        return []
+    # Identify the value column: not Entity/Code and not the time column.
+    standard_cols = {"Entity", "Code", time_col}
     value_cols = [c for c in fieldnames if c not in standard_cols]
     if not value_cols:
         print(f"  OWID CSV unexpected schema. Fieldnames: {fieldnames}")
         return []
     value_col = value_cols[0]
-    print(f"  OWID value column: '{value_col}'")
+    print(f"  OWID time column: '{time_col}', value column: '{value_col}'")
 
     # Collect raw rows first
     raw_rows = list(reader)
@@ -178,24 +187,39 @@ def _parse_csv(text):
                 return d
         return None
 
-    # Sample first 5 rows to identify the right Year encoding, log the choice
+    # Sample first 5 rows to identify the right time encoding, log the choice
     sample_decoded = []
     for row in raw_rows[:5]:
-        d = try_decode_year(row.get("Year", ""))
+        d = try_decode_year(row.get(time_col, ""))
         if d:
-            sample_decoded.append((row.get("Year", ""), d))
+            sample_decoded.append((row.get(time_col, ""), d))
     if sample_decoded:
-        print(f"  OWID Year decode sample: {sample_decoded[0][0]} -> {sample_decoded[0][1].strftime('%Y-%m-%d')}")
+        print(f"  OWID time decode sample: {sample_decoded[0][0]} -> {sample_decoded[0][1].strftime('%Y-%m-%d')}")
+
+    # Detect whether values are in raw dollars or millions of dollars by checking
+    # the magnitude of the first valid value. Values >= 1,000,000 are raw dollars
+    # (OWID's default for this series); values < 100,000 are already in $M.
+    scale_divisor = 1.0
+    for row in raw_rows[:10]:
+        val_raw = row.get(value_col, "")
+        try:
+            v = float(val_raw)
+            if v >= 1_000_000:
+                scale_divisor = 1_000_000.0
+                print(f"  OWID values appear to be in raw dollars; dividing by 1M to get $M")
+            break
+        except (ValueError, TypeError):
+            continue
 
     rows = []
     for row in raw_rows:
-        year_raw = row.get("Year", "")
+        time_raw = row.get(time_col, "")
         val_raw = row.get(value_col, "")
-        d = try_decode_year(year_raw)
+        d = try_decode_year(time_raw)
         if not d:
             continue
         try:
-            val = float(val_raw)
+            val = float(val_raw) / scale_divisor
         except (ValueError, TypeError):
             continue
         period = d.strftime("%Y-%m")
