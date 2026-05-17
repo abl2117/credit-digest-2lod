@@ -297,6 +297,74 @@ def compute_status_from_data(rows):
     return rows
 
 
+def fetch_yfinance_balance_sheet_fallback(rows, sec_data, watchlist):
+    """
+    For names where SEC EDGAR returned no total_debt, fetch fallback values
+    from yfinance's .info dictionary (totalDebt, totalCash). yfinance covers
+    foreign filers and non-SEC filers that SEC EDGAR cannot.
+
+    Limitations:
+    - yfinance values are point-in-time from latest available filing (annual for
+      foreign filers, quarterly for US filers). Mixing with SEC LTM data is fine
+      for EV computation but not appropriate for trend metrics.
+    - Values reported in company's local currency. For US tickers this is USD;
+      for foreign ADRs and OTC tickers yfinance usually converts to USD but
+      check the financialCurrency field.
+    - Less authoritative than SEC EDGAR. We tag these rows with a separate source
+      label so the UI can show the user the data is from yfinance, not SEC.
+
+    Returns the updated rows. Modifies rows in place with new total_debt, cash,
+    net_debt, and a _financials_source = "yfinance" marker.
+    """
+    if not YFINANCE_AVAILABLE:
+        return rows
+    candidates = []
+    for r in rows:
+        co = r.get('company', '')
+        td = str(r.get('total_debt', '')).strip().lower()
+        # Only fallback when SEC didn't populate total_debt
+        if td in ('', 'n/a', 'none'):
+            ticker = watchlist.get(co, {}).get('ticker', '').upper()
+            if ticker:
+                candidates.append((co, ticker, r))
+    if not candidates:
+        print("yfinance balance sheet fallback: no candidates needed.")
+        return rows
+    print(f"yfinance balance sheet fallback: pulling Total Debt and Cash for {len(candidates)} names...")
+    succeeded = 0
+    for co, ticker, row in candidates:
+        try:
+            info = yf.Ticker(ticker).info or {}
+            total_debt = info.get('totalDebt')
+            total_cash = info.get('totalCash')
+            currency = info.get('financialCurrency', 'USD')
+            # Only accept USD-denominated values to avoid FX mismatches against
+            # USD market cap. Non-USD tickers (most foreign filers) get skipped.
+            if currency and currency.upper() != 'USD':
+                print(f"  {co} ({ticker}): yfinance reports in {currency}, skipping to avoid FX mismatch")
+                continue
+            if total_debt is not None:
+                row['total_debt'] = f"{total_debt / 1e9:.1f}"
+                # Also fill cash if SEC didn't have it
+                if str(row.get('cash', '')).strip().lower() in ('', 'n/a', 'none') and total_cash is not None:
+                    row['cash'] = f"{total_cash / 1e9:.1f}"
+                # Compute net debt
+                if total_cash is not None:
+                    row['net_debt'] = f"{(total_debt - total_cash) / 1e9:.1f}"
+                row['_financials_source'] = 'yfinance'
+                # Clear the "Total debt not found" warning since we now have it
+                warnings_list = row.get('_fin_warnings', [])
+                row['_fin_warnings'] = [w for w in warnings_list if 'Total debt' not in w]
+                succeeded += 1
+                print(f"  {co} ({ticker}): Total Debt ${total_debt/1e9:.1f}B, Cash ${(total_cash or 0)/1e9:.1f}B")
+            else:
+                print(f"  {co} ({ticker}): no totalDebt in yfinance info")
+        except Exception as e:
+            print(f"  {co} ({ticker}): yfinance fallback error: {str(e)[:100]}")
+    print(f"yfinance fallback: filled Total Debt for {succeeded}/{len(candidates)} names.")
+    return rows
+
+
 def fetch_commodities_fx():
     if not YFINANCE_AVAILABLE:
         return {}
@@ -1450,6 +1518,8 @@ def _tmt_company_row(co_name, all_rows, sec_data):
         form_label = filing_form if filing_form else ""
         period_label = period_end if period_end else "unknown"
         source_marker = f'<span class="src-tag sec" title="Source: SEC EDGAR {form_label} as of {period_label}">SEC</span>'
+    elif fin_source == 'yfinance':
+        source_marker = '<span class="src-tag yf" title="Source: yfinance balance sheet (Total Debt fallback for non-SEC filer or unusual tag structure)">YF</span>'
     else:
         source_marker = '<span class="src-tag claude" title="Source: Claude web search">EST</span>'
     return (
@@ -1653,6 +1723,9 @@ def build_html(all_rows, macro, top3, datetime_str, commodities=None, fred_data=
             period_label = period_end if period_end else "unknown"
             source_marker = f'<span class="src-tag sec" title="Source: SEC EDGAR {form_label} as of {period_label}">SEC</span>'
             has_history = bool(sec_data.get(co))
+        elif fin_source == 'yfinance':
+            source_marker = '<span class="src-tag yf" title="Source: yfinance balance sheet (Total Debt fallback for non-SEC filer or unusual tag structure). Less authoritative than SEC EDGAR. Historical detail unavailable.">YF</span>'
+            has_history = False
         else:
             source_marker = '<span class="src-tag claude" title="Source: Claude web search (less reliable than SEC EDGAR)">EST</span>'
             has_history = False
@@ -1903,6 +1976,7 @@ tbody tr:hover{background:#0d1520}
 .src-tag{display:inline-block;font-family:"IBM Plex Mono",monospace;font-size:8px;letter-spacing:.5px;padding:1px 4px;border-radius:2px;margin-left:6px;vertical-align:middle;cursor:help}
 .src-tag.sec{background:#001a0a;color:#4ec38a;border:1px solid #1a5c32}
 .src-tag.claude{background:#0d1520;color:#7090a8;border:1px solid #1e2a3a}
+.src-tag.yf{background:#1a1500;color:#f0b429;border:1px solid #5c4a1a}
 .data-warn{color:#f0b429;font-size:12px;cursor:help;margin-left:2px}
 .tmt-tab-content{padding:24px 28px}
 .tmt-intro{color:#a0b4c8;font-size:12px;line-height:1.5;margin-bottom:20px;padding-bottom:14px;border-bottom:1px solid #1e2a3a;max-width:960px}
@@ -2204,26 +2278,63 @@ footer li strong{color:#ffaaaa}
 <div class="pane" id="pane-methodology">
 <div class="methodology-content">
   <h2>Status Definitions</h2>
-  <p>Status is computed deterministically from underlying data after each run.</p>
+  <p>Status is computed deterministically from underlying data after each run, not provided by any analyst or model. Same inputs always produce the same status.</p>
   <table class="methodology-table">
     <tr><td><span class="status-badge red">RED</span></td><td>Concern &ge; 70, action Review/Escalate, 2+ negative outlooks, YTD &lt; -30%, or leverage &gt;5x AND FCF negative.</td></tr>
     <tr><td><span class="status-badge amber">AMBER</span></td><td>Concern &ge; 30, action Watch, 1 negative outlook, leverage &gt; 5x, FCF negative, YTD &lt; -20%, or 1M &lt; -15%.</td></tr>
     <tr><td><span class="status-badge green">GREEN</span></td><td>No triggers fired.</td></tr>
   </table>
 
+  <h2>Financial Metric Definitions</h2>
+  <p>All metrics are LTM (Last Twelve Months) unless explicitly labeled FY. All dollar figures in $Bn unless noted.</p>
+  <table class="methodology-table">
+    <tr><th>Metric</th><th>Definition</th><th>Source</th></tr>
+    <tr><td><strong>Revenue (LTM)</strong></td><td>Sum of four most recent non-overlapping quarterly Revenue observations. For 20-F foreign filers, the latest annual filing.</td><td>SEC EDGAR XBRL <code>Revenues</code> or fallback chain</td></tr>
+    <tr><td><strong>Growth YoY</strong></td><td>Current LTM Revenue divided by prior-year LTM Revenue, minus one. Compares 4 most recent quarters against the 4 preceding non-overlapping quarters.</td><td>Derived from Revenue history</td></tr>
+    <tr><td><strong>EBITDA</strong></td><td>Operating Income + Depreciation, Depreciation &amp; Amortization. LTM basis.</td><td>SEC EDGAR <code>OperatingIncomeLoss</code> + <code>DepreciationDepletionAndAmortization</code></td></tr>
+    <tr><td><strong>EBITDA Margin</strong></td><td>EBITDA divided by Revenue, expressed as percent.</td><td>Derived</td></tr>
+    <tr><td><strong>Operating Margin</strong></td><td>Operating Income divided by Revenue, expressed as percent.</td><td>Derived</td></tr>
+    <tr><td><strong>FCF (Free Cash Flow)</strong></td><td>Operating Cash Flow minus absolute value of Capital Expenditures. LTM basis. Note: this is unlevered FCF before financing.</td><td>SEC EDGAR <code>NetCashProvidedByUsedInOperatingActivities</code> + <code>PaymentsToAcquirePropertyPlantAndEquipment</code></td></tr>
+    <tr><td><strong>Cash</strong></td><td>Cash &amp; cash equivalents at most recent reporting date.</td><td>SEC EDGAR <code>CashAndCashEquivalentsAtCarryingValue</code></td></tr>
+    <tr><td><strong>Long-Term Debt</strong></td><td>Non-current portion of total debt at most recent reporting date. Tag chain walks 15 candidates including capital lease obligations, senior notes, secured/unsecured debt, mortgages payable.</td><td>SEC EDGAR fallback chain (15 candidate tags)</td></tr>
+    <tr><td><strong>Short-Term Debt</strong></td><td>Current portion of long-term debt + commercial paper + short-term borrowings. Tag chain walks 8 candidates.</td><td>SEC EDGAR fallback chain</td></tr>
+    <tr><td><strong>Total Debt</strong></td><td>Long-Term Debt + Short-Term Debt. For names where SEC EDGAR returns no debt data (20-F filers, unusual tag structures), falls back to yfinance balance sheet.</td><td>SEC EDGAR primary, yfinance fallback</td></tr>
+    <tr><td><strong>Net Debt</strong></td><td>Total Debt minus Cash.</td><td>Derived</td></tr>
+    <tr><td><strong>Net Leverage (ND/EBITDA)</strong></td><td>Net Debt divided by LTM EBITDA. The standard rating-agency leverage measure. Investment-grade typically below 3.0x. &gt;5.0x is the Red Flag threshold. Shown as n/a when Net Debt is negative (cash exceeds debt) or EBITDA is zero/negative.</td><td>Derived</td></tr>
+    <tr><td><strong>Interest Coverage</strong></td><td>EBITDA divided by LTM Interest Expense.</td><td>SEC EDGAR <code>InterestExpense</code> + derived</td></tr>
+  </table>
+
+  <h2>Market Data Definitions</h2>
+  <table class="methodology-table">
+    <tr><th>Metric</th><th>Definition</th><th>Source</th></tr>
+    <tr><td><strong>Market Cap</strong></td><td>Current share price times shares outstanding. From yfinance fast_info.</td><td>yfinance</td></tr>
+    <tr><td><strong>EV (Enterprise Value)</strong></td><td>Market Cap + Total Debt - Cash. The theoretical takeover price: what an acquirer would pay equity holders plus assume in debt, less captured cash. Shown as n/a when any of the three inputs is missing.</td><td>Derived</td></tr>
+    <tr><td><strong>1D / 1M / YTD %</strong></td><td>Total return percentage change from previous close, 22 trading days back, and start of calendar year respectively.</td><td>yfinance</td></tr>
+    <tr><td><strong>52W High / Low</strong></td><td>Highest and lowest adjusted close over trailing 252 trading days.</td><td>yfinance</td></tr>
+  </table>
+
+  <h2>Data Source Tags</h2>
+  <p>Each financials row is tagged with its source. Tags appear next to the company name on the Financials and TMT tabs.</p>
+  <ul>
+    <li><span class="src-tag sec">SEC</span> Pulled from SEC EDGAR XBRL company facts API. Authoritative, audited filings.</li>
+    <li><span class="src-tag claude">EST</span> Sourced from Claude web search. Used only when SEC EDGAR data is unavailable. Less reliable.</li>
+    <li><span class="src-tag claude">YF</span> Fallback for Total Debt from yfinance balance sheet when SEC EDGAR returns no debt fields. Used for non-SEC filers (Nissan, Imperial Brands) and some 20-F foreign filers.</li>
+  </ul>
+  <p>Warning icon (<span class="data-warn">&#9888;</span>) next to a company name indicates SEC EDGAR returned a validation warning (stale period, unusual ratio, or missing field). Hover for details.</p>
+
   <h2>Financials Tab</h2>
-  <p>Summary row shows LTM metrics. Click any row with a &#9656; to expand historical detail showing the last 3 fiscal years plus LTM. Income Statement &amp; Cash Flow plus Capital Structure tables with YoY and trend columns.</p>
+  <p>Summary row shows LTM metrics. Click any row with a &#9656; to expand historical detail showing the last 3 fiscal years plus LTM. Income Statement &amp; Cash Flow plus Capital Structure tables with YoY and trend columns. Historical years are reconstructed from quarterly XBRL data by summing 4 non-overlapping quarters ending at each fiscal year-end.</p>
 
   <h2>TMT Tab</h2>
-  <p>Sector deep-dive. Three sections:</p>
+  <p>Sector deep-dive with three layers, top to bottom:</p>
   <ul>
-    <li><strong>US Data Center Construction</strong> at top: monthly Census Bureau VIP data showing total private construction put-in-place spending. The macro demand signal for the entire TMT portfolio. Includes monthly level chart and month-over-month change chart.</li>
-    <li><strong>Hyperscaler CapEx (Stacked, Historical)</strong>: annual CapEx for MSFT + GOOGL + AMZN + ORCL going back 4 fiscal years plus LTM. The public-company subset driving data center demand.</li>
-    <li><strong>Five subsection tables</strong>: Hyperscalers, Data Center &amp; Tower REITs, Telecom, Hardware &amp; EMS, and Software/Payments/Services. Filter pills apply across all subsections.</li>
+    <li><strong>US Data Center Construction</strong>: monthly private construction put-in-place spending, sourced from US Census Bureau VIP via Our World in Data. Values inflation-adjusted to constant 2021 US$ using BLS PPI for new office building construction. Lagged ~6 weeks. Charts show monthly level and month-over-month change. KPI tiles show latest value, YoY %, 3-month average MoM, and 5-year growth.</li>
+    <li><strong>Hyperscaler CapEx (Stacked, Historical)</strong>: annual CapEx for Microsoft, Alphabet, Amazon, and Oracle going back 4 fiscal years plus LTM. Stacked bars sum to the latest period total shown in the callout box. The public-company subset driving data center construction demand.</li>
+    <li><strong>Five subsection tables</strong>: Hyperscalers, Data Center &amp; Tower REITs, Telecom, Hardware &amp; EMS, Software/Payments/Services. Filter pills (Red/Amber/Green) apply across all subsections.</li>
   </ul>
 
   <h2>Red Flags Framework</h2>
-  <p>9 of 12 universal flags computed each run from SEC EDGAR, yfinance, and ratings data.</p>
+  <p>9 of 12 universal flags computed deterministically each run. Thresholds set based on rating-agency benchmarks and historical default precedents.</p>
   <table class="methodology-table">
     <tr><th>Flag</th><th>Threshold</th><th>Watch</th><th>Source</th></tr>
     <tr><td>1. Leverage Too High</td><td>ND/EBITDA &gt; 5.0x</td><td>&gt; 4.0x</td><td>SEC EDGAR</td></tr>
@@ -2238,13 +2349,24 @@ footer li strong{color:#ffaaaa}
   </table>
 
   <h2>Macro Indicators</h2>
-  <p>HY OAS, IG OAS, 10Y UST, and 2Y UST in the header strip pull directly from FRED. Spreads converted from percent to basis points for the header tile; the Macro tab displays the same FRED observations in their native percent format. One source, one number.</p>
+  <p>HY OAS, IG OAS, 10Y UST, and 2Y UST in the header strip pull directly from FRED. Spreads converted from percent to basis points for the header tile. The Macro tab displays the same FRED observations in their native percent format with category groupings (Rates, Spreads, Inflation, Labor, Activity).</p>
+
+  <h2>Data Sources</h2>
+  <table class="methodology-table">
+    <tr><th>Source</th><th>Purpose</th><th>Cache TTL</th></tr>
+    <tr><td>SEC EDGAR</td><td>Financial metrics for SEC filers</td><td>6 days</td></tr>
+    <tr><td>yfinance</td><td>Market data, stock returns, Total Debt fallback</td><td>None (live every run)</td></tr>
+    <tr><td>FRED</td><td>Macro indicators (19 series across rates, spreads, inflation, labor, activity)</td><td>20 hours</td></tr>
+    <tr><td>Our World in Data</td><td>US data center construction spending (mirrors Census Bureau VIP + BLS PPI)</td><td>24 hours</td></tr>
+    <tr><td>Anthropic Claude</td><td>Ratings, news, earnings dates, key developments, Top 3</td><td>None (live every run)</td></tr>
+  </table>
 
   <h2>Refresh Cadence</h2>
   <ul>
-    <li>Daily 8:00 AM ET on weekdays</li>
-    <li>Daily: market data, FX, indices (yfinance); ratings, news, top 3 (Claude); FRED macro (TTL 20h); Census data center construction (TTL 24h)</li>
-    <li>Weekly: SEC EDGAR financials (TTL 6 days)</li>
+    <li>Workflow runs daily at 8:00 AM ET on weekdays (cron schedule). Can be triggered manually via the Actions tab.</li>
+    <li>Daily refresh: market data + commodities + indices (yfinance), ratings + news + Top 3 (Claude), FRED macro, data center construction (Our World in Data).</li>
+    <li>Weekly refresh: SEC EDGAR financials (TTL 6 days). Delete <code>financials_cache.json</code> to force a refresh.</li>
+    <li>Each run logs to <code>runs.json</code> with full diagnostics. Keep last 60 runs.</li>
   </ul>
 </div>
 </div>
@@ -2284,6 +2406,9 @@ def main():
     if SEC_EDGAR_AVAILABLE:
         sec_data, sec_warnings, sec_metadata = sec_edgar.fetch_financials(WATCHLIST)
         all_rows = sec_edgar.apply_sec_overrides(all_rows, sec_data)
+
+    # yfinance balance-sheet fallback for names where SEC EDGAR returned no total_debt
+    all_rows = fetch_yfinance_balance_sheet_fallback(all_rows, sec_data, WATCHLIST)
 
     market_data = fetch_market_data()
     all_rows = apply_market_overrides(all_rows, market_data)
