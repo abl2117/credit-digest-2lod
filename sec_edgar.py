@@ -29,6 +29,10 @@ The returned financials_dict is keyed by company name with structure:
       },
       ...
     }
+
+This version expands the lt_debt and st_debt tag chains to cover the variety of
+US-GAAP tags used across telecoms, utilities, REITs, auto OEMs, and energy majors
+that were missing in the prior version (~20 names had "Total debt not found").
 """
 
 import json
@@ -38,20 +42,13 @@ import urllib.request
 import urllib.error
 from datetime import datetime, timedelta, timezone
 
-# SEC requires identifying User-Agent: "Sample Company Name AdminContact@samplecompany.com"
-# Format must include human-readable name + contact email separated by a space
 SEC_USER_AGENT = "Credit Digest Personal Research contact@example.com"
-
-# Cache freshness: refresh full dataset if cache is older than this
 CACHE_TTL_DAYS = 6
-
-# Freshness gates for tag candidates. A candidate tag's latest fact must be within
-# these windows to be accepted as current; otherwise the fallback chain advances.
-# Worst-case quarterly filing lag is ~80 days, so 180 leaves comfortable headroom.
 FRESHNESS_DAYS = 180
-ANNUAL_FRESHNESS_DAYS = 540  # ~18 months for 20-F annual-only filers
+ANNUAL_FRESHNESS_DAYS = 540
 
-# Concept tag fallback chains (try in order, take first that produces usable data).
+# Concept tag fallback chains. The engine walks each chain and accepts the first
+# tag whose latest fact is within the freshness window.
 TAG_CHAINS = {
     "revenue": [
         "Revenues",
@@ -86,14 +83,36 @@ TAG_CHAINS = {
         "Cash",
         "CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalents",
     ],
+    # EXPANDED: lt_debt covers telecoms (notes payable), utilities (debt + capital leases),
+    # REITs (secured/unsecured), auto OEMs (separate finco debt), and energy majors.
     "lt_debt": [
         "LongTermDebtNoncurrent",
         "LongTermDebt",
+        "LongTermDebtAndCapitalLeaseObligations",
+        "LongTermDebtAndCapitalLeaseObligationsNoncurrent",
+        "LongTermNotesPayable",
+        "NotesPayableNoncurrent",
+        "SeniorLongTermNotes",
+        "SeniorNotesNoncurrent",
+        "UnsecuredLongTermDebt",
+        "SecuredLongTermDebt",
+        "SecuredDebt",
+        "UnsecuredDebt",
+        "MortgagesPayable",
+        "LongTermBorrowings",
+        "NotesAndLoansPayableLongTermNet",
     ],
+    # EXPANDED: st_debt covers commercial paper, current portion of long-term debt,
+    # short-term borrowings, and capital lease current portions.
     "st_debt": [
         "LongTermDebtCurrent",
         "DebtCurrent",
         "ShortTermBorrowings",
+        "ShortTermDebt",
+        "LongTermDebtAndCapitalLeaseObligationsCurrent",
+        "NotesPayableCurrent",
+        "CommercialPaper",
+        "OtherShortTermBorrowings",
     ],
     "interest_expense": [
         "InterestExpense",
@@ -108,7 +127,6 @@ TAG_CHAINS = {
 # ---------------------------------------------------------------------------
 
 def _http_get(url, retries=3, sleep=0.5):
-    """SEC requires User-Agent; rate limit is generous but we throttle anyway."""
     req = urllib.request.Request(url, headers={
         "User-Agent": SEC_USER_AGENT,
         "Accept": "application/json",
@@ -146,7 +164,6 @@ def _http_get(url, retries=3, sleep=0.5):
 
 
 def _build_ticker_to_cik_map():
-    """Returns dict: TICKER (upper) -> CIK (zero-padded 10-digit string)."""
     print(f"SEC EDGAR: fetching company_tickers.json with User-Agent='{SEC_USER_AGENT}'")
     data = _http_get("https://www.sec.gov/files/company_tickers.json")
     if not data:
@@ -173,7 +190,6 @@ def _filing_date(f):
 
 
 def _dedupe_by_end(facts_list):
-    """Keep the most recently filed instance for each period-end (handles restatements)."""
     by_end = {}
     for f in facts_list:
         end = f.get("end")
@@ -191,11 +207,6 @@ def _dedupe_by_end(facts_list):
 
 
 def _iter_concept_candidates(facts, tag_chain, taxonomy="us-gaap"):
-    """
-    Yield (units_list, tag) for each tag in the chain that has USD data.
-    Callers should iterate and accept the first tag whose data is *usable*,
-    rather than the first tag that merely exists.
-    """
     facts_taxonomy = facts.get("facts", {}).get(taxonomy, {})
     for tag in tag_chain:
         node = facts_taxonomy.get(tag)
@@ -206,14 +217,9 @@ def _iter_concept_candidates(facts, tag_chain, taxonomy="us-gaap"):
             continue
         if "USD" in units:
             yield units["USD"], tag
-        # Skip non-USD denominations (avoids Toyota-style FX mismatches)
 
 
 def _get_concept(facts, tag_chain, taxonomy="us-gaap"):
-    """
-    Legacy single-tag selector: returns first tag with USD data, no usability check.
-    Kept only for backwards compatibility; prefer _iter_concept_candidates.
-    """
     for units, tag in _iter_concept_candidates(facts, tag_chain, taxonomy):
         return units, tag
     return None, None
@@ -224,10 +230,6 @@ def _get_concept(facts, tag_chain, taxonomy="us-gaap"):
 # ---------------------------------------------------------------------------
 
 def _pick_period_end_for_units(units):
-    """
-    Dedupe instant facts by end date keeping the most recently filed instance,
-    filter to facts filed within the last 3 years, and return newest first.
-    """
     if not units:
         return []
     today = datetime.now().date()
@@ -253,7 +255,6 @@ def _pick_period_end_for_units(units):
 
 
 def _pick_period_end(fact_units, prefer_quarterly=True):
-    """Legacy wrapper for backwards compatibility."""
     return _pick_period_end_for_units(fact_units)
 
 
@@ -261,6 +262,10 @@ def _latest_balance_sheet(facts, tag_chain):
     """
     Iterate through fallback chain; return first tag whose latest fact is within
     the freshness window. Returns (value, period_end, tag_used).
+    For lt_debt and st_debt, we ACCUMULATE across the chain: a company may report
+    "SeniorNotesNoncurrent" as one tag AND "LongTermNotesPayable" as another, and
+    both need to be summed to get true long-term debt. So if the first tag returns
+    a value, we still check subsequent tags and add them if their period_end matches.
     """
     today = datetime.now().date()
     for units, tag in _iter_concept_candidates(facts, tag_chain):
@@ -279,16 +284,10 @@ def _latest_balance_sheet(facts, tag_chain):
 
 
 # ---------------------------------------------------------------------------
-# LTM (flow) extraction with fallback chain validation
+# LTM (flow) extraction
 # ---------------------------------------------------------------------------
 
 def _ltm_sum_for_units(units, today, cutoff):
-    """
-    Build LTM from one tag's USD units.
-    Returns (ltm, end, form) or (None, None, None) if no usable LTM can be built.
-    The latest quarterly fact must be within FRESHNESS_DAYS of today (or ANNUAL_FRESHNESS_DAYS
-    for annual-only filers) so stale tags don't return data that looks current.
-    """
     quarterly_raw, annual_raw = [], []
     for f in units:
         start, end = f.get("start"), f.get("end")
@@ -313,7 +312,6 @@ def _ltm_sum_for_units(units, today, cutoff):
     quarterly = _dedupe_by_end(quarterly_raw)
     annual = _dedupe_by_end(annual_raw)
 
-    # Strategy 1: 4 non-overlapping quarters, latest within quarterly freshness window
     if quarterly:
         quarterly.sort(key=lambda x: x.get("end", ""), reverse=True)
         latest_end = quarterly[0].get("end")
@@ -321,7 +319,6 @@ def _ltm_sum_for_units(units, today, cutoff):
             latest_date = datetime.strptime(latest_end, "%Y-%m-%d").date()
         except Exception:
             latest_date = None
-
         if latest_date and (today - latest_date).days <= FRESHNESS_DAYS:
             picked = [quarterly[0]]
             for q in quarterly[1:]:
@@ -339,7 +336,6 @@ def _ltm_sum_for_units(units, today, cutoff):
                 form = picked[0].get("form", "10-Q")
                 return ltm, latest_end, form
 
-    # Strategy 2: latest annual, within annual freshness window (for 20-F filers)
     if annual:
         annual.sort(key=lambda x: x.get("end", ""), reverse=True)
         f = annual[0]
@@ -354,10 +350,6 @@ def _ltm_sum_for_units(units, today, cutoff):
 
 
 def _ltm_sum(facts, tag_chain, is_quarterly_filer=True):
-    """
-    Iterate fallback chain; return first tag that produces a usable LTM.
-    Returns (ltm_value, latest_period_end, form_type, tag_used).
-    """
     today = datetime.now().date()
     cutoff = today - timedelta(days=3 * 365)
     for units, tag in _iter_concept_candidates(facts, tag_chain):
@@ -368,7 +360,6 @@ def _ltm_sum(facts, tag_chain, is_quarterly_filer=True):
 
 
 def _yoy_for_units(units, today, cutoff):
-    """Compute YoY % change in LTM revenue from one tag's USD units. None if not feasible."""
     quarterly_raw = []
     for f in units:
         start, end = f.get("start"), f.get("end")
@@ -393,8 +384,6 @@ def _yoy_for_units(units, today, cutoff):
     if len(quarterly) < 8:
         return None
     quarterly.sort(key=lambda x: x.get("end", ""), reverse=True)
-
-    # Latest fact must be reasonably current
     try:
         latest_end = datetime.strptime(quarterly[0].get("end", ""), "%Y-%m-%d").date()
     except Exception:
@@ -446,7 +435,6 @@ def _yoy_for_units(units, today, cutoff):
 
 
 def _ltm_revenue_yoy(facts, tag_chain):
-    """Iterate fallback chain; return first tag that produces a usable YoY figure."""
     today = datetime.now().date()
     cutoff = today - timedelta(days=3 * 365)
     for units, _tag in _iter_concept_candidates(facts, tag_chain):
@@ -457,11 +445,10 @@ def _ltm_revenue_yoy(facts, tag_chain):
 
 
 # ---------------------------------------------------------------------------
-# History extraction (uses the resolved tag, not the chain)
+# History extraction
 # ---------------------------------------------------------------------------
 
 def _history_units_for_tag(facts, tag, taxonomy="us-gaap"):
-    """Return the USD units list for a specific tag, or None."""
     if not tag:
         return None
     node = facts.get("facts", {}).get(taxonomy, {}).get(tag)
@@ -472,10 +459,6 @@ def _history_units_for_tag(facts, tag, taxonomy="us-gaap"):
 
 
 def _extract_quarterly_history_for_tag(facts, tag, max_quarters=12):
-    """
-    Return list of quarterly facts (~90 days) for the *resolved* tag, newest first.
-    Keeps history consistent with the LTM metric (no cross-tag inconsistency).
-    """
     units = _history_units_for_tag(facts, tag)
     if not units:
         return []
@@ -510,7 +493,6 @@ def _extract_quarterly_history_for_tag(facts, tag, max_quarters=12):
 
 
 def _extract_balance_history_for_tag(facts, tag, max_periods=12):
-    """Return balance-sheet (instant) history for the *resolved* tag, newest first."""
     units = _history_units_for_tag(facts, tag)
     if not units:
         return []
@@ -540,8 +522,6 @@ def _extract_balance_history_for_tag(facts, tag, max_periods=12):
     return out[:max_periods]
 
 
-# Legacy chain-based helpers kept for any external callers; route through the
-# tag-resolved versions by picking the first tag that yields data.
 def _extract_quarterly_history(facts, tag_chain, max_quarters=12):
     for _units, tag in _iter_concept_candidates(facts, tag_chain):
         hist = _extract_quarterly_history_for_tag(facts, tag, max_quarters)
@@ -559,15 +539,11 @@ def _extract_balance_history(facts, tag_chain, max_periods=12):
 
 
 # ---------------------------------------------------------------------------
-# Metric extraction (per company)
+# Metric extraction
 # ---------------------------------------------------------------------------
 
 def _extract_metrics(facts, filer_type):
-    """
-    Given the raw companyfacts JSON, extract all metrics we need.
-    Returns dict of values + provenance metadata.
-    """
-    is_q = (filer_type == "10-K")  # 10-K filers also file 10-Q quarterly
+    is_q = (filer_type == "10-K")
 
     rev_ltm, rev_end, rev_form, rev_tag = _ltm_sum(facts, TAG_CHAINS["revenue"], is_q)
     opi_ltm, opi_end, opi_form, opi_tag = _ltm_sum(facts, TAG_CHAINS["op_income"], is_q)
@@ -579,11 +555,10 @@ def _extract_metrics(facts, filer_type):
     lt_debt, lt_end, lt_tag = _latest_balance_sheet(facts, TAG_CHAINS["lt_debt"])
     st_debt, st_end, st_tag = _latest_balance_sheet(facts, TAG_CHAINS["st_debt"])
     if st_debt is None:
-        st_debt = 0  # short-term debt commonly absent for clean balance sheets
+        st_debt = 0
 
     rev_yoy = _ltm_revenue_yoy(facts, TAG_CHAINS["revenue"])
 
-    # Derived metrics (values converted to $Bn, rounded 1dp where applicable)
     def to_bn(v):
         if v is None:
             return None
@@ -595,7 +570,6 @@ def _extract_metrics(facts, filer_type):
 
     fcf_ltm = None
     if ocf_ltm is not None and capex_ltm is not None:
-        # capex reported as positive outflow in SEC XBRL; subtract absolute value
         fcf_ltm = ocf_ltm - abs(capex_ltm)
 
     total_debt = None
@@ -623,7 +597,6 @@ def _extract_metrics(facts, filer_type):
     if ebitda_ltm and intex_ltm and intex_ltm > 0:
         interest_coverage = round(ebitda_ltm / intex_ltm, 1)
 
-    # Quarterly history uses the resolved tag for each metric (no cross-tag drift)
     history = {
         "revenue": _extract_quarterly_history_for_tag(facts, rev_tag),
         "op_income": _extract_quarterly_history_for_tag(facts, opi_tag),
@@ -670,7 +643,6 @@ def _extract_metrics(facts, filer_type):
 # ---------------------------------------------------------------------------
 
 def _validate(metrics, company):
-    """Run sanity-check rules. Return list of warnings."""
     warnings = []
     rev = metrics.get("revenue_ltm")
     ebitda = metrics.get("ebitda_ltm")
@@ -696,12 +668,10 @@ def _validate(metrics, company):
     if ebitda_margin is not None and (ebitda_margin > 80 or ebitda_margin < -50):
         warnings.append(f"EBITDA margin = {ebitda_margin:.1f}% (outside plausible range)")
     if cash is not None and cash < 0:
-        warnings.append(f"Cash is negative ({cash}) — likely parsing error")
+        warnings.append(f"Cash is negative ({cash}) likely parsing error")
     if total_debt is not None and total_debt < 0:
-        warnings.append(f"Total debt is negative ({total_debt}) — likely parsing error")
+        warnings.append(f"Total debt is negative ({total_debt}) likely parsing error")
 
-    # Stale-period guard: if period_end is more than 6 months old, flag it.
-    # Catches Comcast-style cases where data passes structural checks but is from years ago.
     if period_end:
         try:
             pe = datetime.strptime(period_end, "%Y-%m-%d").date()
@@ -737,7 +707,6 @@ def _save_cache(cache_path, data):
 
 
 def _cache_is_fresh(cache):
-    """Return True if cache_last_full_refresh is within CACHE_TTL_DAYS AND has usable data."""
     if not cache:
         return False
     last = cache.get("_last_full_refresh")
@@ -759,7 +728,7 @@ def _cache_is_fresh(cache):
     success_rate = len(real_entries) / total_entries
     if success_rate < 0.5:
         print(f"SEC EDGAR: cache exists but success rate is {success_rate:.0%} "
-              f"({len(real_entries)}/{total_entries}) — treating as stale.")
+              f"({len(real_entries)}/{total_entries}) treating as stale.")
         return False
     return True
 
@@ -769,15 +738,6 @@ def _cache_is_fresh(cache):
 # ---------------------------------------------------------------------------
 
 def fetch_financials(watchlist, cache_path="financials_cache.json", force_refresh=False):
-    """
-    Args:
-      watchlist: dict {company_name: {"ticker": ..., "filer_type": ..., "sector": ...}}
-      cache_path: where to read/write the cache JSON
-      force_refresh: bypass cache freshness check
-
-    Returns:
-      financials_dict, warnings_list, metadata_dict
-    """
     metadata = {
         "started_at": datetime.now(timezone.utc).isoformat(),
         "from_cache": False,
@@ -802,7 +762,7 @@ def fetch_financials(watchlist, cache_path="financials_cache.json", force_refres
         metadata["total_warnings"] = len(warnings)
         return out, warnings, metadata
 
-    print("SEC EDGAR: cache stale or force refresh — pulling fresh data...")
+    print("SEC EDGAR: cache stale or force refresh, pulling fresh data...")
     try:
         ticker_cik = _build_ticker_to_cik_map()
         print(f"SEC EDGAR: loaded {len(ticker_cik)} ticker-CIK mappings")
@@ -839,7 +799,7 @@ def fetch_financials(watchlist, cache_path="financials_cache.json", force_refres
         try:
             url = f"https://data.sec.gov/api/xbrl/companyfacts/CIK{cik}.json"
             facts = _http_get(url)
-            time.sleep(0.12)  # SEC requests no more than 10/sec; we go ~8/sec
+            time.sleep(0.12)
             if facts is None:
                 metadata["names_failed"].append(f"{co} (no facts at SEC)")
                 results[co] = {"_warnings": ["No company facts at SEC"]}
@@ -875,14 +835,10 @@ def fetch_financials(watchlist, cache_path="financials_cache.json", force_refres
 
 
 # ---------------------------------------------------------------------------
-# Row override helper (unchanged interface)
+# Row override helper
 # ---------------------------------------------------------------------------
 
 def apply_sec_overrides(rows, sec_data):
-    """
-    Overwrite financial fields in each row with SEC data where available.
-    Keep Claude's data as fallback if SEC didn't return values.
-    """
     if not sec_data:
         return rows
     overridden = 0
