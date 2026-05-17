@@ -466,12 +466,13 @@ def _history_units_for_tag(facts, tag, taxonomy="us-gaap"):
     return units.get("USD")
 
 
-def _extract_quarterly_history_for_tag(facts, tag, max_quarters=12):
+def _extract_quarterly_history_for_tag(facts, tag, max_quarters=20):
     units = _history_units_for_tag(facts, tag)
     if not units:
         return []
     today = datetime.now().date()
-    cutoff = today - timedelta(days=3 * 365)
+    # 6-year window to accommodate 5-year hyperscaler CapEx charts
+    cutoff = today - timedelta(days=6 * 365)
     raw = []
     for f in units:
         start, end = f.get("start"), f.get("end")
@@ -500,12 +501,13 @@ def _extract_quarterly_history_for_tag(facts, tag, max_quarters=12):
     return out[:max_quarters]
 
 
-def _extract_balance_history_for_tag(facts, tag, max_periods=12):
+def _extract_balance_history_for_tag(facts, tag, max_periods=20):
     units = _history_units_for_tag(facts, tag)
     if not units:
         return []
     today = datetime.now().date()
-    cutoff = today - timedelta(days=3 * 365)
+    # 6-year window to accommodate hyperscaler RPO and CapEx charts
+    cutoff = today - timedelta(days=6 * 365)
     raw = []
     for f in units:
         end = f.get("end")
@@ -530,7 +532,7 @@ def _extract_balance_history_for_tag(facts, tag, max_periods=12):
     return out[:max_periods]
 
 
-def _extract_quarterly_history(facts, tag_chain, max_quarters=12):
+def _extract_quarterly_history(facts, tag_chain, max_quarters=20):
     for _units, tag in _iter_concept_candidates(facts, tag_chain):
         hist = _extract_quarterly_history_for_tag(facts, tag, max_quarters)
         if hist:
@@ -538,7 +540,7 @@ def _extract_quarterly_history(facts, tag_chain, max_quarters=12):
     return []
 
 
-def _extract_balance_history(facts, tag_chain, max_periods=12):
+def _extract_balance_history(facts, tag_chain, max_periods=20):
     for _units, tag in _iter_concept_candidates(facts, tag_chain):
         hist = _extract_balance_history_for_tag(facts, tag, max_periods)
         if hist:
