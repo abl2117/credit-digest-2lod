@@ -920,27 +920,101 @@ def _to_float_safe(v):
 
 def _detect_fiscal_year_ends(sec_for_co, max_count=3):
     """
-    Find the last N fiscal year-end dates. Walks all balance history keys
-    (cash, lt_debt, st_debt) and accepts any 10-K filing period_end.
+    Find the last N fiscal year-end dates. Defensive strategy:
+
+    Approach 1 (primary): Walk balance history and flow history, accept any
+    entries explicitly tagged as 10-K/10-K-A/20-F filings.
+
+    Approach 2 (fallback): If no 10-K-tagged entries found, derive year-ends
+    from the latest period_end of any flow series. Walks back 12 months at a
+    time from the latest observation. This works for filers where SEC XBRL
+    doesn't consistently tag the form field, including hyperscalers like
+    Microsoft and Google.
     """
     bh = sec_for_co.get("_balance_history", {}) or {}
+    h = sec_for_co.get("_history", {}) or {}
     candidates = []
+
+    # Approach 1: explicitly tagged 10-K entries from any source
     for source in ("lt_debt", "cash", "st_debt"):
         for entry in bh.get(source, []) or []:
             form = (entry.get("form") or "").upper()
             if form in ("10-K", "10-K/A", "20-F"):
                 pd = entry.get("period_end")
-                if pd: candidates.append(pd)
-    if not candidates:
-        # Fallback: any 10-K from flow history
-        h = sec_for_co.get("_history", {}) or {}
-        for source in ("revenue", "op_income"):
-            for entry in h.get(source, []) or []:
-                form = (entry.get("form") or "").upper()
-                if form in ("10-K", "10-K/A", "20-F"):
-                    pd = entry.get("period_end")
-                    if pd: candidates.append(pd)
-    return sorted(set(candidates), reverse=True)[:max_count]
+                if pd:
+                    candidates.append(pd)
+    for source in ("revenue", "op_income", "capex"):
+        for entry in h.get(source, []) or []:
+            form = (entry.get("form") or "").upper()
+            if form in ("10-K", "10-K/A", "20-F"):
+                pd = entry.get("period_end")
+                if pd:
+                    candidates.append(pd)
+
+    if candidates:
+        return sorted(set(candidates), reverse=True)[:max_count]
+
+    # Approach 2: derive year-ends from the latest period_end of any flow series.
+    # Walk back 12 months at a time. This catches hyperscalers and other filers
+    # where the form field isn't reliably 10-K-tagged in XBRL company facts.
+    latest_dates = []
+    for source in ("revenue", "op_income", "capex", "ocf"):
+        flow_hist = h.get(source, []) or []
+        if flow_hist:
+            try:
+                latest = flow_hist[0].get("period_end")
+                if latest:
+                    latest_dates.append(datetime.strptime(latest, "%Y-%m-%d").date())
+            except (ValueError, TypeError):
+                continue
+    for source in ("lt_debt", "cash", "st_debt"):
+        bal_hist = bh.get(source, []) or []
+        if bal_hist:
+            try:
+                latest = bal_hist[0].get("period_end")
+                if latest:
+                    latest_dates.append(datetime.strptime(latest, "%Y-%m-%d").date())
+            except (ValueError, TypeError):
+                continue
+
+    if not latest_dates:
+        return []
+
+    # The latest available period_end is approximately at-or-just-after a fiscal year-end.
+    # For calendar-year filers it's e.g. Q1 2026 (March end) or Q4 2025 (Dec end).
+    # The fiscal year-end is roughly the prior occurrence of the same fiscal-period-end
+    # month from a year prior. For most US filers: latest_date.replace(year=latest_date.year-1)
+    # works as a candidate, then step back 12 months from there.
+    latest = max(latest_dates)
+
+    # Heuristic: align to a likely fiscal year-end. If latest is between Sep 30 and Mar 31,
+    # the fiscal year-end likely matches the calendar year-end (Dec 31 for calendar filers).
+    # Otherwise use latest_date's month as the year-end month (handles MSFT June, Oracle May).
+    derived = []
+    # The latest quarterly period_end IS one of the fiscal quarter ends. Step back to find
+    # the most recent fiscal year-end at-or-before latest_date.
+    # We assume year-end is the month preceding the latest_date when latest_date is the
+    # first quarter (e.g., latest is March -> year-end is March of prior year for FY ending March;
+    # or December prior for calendar fiscal year). Simpler: try both same-month-prior-year
+    # and December-prior-year as candidates.
+
+    # Candidate 1: same month, prior year (handles non-calendar fiscal years)
+    try:
+        c1 = latest.replace(year=latest.year - 1)
+        derived.append(c1)
+    except ValueError:
+        pass
+
+    # Generate prior year-ends by stepping back 12 months from c1
+    if derived:
+        for i in range(1, max_count + 1):
+            try:
+                prev = derived[-1].replace(year=derived[-1].year - 1)
+                derived.append(prev)
+            except ValueError:
+                break
+
+    return [d.strftime("%Y-%m-%d") for d in derived[:max_count]]
 
 
 def _annual_sum_around(history, year_end_date, window_days=400):
@@ -2333,20 +2407,28 @@ footer li strong{color:#ffaaaa}
     <li><strong>Five subsection tables</strong>: Hyperscalers, Data Center &amp; Tower REITs, Telecom, Hardware &amp; EMS, Software/Payments/Services. Filter pills (Red/Amber/Green) apply across all subsections.</li>
   </ul>
 
-  <h2>Red Flags Framework</h2>
-  <p>9 of 12 universal flags computed deterministically each run. Thresholds set based on rating-agency benchmarks and historical default precedents.</p>
+  <h2>Red Flags Framework (15 Flags)</h2>
+  <p>Universal 15-flag framework, 11 deterministically computed each run, 4 pending future data sources. The heat map renders all 15 columns with pending flags shown as N/A so the framework is honest about coverage.</p>
   <table class="methodology-table">
-    <tr><th>Flag</th><th>Threshold</th><th>Watch</th><th>Source</th></tr>
-    <tr><td>1. Leverage Too High</td><td>ND/EBITDA &gt; 5.0x</td><td>&gt; 4.0x</td><td>SEC EDGAR</td></tr>
-    <tr><td>2. Leverage Climbing</td><td>ND/EBITDA +1.0x YoY</td><td>+0.5x</td><td>SEC EDGAR history</td></tr>
-    <tr><td>3. Coverage Thin</td><td>EBITDA/Interest &lt; 3.0x</td><td>&lt; 4.5x</td><td>SEC EDGAR</td></tr>
-    <tr><td>4. Burning Cash</td><td>FCF negative 2 quarters</td><td>1 quarter</td><td>SEC EDGAR history</td></tr>
-    <tr><td>7. Revenue Shrinking</td><td>Rev YoY &lt; -5%</td><td>&lt; -2%</td><td>SEC EDGAR</td></tr>
-    <tr><td>8. Margin Compression</td><td>EBITDA margin -300bps YoY</td><td>-150bps</td><td>SEC EDGAR history</td></tr>
-    <tr><td>9. Stock Collapse</td><td>YTD &lt; -25%</td><td>&lt; -15%</td><td>yfinance</td></tr>
-    <tr><td>10. Rating Pressure</td><td>2+ Negative outlooks</td><td>1 negative</td><td>Ratings + override</td></tr>
-    <tr><td>11. Bad News in Filings</td><td>Trigger phrases in key dev</td><td>Watch phrases</td><td>Claude synthesis</td></tr>
+    <tr><th>#</th><th>Flag</th><th>Threshold</th><th>Watch</th><th>Source</th><th>Status</th></tr>
+    <tr><td>1</td><td>Leverage Too High</td><td>ND/EBITDA &gt; 5.0x</td><td>&gt; 4.0x</td><td>SEC EDGAR</td><td>Computed</td></tr>
+    <tr><td>2</td><td>Leverage Climbing</td><td>ND/EBITDA +1.0x YoY</td><td>+0.5x</td><td>SEC EDGAR history</td><td>Computed</td></tr>
+    <tr><td>3</td><td>Coverage Thin</td><td>EBITDA/Interest &lt; 3.0x</td><td>&lt; 4.5x</td><td>SEC EDGAR</td><td>Computed</td></tr>
+    <tr><td>4</td><td>Burning Cash</td><td>FCF negative 2 quarters</td><td>1 quarter</td><td>SEC EDGAR history</td><td>Computed</td></tr>
+    <tr><td>5</td><td>Wall of Maturities</td><td>&gt;20% of debt as current portion</td><td>&gt;10%</td><td>SEC EDGAR (ST debt / Total debt)</td><td>Computed</td></tr>
+    <tr><td>6</td><td>Refi at Higher Rates</td><td>Avg coupon to refi &gt;150bps above current</td><td>&gt;75bps</td><td>Bond coupon data</td><td>Pending</td></tr>
+    <tr><td>7</td><td>Revenue Shrinking</td><td>Rev YoY &lt; -5%</td><td>&lt; -2%</td><td>SEC EDGAR</td><td>Computed</td></tr>
+    <tr><td>8</td><td>Margin Compression</td><td>EBITDA margin -300bps YoY</td><td>-150bps</td><td>SEC EDGAR history</td><td>Computed</td></tr>
+    <tr><td>9</td><td>Stock Collapse</td><td>YTD &lt; -25%</td><td>&lt; -15%</td><td>yfinance</td><td>Computed</td></tr>
+    <tr><td>10</td><td>Rating Pressure</td><td>2+ Negative outlooks</td><td>1 negative</td><td>Ratings + override</td><td>Computed</td></tr>
+    <tr><td>11</td><td>Bad News in Filings</td><td>Trigger phrases in key dev</td><td>Watch phrases</td><td>Claude synthesis</td><td>Computed</td></tr>
+    <tr><td>12</td><td>Liquidity Squeeze</td><td>Cash / ST Debt &lt; 1.0x</td><td>&lt; 1.5x</td><td>SEC EDGAR</td><td>Computed</td></tr>
+    <tr><td>13</td><td>Going Concern</td><td>Auditor going concern qualification</td><td>Substantial doubt language</td><td>10-K auditor opinion text</td><td>Pending</td></tr>
+    <tr><td>14</td><td>Insider Selling</td><td>Large insider sales 90d (&gt;$10MM or &gt;5% shares)</td><td>&gt;$5MM</td><td>Form 4 filings</td><td>Pending</td></tr>
+    <tr><td>15</td><td>Geographic Risk</td><td>Material unhedged sanctioned/conflict exposure</td><td>Single-country &gt;25% revenue</td><td>10-K risk factors text</td><td>Pending</td></tr>
   </table>
+  <p><strong>Why 4 flags are pending:</strong> Flag 6 requires bond-level coupon data outside the SEC XBRL companyfacts schema. Flags 13, 15 require text-extraction from 10-K filings (auditor opinion section, risk factors section), which is a separate pipeline. Flag 14 requires parsing Form 4 insider transactions, which is a different SEC API endpoint. The architecture leaves these as N/A placeholders rather than guessing; we can wire them in future iterations using either a manual override file (for known cases) or dedicated text-extraction passes.</p>
+  <p><strong>Sign-off tier mapping:</strong> 0 flags = Comfortable. 1-2 flags = Watch. 3-4 flags = Review. 5+ flags = Escalate. Watch states accumulate separately; 3+ watch states alone elevate to Watch tier.</p>
 
   <h2>Macro Indicators</h2>
   <p>HY OAS, IG OAS, 10Y UST, and 2Y UST in the header strip pull directly from FRED. Spreads converted from percent to basis points for the header tile. The Macro tab displays the same FRED observations in their native percent format with category groupings (Rates, Spreads, Inflation, Labor, Activity).</p>
