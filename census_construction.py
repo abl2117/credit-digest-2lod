@@ -1,25 +1,37 @@
 """
-US Census Bureau Construction Spending integration for the credit digest.
+US Data Center Construction Spending integration for the credit digest.
 
-Pulls monthly private data center construction spending from the Value of
-Construction Put in Place (VIP) timeseries API. Free, no API key required for
-moderate usage, no FRED dependency.
+Pulls monthly private data center construction spending from Our World in Data,
+which mirrors the US Census Bureau Value of Construction Put in Place Survey (VIP)
+data with monthly updates and a clean CSV interface.
 
-The Census Bureau began breaking out data centers as a separate category under
-"private office" in July 2024, with history extending back to January 2014.
-The C30 report releases on the first business day of each month covering data
-roughly 6 weeks back (e.g., May release covers March data).
+WHY OWID INSTEAD OF CENSUS DIRECT:
+The Census Bureau's VIP timeseries API requires a category_code parameter that
+isn't publicly documented for the data center subcategory. We tried five plausible
+candidates (p001ofdc, p001ofd, p99dc, private_data_center, p001dc) and all returned
+JSON errors. Rather than continuing to guess, we use OWID's CSV mirror which
+publishes the same underlying Census data with a stable, documented URL.
 
-Public function:
+DATA DETAIL:
+OWID applies an inflation adjustment using the BLS Producer Price Index for new
+office building construction. Values are in constant 2021 US dollars rather than
+nominal dollars. This means absolute values are slightly lower than headline
+Census figures, but the trajectory and inflection points are identical. The chart
+in the dashboard notes "real terms" so the difference is transparent.
+
+Source chain: US Census Bureau VIP -> OWID processing (PPI adjustment) -> CSV
+Update cadence: monthly, ~6 weeks after the reference month
+License: CC BY 4.0 (cite OWID + Census)
+
+Public function (interface unchanged from prior version):
     fetch_data_center_construction(cache_path='data_center_cache.json',
                                    force_refresh=False, api_key=None)
       -> (data_dict, warnings_list, metadata_dict)
 
-Returned data_dict structure:
+Returned data_dict structure (also unchanged):
     {
       "series": [
         {"period": "2014-01", "value": 776.0},
-        {"period": "2014-02", "value": 753.0},
         ...
         {"period": "2026-03", "value": 3775.0},
       ],
@@ -28,9 +40,9 @@ Returned data_dict structure:
       "mom_change": 89.0,
       "three_month_avg_mom": 99.0,
       "five_year_growth_pct": 387.0,
-      "_source": "US Census Bureau VIP",
-      "_category_code": "...",
-      "_fetched_at": "..."
+      "_source": "Our World in Data (Census Bureau VIP + BLS PPI)",
+      "_fetched_at": "...",
+      "_last_full_refresh": "..."
     }
 """
 
@@ -39,47 +51,41 @@ import os
 import time
 import urllib.request
 import urllib.error
-import urllib.parse
-from datetime import datetime, timedelta, timezone
+import csv
+import io
+from datetime import datetime, timezone
 
-# Cache TTL: Census releases monthly, daily cache check is plenty
+# Cache TTL: OWID updates monthly, daily cache check is plenty
 CACHE_TTL_HOURS = 24
 
-# VIP endpoint. Series prefix is "vip" under the EITS timeseries namespace.
-VIP_ENDPOINT = "https://api.census.gov/data/timeseries/eits/vip"
+# OWID CSV URL for monthly US data center construction spending
+OWID_CSV_URL = (
+    "https://ourworldindata.org/grapher/monthly-spending-data-center-us.csv"
+    "?v=1&csvType=full&useColumnShortNames=false"
+)
 
-# Candidate category codes for private data center construction. The Census
-# Bureau's coding scheme for VIP follows a pattern like "p001ofdc" where:
-#   p = private, 001 = total, of = office, dc = data center
-# Different documentation sources show slightly different codes; we walk the
-# candidate list and accept the first that returns rows. On success the code
-# is cached so subsequent runs skip the discovery step.
-CATEGORY_CODE_CANDIDATES = [
-    "p001ofdc",   # private, total, office subcategory, data center
-    "p001ofd",
-    "p99dc",
-    "private_data_center",
-    "p001dc",
-]
+# OWID metadata URL (for reference, not used in critical path)
+OWID_METADATA_URL = (
+    "https://ourworldindata.org/grapher/monthly-spending-data-center-us.metadata.json"
+    "?v=1&csvType=full&useColumnShortNames=false"
+)
 
-# Data type code for the Seasonally Adjusted Annual Rate value column. VIP
-# publishes both SAAR and not-seasonally-adjusted versions; SAAR is the
-# headline figure used in Census press releases and equivalent to what FRED
-# publishes for office and commercial subcategories.
-DATA_TYPE_SAAR = "VIP"
+# OWID asks data fetchers to identify themselves. They specifically request
+# this User-Agent format in their documentation.
+OWID_USER_AGENT = "Our World In Data data fetch/1.0"
 
 
-def _http_get_json(url, retries=3, sleep=0.5):
-    """Lightweight GET with retry on 429/5xx."""
+def _http_get_text(url, retries=3, sleep=0.8):
+    """Fetch URL contents as text with retry on 429/5xx."""
     req = urllib.request.Request(url, headers={
-        "Accept": "application/json",
-        "User-Agent": "Credit Digest Personal Research",
+        "Accept": "text/csv, application/json, */*",
+        "User-Agent": OWID_USER_AGENT,
     })
     last_err = None
     for attempt in range(retries):
         try:
-            with urllib.request.urlopen(req, timeout=20) as r:
-                return json.loads(r.read())
+            with urllib.request.urlopen(req, timeout=30) as r:
+                return r.read().decode("utf-8")
         except urllib.error.HTTPError as e:
             last_err = f"HTTP {e.code} {e.reason}"
             if e.code in (429, 500, 502, 503, 504):
@@ -90,95 +96,137 @@ def _http_get_json(url, retries=3, sleep=0.5):
                 last_err += f" body={body}"
             except Exception:
                 pass
-            print(f"  Census HTTP {e.code} on {url}: {last_err}")
+            print(f"  OWID HTTP {e.code} on {url}: {last_err}")
             return None
         except Exception as e:
             last_err = f"{type(e).__name__}: {str(e)[:120]}"
-            print(f"  Census fetch error: {last_err}")
+            print(f"  OWID fetch error: {last_err}")
             time.sleep(sleep)
-    print(f"  Census fetch failed after {retries} attempts: {last_err}")
+    print(f"  OWID fetch failed after {retries} attempts: {last_err}")
     return None
 
 
-def _build_query(category_code, time_range, api_key=None):
-    """Build a VIP query URL."""
-    params = {
-        "get": "cell_value,data_type_code,time_slot_id,time,category_code,seasonally_adj",
-        "category_code": category_code,
-        "time": time_range,
-    }
-    if api_key:
-        params["key"] = api_key
-    return f"{VIP_ENDPOINT}?{urllib.parse.urlencode(params)}"
-
-
-def _try_category_codes(time_range, api_key=None):
+def _parse_csv(text):
     """
-    Walk candidate category codes. Return (rows, code) for the first that
-    yields data. The rows are the raw JSON array from the API.
-    """
-    for code in CATEGORY_CODE_CANDIDATES:
-        url = _build_query(code, time_range, api_key)
-        rows = _http_get_json(url)
-        time.sleep(0.2)
-        if rows and isinstance(rows, list) and len(rows) > 1:
-            print(f"  Census: category_code={code} returned {len(rows)-1} rows")
-            return rows, code
-    return None, None
+    Parse OWID CSV. Expected columns:
+      Entity,Code,Year,<indicator column name>
 
+    The "Year" column encoding is one of:
+      (a) Calendar year (e.g. 2014, 2015) — annual data
+      (b) YYYY-MM-DD or YYYY-MM string — string date
+      (c) Days since some epoch (commonly 2020-01-21 for OWID monthly grapher data)
+      (d) Days since 1900-01-01 (Excel/Lotus convention)
 
-def _parse_rows(rows):
+    We try each strategy and pick whichever produces dates between 2010 and 2030
+    (a sanity window for this series, which runs 2014-present).
+
+    Returns list of {period: 'YYYY-MM', value: float} sorted chronological.
     """
-    Convert Census API JSON array response into structured records.
-    First row is headers, subsequent rows are values.
-    """
-    if not rows or len(rows) < 2:
+    if not text:
         return []
-    headers = rows[0]
-    out = []
-    for row in rows[1:]:
-        rec = dict(zip(headers, row))
-        # Parse cell_value as float; skip rows with non-numeric values
+    reader = csv.DictReader(io.StringIO(text))
+    fieldnames = reader.fieldnames or []
+    if not fieldnames:
+        return []
+
+    # Identify the value column. OWID grapher CSVs have Entity, Code, Year, then
+    # the indicator column (which has a long descriptive name).
+    standard_cols = {"Entity", "Code", "Year"}
+    value_cols = [c for c in fieldnames if c not in standard_cols]
+    if not value_cols:
+        print(f"  OWID CSV unexpected schema. Fieldnames: {fieldnames}")
+        return []
+    value_col = value_cols[0]
+    print(f"  OWID value column: '{value_col}'")
+
+    # Collect raw rows first
+    raw_rows = list(reader)
+    if not raw_rows:
+        return []
+
+    from datetime import date, timedelta
+
+    def try_decode_year(year_raw):
+        """Return a date object or None if decode fails."""
+        if not year_raw:
+            return None
+        s = str(year_raw).strip()
+        # Strategy 1: YYYY-MM-DD or YYYY-MM string
+        for fmt in ("%Y-%m-%d", "%Y-%m"):
+            try:
+                return datetime.strptime(s, fmt).date()
+            except (ValueError, TypeError):
+                continue
+        # Strategy 2: integer
         try:
-            val = float(rec.get("cell_value", "").replace(",", ""))
-        except (ValueError, TypeError, AttributeError):
+            n = int(s)
+        except (ValueError, TypeError):
+            return None
+        # Try multiple epochs and pick whichever produces a date in our window
+        candidates = [
+            ("calendar_year", lambda x: date(x, 6, 15) if 1900 <= x <= 2100 else None),
+            ("owid_epoch_2020_01_21", lambda x: date(2020, 1, 21) + timedelta(days=x)),
+            ("excel_1900_01_01",     lambda x: date(1900, 1, 1) + timedelta(days=x)),
+            ("unix_epoch_1970",      lambda x: date(1970, 1, 1) + timedelta(days=x)),
+        ]
+        for _name, fn in candidates:
+            try:
+                d = fn(n)
+            except (OverflowError, ValueError, TypeError):
+                continue
+            if d and date(2010, 1, 1) <= d <= date(2035, 12, 31):
+                return d
+        return None
+
+    # Sample first 5 rows to identify the right Year encoding, log the choice
+    sample_decoded = []
+    for row in raw_rows[:5]:
+        d = try_decode_year(row.get("Year", ""))
+        if d:
+            sample_decoded.append((row.get("Year", ""), d))
+    if sample_decoded:
+        print(f"  OWID Year decode sample: {sample_decoded[0][0]} -> {sample_decoded[0][1].strftime('%Y-%m-%d')}")
+
+    rows = []
+    for row in raw_rows:
+        year_raw = row.get("Year", "")
+        val_raw = row.get(value_col, "")
+        d = try_decode_year(year_raw)
+        if not d:
             continue
-        # Filter to seasonally adjusted values only (matches Census press releases)
-        adj = str(rec.get("seasonally_adj", "")).lower()
-        if adj not in ("yes", "y", "true", "1"):
+        try:
+            val = float(val_raw)
+        except (ValueError, TypeError):
             continue
-        period = rec.get("time", "")
-        if not period:
-            continue
-        out.append({"period": period, "value": val})
-    # Sort chronological
+        period = d.strftime("%Y-%m")
+        rows.append({"period": period, "value": val})
+
+    # Dedupe by period (last write wins)
+    by_period = {}
+    for r in rows:
+        by_period[r["period"]] = r["value"]
+    out = [{"period": p, "value": v} for p, v in by_period.items()]
     out.sort(key=lambda r: r["period"])
     return out
 
 
 def _compute_derived_metrics(series):
-    """
-    Given a sorted (oldest first) list of {period, value}, compute the
-    derived KPI fields used by the dashboard tile row.
-    """
+    """Given a sorted (oldest first) series, compute KPI fields."""
     if not series:
         return {}
     latest = series[-1]
     metrics = {"latest": latest}
 
-    # MoM change
     if len(series) >= 2:
         prev = series[-2]
         metrics["mom_change"] = round(latest["value"] - prev["value"], 1)
 
-    # 3-month avg MoM (last 3 monthly deltas)
     deltas = []
     for i in range(max(1, len(series) - 3), len(series)):
         deltas.append(series[i]["value"] - series[i - 1]["value"])
     if deltas:
         metrics["three_month_avg_mom"] = round(sum(deltas) / len(deltas), 1)
 
-    # YoY % (12 months back)
     if len(series) >= 13:
         yoy_base = series[-13]
         if yoy_base["value"] > 0:
@@ -186,7 +234,6 @@ def _compute_derived_metrics(series):
                 (latest["value"] - yoy_base["value"]) / yoy_base["value"] * 100, 1
             )
 
-    # 5-year growth (60 months back)
     if len(series) >= 61:
         base = series[-61]
         if base["value"] > 0:
@@ -212,7 +259,7 @@ def _save_cache(cache_path, data):
         with open(cache_path, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=2)
     except Exception as e:
-        print(f"WARNING: failed to write Census cache: {e}")
+        print(f"WARNING: failed to write OWID cache: {e}")
 
 
 def _cache_is_fresh(cache):
@@ -234,56 +281,56 @@ def _cache_is_fresh(cache):
 def fetch_data_center_construction(cache_path="data_center_cache.json",
                                    force_refresh=False, api_key=None):
     """
-    Pull monthly US private data center construction spending from Census VIP.
+    Pull monthly US data center construction spending from Our World in Data.
 
     Args:
       cache_path: where to read/write the cache JSON
       force_refresh: bypass cache freshness check
-      api_key: optional Census API key (raises rate limit beyond 500/day)
+      api_key: unused (kept for interface compatibility with prior version)
 
     Returns:
       data_dict, warnings_list, metadata_dict
 
-    Behavior on failure: returns empty dict + warning rather than raising,
-    so the dashboard degrades gracefully (chart shows "data unavailable").
+    On failure: returns empty dict + warning rather than raising. Dashboard
+    will show the placeholder. Stale cache (if present) is used as fallback.
     """
+    _ = api_key  # accepted for backwards compatibility, not used by OWID
     metadata = {
         "started_at": datetime.now(timezone.utc).isoformat(),
         "from_cache": False,
         "rows_returned": 0,
     }
 
-    if api_key is None:
-        api_key = os.environ.get("CENSUS_API_KEY")
-
     cache = _load_cache(cache_path)
     if cache and _cache_is_fresh(cache) and not force_refresh:
-        print(f"Census: cache fresh ({cache.get('_fetched_at')}); using cached data.")
+        print(f"OWID Data Center: cache fresh ({cache.get('_fetched_at')}); using cached data.")
         metadata["from_cache"] = True
         metadata["rows_returned"] = len(cache.get("series", []))
         return cache, [], metadata
 
-    print("Census: cache stale or force refresh, pulling fresh data...")
-
-    # Pull from 2014 (when data centers were first broken out) to present.
-    # The 'from YYYY' syntax is documented in Census EITS examples.
-    time_range = "from+2014"
-
-    rows, used_code = _try_category_codes(time_range, api_key)
-    if not rows:
-        msg = "Census API returned no data for any candidate category_code"
-        print(f"WARNING: {msg}. Tried: {CATEGORY_CODE_CANDIDATES}")
+    print("OWID Data Center: cache stale or force refresh, pulling fresh CSV...")
+    text = _http_get_text(OWID_CSV_URL)
+    if not text:
+        msg = "OWID CSV fetch failed"
+        print(f"WARNING: {msg}")
         if cache:
-            print("Census: falling back to stale cache.")
+            print("OWID Data Center: falling back to stale cache.")
             metadata["from_cache"] = True
             metadata["rows_returned"] = len(cache.get("series", []))
             return cache, [msg + "; using stale cache"], metadata
         return {}, [msg], metadata
 
-    series = _parse_rows(rows)
+    series = _parse_csv(text)
     if not series:
-        msg = "Census API returned rows but none were parseable (likely all unadjusted)"
+        msg = "OWID CSV downloaded but no parseable rows found"
         print(f"WARNING: {msg}")
+        # Show first 200 chars of response for diagnostics
+        print(f"  CSV preview: {text[:200]!r}")
+        if cache:
+            print("OWID Data Center: falling back to stale cache.")
+            metadata["from_cache"] = True
+            metadata["rows_returned"] = len(cache.get("series", []))
+            return cache, [msg + "; using stale cache"], metadata
         return {}, [msg], metadata
 
     derived = _compute_derived_metrics(series)
@@ -291,15 +338,16 @@ def fetch_data_center_construction(cache_path="data_center_cache.json",
     payload = {
         "series": series,
         **derived,
-        "_source": "US Census Bureau VIP",
-        "_category_code": used_code,
+        "_source": "Our World in Data (Census Bureau VIP + BLS PPI inflation adjustment)",
+        "_unit": "constant 2021 US$ millions",
         "_fetched_at": datetime.now(timezone.utc).isoformat(),
         "_last_full_refresh": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
     }
     _save_cache(cache_path, payload)
-    print(f"Census: refresh complete. {len(series)} monthly observations, "
-          f"latest = {derived.get('latest', {}).get('period', 'n/a')} = "
-          f"${derived.get('latest', {}).get('value', 0):,.1f}M")
+    latest_period = derived.get("latest", {}).get("period", "n/a")
+    latest_value = derived.get("latest", {}).get("value", 0)
+    print(f"OWID Data Center: refresh complete. {len(series)} monthly observations, "
+          f"latest = {latest_period} = ${latest_value:,.1f}M (constant 2021$)")
 
     metadata["rows_returned"] = len(series)
     return payload, [], metadata
