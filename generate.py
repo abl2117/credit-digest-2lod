@@ -1323,100 +1323,104 @@ def fin_detail_html(co_name, sec_for_co):
 # ----------------------------------------------------------------------
 # Hyperscaler CapEx historical bar chart - 4 names stacked, 4 years + LTM
 # ----------------------------------------------------------------------
+def _round_to_calendar_quarter(period_end_str):
+    """
+    Round a period_end date to the nearest calendar quarter end (Mar 31, Jun 30,
+    Sep 30, Dec 31). Used to align hyperscalers with different fiscal calendars
+    (e.g. Oracle's May FY, MSFT's June FY) onto a single chart axis.
+    """
+    try:
+        dt = datetime.strptime(period_end_str, "%Y-%m-%d").date()
+    except (ValueError, TypeError):
+        return period_end_str
+    # Calendar quarter ends
+    from datetime import date as _date
+    quarter_ends = [
+        _date(dt.year, 3, 31),
+        _date(dt.year, 6, 30),
+        _date(dt.year, 9, 30),
+        _date(dt.year, 12, 31),
+    ]
+    # Also include adjacent year ends for boundary cases
+    quarter_ends.insert(0, _date(dt.year - 1, 12, 31))
+    quarter_ends.append(_date(dt.year + 1, 3, 31))
+    closest = min(quarter_ends, key=lambda qe: abs((dt - qe).days))
+    return closest.strftime("%Y-%m-%d")
+
+
 def _hyperscaler_capex_history(sec_data):
     """
-    Build annual CapEx history for MSFT, GOOGL, AMZN, ORCL.
-    Returns list of dicts: [{period_label, msft, googl, amzn, orcl, total}, ...]
-    Oldest first, LTM last.
+    Build quarterly CapEx history for MSFT, GOOGL, AMZN, ORCL.
+
+    Quarterly view: each bar is one calendar quarter, with the 4 hyperscalers
+    stacked. Each company's capex for that quarter is added to the stack based
+    on its reported period_end. Different fiscal calendars are fine - we synchronize
+    on the calendar period_end date, not on fiscal year.
+
+    Returns (rows, contributors) where rows is a list of period dicts oldest
+    first. Each row has period_label (e.g. "Q1 25"), period_end (raw date),
+    one entry per company (Microsoft, Alphabet, Amazon, Oracle) and a total.
     """
     hyperscalers = ["Microsoft", "Alphabet", "Amazon", "Oracle"]
     if not sec_data:
         return [], []
 
-    # Determine fiscal year-ends by looking across all 4 names; use the most common
-    # year-end set (most names share calendar year-end; Oracle and MSFT have non-CY)
-    all_year_ends = set()
-    for co in hyperscalers:
-        sec = (sec_data or {}).get(co, {})
-        if not sec: continue
-        for ye in _detect_fiscal_year_ends(sec, max_count=4):
-            all_year_ends.add(ye)
-
-    # Group year-ends by calendar year for cross-company alignment
-    by_cal_year = {}
-    for ye in all_year_ends:
-        try:
-            dt = datetime.strptime(ye, "%Y-%m-%d").date()
-            by_cal_year.setdefault(dt.year, []).append(ye)
-        except (ValueError, TypeError):
-            continue
-
-    # Use the most recent 4 calendar years
-    years_sorted = sorted(by_cal_year.keys(), reverse=True)[:4]
-    years_sorted.reverse()  # oldest first
-
-    rows = []
+    # Collect quarterly capex by calendar-quarter-end across all 4 names.
+    # Companies with non-calendar fiscal years (Oracle: Feb/May/Aug/Nov; MSFT
+    # historical periods: also non-calendar) get rounded to the nearest
+    # calendar quarter end so they stack cleanly on the chart.
+    capex_by_period_co = {}  # (rounded_period_end, co) -> value in dollars
+    all_periods = set()
     contributors_present = []
-
-    for cal_year in years_sorted:
-        row = {"period_label": str(cal_year)}
-        year_total = 0.0
-        year_has_data = False
-        for co in hyperscalers:
-            sec = (sec_data or {}).get(co, {})
-            if not sec:
-                row[co] = None
-                continue
-            capex_hist = (sec.get("_history", {}) or {}).get("capex", [])
-            # Find this company's year-end falling within this calendar year
-            target_ye = None
-            for ye in _detect_fiscal_year_ends(sec, max_count=5):
-                try:
-                    if datetime.strptime(ye, "%Y-%m-%d").date().year == cal_year:
-                        target_ye = ye
-                        break
-                except (ValueError, TypeError):
-                    continue
-            if target_ye:
-                val = _annual_sum_around(capex_hist, target_ye, window_days=400)
-                if val is not None:
-                    val_bn = abs(val) / 1e9
-                    row[co] = round(val_bn, 1)
-                    year_total += val_bn
-                    year_has_data = True
-                    if co not in contributors_present:
-                        contributors_present.append(co)
-                else:
-                    row[co] = None
-            else:
-                row[co] = None
-        row["total"] = round(year_total, 1) if year_has_data else None
-        if year_has_data:
-            rows.append(row)
-
-    # Append LTM column
-    ltm_row = {"period_label": "LTM"}
-    ltm_total = 0.0
-    ltm_has_data = False
     for co in hyperscalers:
         sec = (sec_data or {}).get(co, {})
         if not sec:
-            ltm_row[co] = None
             continue
-        capex_hist = (sec.get("_history", {}) or {}).get("capex", [])
-        if len(capex_hist) >= 4:
-            val = sum(abs(q.get("value", 0)) for q in capex_hist[:4] if q.get("value") is not None)
-            val_bn = val / 1e9
-            ltm_row[co] = round(val_bn, 1)
-            ltm_total += val_bn
-            ltm_has_data = True
-            if co not in contributors_present:
-                contributors_present.append(co)
-        else:
-            ltm_row[co] = None
-    ltm_row["total"] = round(ltm_total, 1) if ltm_has_data else None
-    if ltm_has_data:
-        rows.append(ltm_row)
+        capex_hist = (sec.get("_history", {}) or {}).get("capex", []) or []
+        if not capex_hist:
+            continue
+        company_has_data = False
+        for entry in capex_hist:
+            pd = entry.get("period_end")
+            val = entry.get("value")
+            if pd and val is not None:
+                # Round to calendar quarter for cross-company alignment
+                pd_aligned = _round_to_calendar_quarter(pd)
+                capex_by_period_co[(pd_aligned, co)] = abs(val)
+                all_periods.add(pd_aligned)
+                company_has_data = True
+        if company_has_data and co not in contributors_present:
+            contributors_present.append(co)
+
+    if not all_periods:
+        return [], []
+
+    # Keep the most recent 16 quarters across all names
+    sorted_periods = sorted(all_periods, reverse=True)[:16]
+    sorted_periods.reverse()  # oldest first for chart
+
+    rows = []
+    for period in sorted_periods:
+        try:
+            dt = datetime.strptime(period, "%Y-%m-%d").date()
+            q = (dt.month - 1) // 3 + 1
+            label = f"Q{q} '{str(dt.year)[2:]}"
+        except (ValueError, TypeError):
+            label = period
+        row = {"period_label": label, "period_end": period}
+        period_total = 0.0
+        period_has_data = False
+        for co in hyperscalers:
+            val = capex_by_period_co.get((period, co))
+            if val is not None:
+                val_bn = val / 1e9
+                row[co] = round(val_bn, 1)
+                period_total += val_bn
+                period_has_data = True
+            else:
+                row[co] = None
+        row["total"] = round(period_total, 1) if period_has_data else None
+        rows.append(row)
 
     return rows, contributors_present
 
@@ -1451,13 +1455,13 @@ def _build_hyperscaler_chart_html(sec_data, chart_id="hyperCapexChart"):
     datasets_json = json.dumps(datasets)
     totals_json = json.dumps([r.get("total") for r in history])
 
-    # Most recent total + YoY
+    # Most recent quarter total + YoY (4 quarters back = same quarter prior year)
     latest = history[-1] if history else None
-    prior = history[-2] if len(history) >= 2 else None
+    prior_year = history[-5] if len(history) >= 5 else None
     callout_total = latest.get("total") if latest else 0
     callout_yoy_html = ""
-    if latest and prior and prior.get("total") and prior["total"] > 0:
-        yoy = (latest["total"] - prior["total"]) / prior["total"] * 100
+    if latest and prior_year and prior_year.get("total") and prior_year["total"] > 0:
+        yoy = (latest["total"] - prior_year["total"]) / prior_year["total"] * 100
         sign = "+" if yoy >= 0 else ""
         cls = "stock-up" if yoy >= 0 else "stock-down"
         callout_yoy_html = f'<span class="{cls}">{sign}{yoy:.1f}% YoY</span>'
@@ -1466,11 +1470,11 @@ def _build_hyperscaler_chart_html(sec_data, chart_id="hyperCapexChart"):
     <div class="hyper-chart-section">
       <div class="hyper-chart-header">
         <div>
-          <h3 class="tmt-section-title">Hyperscaler CapEx (Stacked, Historical)</h3>
-          <div class="tmt-section-subtitle">Annual CapEx for MSFT + GOOGL + AMZN + ORCL, fiscal year basis. LTM is sum of latest 4 quarters.</div>
+          <h3 class="tmt-section-title">Hyperscaler CapEx (Stacked, Quarterly)</h3>
+          <div class="tmt-section-subtitle">Quarterly CapEx for MSFT + GOOGL + AMZN + ORCL, last 16 quarters. Bars synchronize on calendar quarter end; companies with non-calendar fiscal years contribute at their actual reported period.</div>
         </div>
         <div class="hyper-chart-callout">
-          <div class="hyper-chart-callout-label">Latest period total</div>
+          <div class="hyper-chart-callout-label">Latest quarter total</div>
           <div class="hyper-chart-callout-value">${callout_total:,.1f}Bn</div>
           {callout_yoy_html}
         </div>
@@ -1523,8 +1527,8 @@ def _hyperscaler_rpo_history(sec_data):
     if not sec_data:
         return [], []
 
-    # Find the set of distinct period_end dates across the 4 names. Take the
-    # most recent 8 quarters that appear across at least one name.
+    # Find the set of distinct period_end dates across the 4 names, rounded to
+    # calendar quarter end to align companies with non-calendar fiscal years.
     all_periods = set()
     rpo_by_company = {}
     for co in hyperscalers:
@@ -1534,14 +1538,15 @@ def _hyperscaler_rpo_history(sec_data):
         rpo_hist = (sec.get("_balance_history", {}) or {}).get("revenue_backlog", []) or []
         if not rpo_hist:
             continue
-        # rpo_hist is newest first; build period->value map
+        # rpo_hist is newest first; build period->value map with rounded keys
         company_map = {}
         for entry in rpo_hist:
             pd = entry.get("period_end")
             val = entry.get("value")
             if pd and val is not None:
-                company_map[pd] = val
-                all_periods.add(pd)
+                pd_aligned = _round_to_calendar_quarter(pd)
+                company_map[pd_aligned] = val
+                all_periods.add(pd_aligned)
         if company_map:
             rpo_by_company[co] = company_map
 
@@ -2637,7 +2642,7 @@ footer li strong{color:#ffaaaa}
   <p>Sector deep-dive with four chart layers and five subsection tables, top to bottom:</p>
   <ul>
     <li><strong>US Data Center Construction</strong>: monthly private construction put-in-place spending, sourced from US Census Bureau VIP via Our World in Data. Values inflation-adjusted to constant 2021 US$ using BLS PPI for new office building construction. Lagged ~6 weeks. Charts show monthly level and month-over-month change. KPI tiles show latest value, YoY %, 3-month average MoM, and 5-year growth. <em>Macro demand signal.</em></li>
-    <li><strong>Hyperscaler CapEx (Stacked, Historical)</strong>: annual CapEx for Microsoft, Alphabet, Amazon, and Oracle going back 4 fiscal years plus LTM. <em>Public-company supply commitment.</em></li>
+    <li><strong>Hyperscaler CapEx (Stacked, Quarterly)</strong>: quarterly CapEx for Microsoft, Alphabet, Amazon, and Oracle going back up to 16 quarters. Bars synchronize on calendar quarter end. <em>Public-company supply commitment, quarterly cadence to surface inflection points.</em></li>
     <li><strong>Hyperscaler Revenue Backlog (RPO)</strong>: quarterly Remaining Performance Obligation for the same 4 hyperscalers, last 8 quarters. From SEC EDGAR XBRL <code>RevenueRemainingPerformanceObligation</code> tag. <em>Contracted demand: revenue under signed contracts but not yet recognized. Forward demand signal.</em> Names with no RPO disclosure are noted in the chart subtitle.</li>
     <li><strong>Five subsection tables</strong>: Hyperscalers, Data Center &amp; Tower REITs, Telecom, Hardware &amp; EMS, Software/Payments/Services. Filter pills (Red/Amber/Green) apply across all subsections.</li>
   </ul>
