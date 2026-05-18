@@ -2839,6 +2839,92 @@ footer li strong{color:#ffaaaa}
 </html>"""
 
 
+def second_pass_news(all_rows):
+    """
+    For names with status=amber/red that currently show "No material news.",
+    do a targeted second-pass Claude search to surface credit-relevant events.
+
+    The first-pass Batch A/B prompts cover 44 + 38 names. With ~25 web searches
+    available per batch, Claude has limited search budget per name. Names where
+    the search returned empty often have material news that just wasn't found.
+
+    This pass re-queries Claude with a focused prompt for ONLY the names that
+    need it. Maximum 15 names per call to keep search budget per name high.
+    """
+    candidates = []
+    for r in all_rows:
+        status = str(r.get('status', '')).lower()
+        if status not in ('amber', 'red'):
+            continue
+        key_dev = str(r.get('key_dev', '') or '').strip().lower()
+        if key_dev in ('', 'no material news.', 'no material news', 'n/a'):
+            candidates.append(r.get('company', ''))
+
+    if not candidates:
+        print("Second-pass news: no amber/red names with empty key_dev; skipping.")
+        return all_rows
+
+    # Cap at 15 to keep per-name search budget meaningful (25 searches / 15 names = ~1.7 per)
+    candidates = candidates[:15]
+    print(f"Second-pass news: re-querying {len(candidates)} amber/red names with empty key_dev: {', '.join(candidates)}")
+
+    names_str = '\n'.join(f"- {co}" for co in candidates)
+    prompt = f"""Today is {datetime_str}. You are a credit analyst finding material credit-relevant news for specific companies that another search missed.
+
+Companies to research:
+{names_str}
+
+For EACH company, search the web for material credit events in the last 60 days. Look hard for:
+1. Rating actions: upgrades, downgrades, outlook changes, ratings affirmed with comments (Moody's, S&P, Fitch press releases)
+2. Capital structure: spin-offs, M&A, acquisitions, divestitures, debt issuance, refinancing, dividend changes, buybacks
+3. Financial events: covenant amendments, defaults, missed payments, going concern, restatements
+4. Strategic: management changes, restructuring, contract wins/losses, strategic reviews
+5. Earnings: beats, misses, guidance changes, withdrawn guidance, especially recent quarterly earnings
+6. Legal/Regulatory: SEC investigations, material litigation, penalties
+
+If a company TRULY has no material credit-relevant news in the last 60 days, return "No material news." for that company. But search harder than a typical search - check 8-K filings, earnings press releases, agency websites, financial press. Multiple search queries per company are encouraged.
+
+Search query patterns to use:
+- "[Company] earnings Q1 2026 OR Q4 2025"
+- "[Company] credit rating action 2026"
+- "[Company] 8-K filing material event 2026"
+- "[Company] acquisition OR divestiture OR spin-off 2026"
+
+OUTPUT FORMAT: Your ENTIRE response must be ONLY a single JSON object. Start with {{ as the very first character. End with }} as the very last character. NO preamble, NO markdown, NO explanation.
+
+{{"updates": [{{"company": "Exact Company Name", "key_dev": "1-2 sentences, under 200 characters, citing the specific event with date"}}]}}
+
+Rules:
+- Include every company in the input list; if truly no news, set key_dev to "No material news."
+- key_dev must be SPECIFIC: cite dates, dollar amounts, percentages where applicable
+- Use the EXACT company name as provided in the input list
+- Public information only"""
+
+    try:
+        raw = call_claude(prompt, "Second-pass news")
+        data, err = parse_json(raw, "Second-pass news")
+        if err or not data:
+            print(f"Second-pass news: parse error, skipping. Detail: {err}")
+            return all_rows
+        updates = data.get('updates', [])
+        if not updates:
+            print("Second-pass news: response had no updates list.")
+            return all_rows
+        updated_count = 0
+        name_to_update = {u.get('company', '').strip(): u.get('key_dev', '') for u in updates}
+        for r in all_rows:
+            co = r.get('company', '')
+            if co in name_to_update:
+                new_dev = name_to_update[co]
+                if new_dev and new_dev.lower() not in ('no material news.', 'no material news', 'n/a', ''):
+                    r['key_dev'] = new_dev
+                    updated_count += 1
+        print(f"Second-pass news: updated {updated_count} of {len(candidates)} candidates with new material developments.")
+    except Exception as e:
+        print(f"Second-pass news: exception during call, skipping. Detail: {str(e)[:200]}")
+    return all_rows
+
+
 def main():
     run_start = datetime.now(pytz.utc)
 
@@ -2897,6 +2983,10 @@ def main():
         print(f"Census: {census_metadata.get('rows_returned', 0)} monthly observations")
 
     all_rows = compute_status_from_data(all_rows)
+
+    # Second-pass news search: targets amber/red names that returned "No material news"
+    # in the first pass. Catches credit-relevant events that Claude's broad search missed.
+    all_rows = second_pass_news(all_rows)
 
     flag_summary = None
     if RED_FLAGS_AVAILABLE:
