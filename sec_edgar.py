@@ -130,19 +130,18 @@ TAG_CHAINS = {
     ],
     # Revenue Remaining Performance Obligation (RPO) - the contracted-but-not-yet-recognized
     # revenue disclosure required under ASC 606. Used as a forward demand signal for
-    # hyperscalers and SaaS names. Companies tag this with significant variation; expanded
-    # chain covers Microsoft (RevenueRemainingPerformanceObligation), Alphabet
-    # (RemainingPerformanceObligation), Oracle (uses both formats), and Amazon (when
-    # they disclose AWS backlog separately under a different tag).
+    # hyperscalers. ONLY true RPO tags are included; we deliberately exclude:
+    #   - DeferredRevenue and ContractWithCustomerLiability variants. These represent
+    #     billed-and-collected-but-not-recognized revenue, a SUBSET of RPO. For Amazon
+    #     specifically these tags include Prime membership prepayments, gift card balances,
+    #     and AWS prepayments, which is much broader than AWS commercial backlog.
+    # If a hyperscaler doesn't tag true RPO, the chart will correctly show them as missing
+    # rather than substitute a misleading proxy.
     "revenue_backlog": [
         "RevenueRemainingPerformanceObligation",
         "RemainingPerformanceObligation",
         "RevenueRemainingPerformanceObligationAmount",
         "RemainingPerformanceObligationAmount",
-        "ContractWithCustomerLiability",
-        "ContractWithCustomerLiabilityCurrent",
-        "DeferredRevenue",
-        "ContractWithCustomerLiabilityRevenueRecognized",
     ],
 }
 
