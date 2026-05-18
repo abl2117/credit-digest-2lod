@@ -2015,6 +2015,82 @@
         "html_bytes": 778461
       },
       "logged_at": "2026-05-18T00:59:11.137614+00:00"
+    },
+    {
+      "run_id": "2026-05-18-1422",
+      "run_started": "2026-05-18T18:22:36.605563+00:00",
+      "run_completed": "2026-05-18T18:29:54.724003+00:00",
+      "duration_seconds": 438,
+      "data_sources": {
+        "anthropic_claude": {
+          "model": "claude-sonnet-4-6",
+          "calls": 2,
+          "batches_succeeded": 2
+        },
+        "sec_edgar": {
+          "from_cache": true,
+          "names_attempted": 81,
+          "names_succeeded": 75,
+          "names_failed": [],
+          "names_no_sec_filer": [],
+          "total_warnings": 26
+        },
+        "yfinance": {
+          "market_data_companies": 81,
+          "commodities_indices": 6
+        },
+        "fred": {
+          "from_cache": false,
+          "series_attempted": 19,
+          "series_succeeded": 19,
+          "series_failed": [],
+          "warnings": []
+        },
+        "census": {
+          "from_cache": false,
+          "rows_returned": 145,
+          "warnings": []
+        }
+      },
+      "overrides_applied": {
+        "ratings_override": 4
+      },
+      "validation_warnings": [
+        "Oracle: Total debt not found in SEC tags",
+        "Oracle: Period end 2025-05-31 is 352 days old (stale)",
+        "Nextracker: Total debt not found in SEC tags",
+        "General Motors: Total debt not found in SEC tags",
+        "Ford: Total debt not found in SEC tags",
+        "Ford: Period end 2024-12-31 is 503 days old (stale)",
+        "Toyota: Revenue LTM not found in SEC tags",
+        "Toyota: EBITDA could not be constructed (missing op_income or D&A)",
+        "Toyota: Cash not found in SEC tags",
+        "Toyota: Total debt not found in SEC tags",
+        "Nissan: Not an SEC filer",
+        "Anheuser-Busch InBev: Revenue LTM not found in SEC tags",
+        "Anheuser-Busch InBev: EBITDA could not be constructed (missing op_income or D&A)",
+        "Anheuser-Busch InBev: Cash not found in SEC tags",
+        "Anheuser-Busch InBev: Total debt not found in SEC tags",
+        "Imperial Brands: Not an SEC filer",
+        "BP: Revenue LTM not found in SEC tags",
+        "BP: EBITDA could not be constructed (missing op_income or D&A)",
+        "BP: Cash not found in SEC tags",
+        "BP: Total debt not found in SEC tags",
+        "Air Products: Total debt not found in SEC tags",
+        "Nutanix: Total debt not found in SEC tags",
+        "CEMEX: Revenue LTM not found in SEC tags",
+        "CEMEX: EBITDA could not be constructed (missing op_income or D&A)",
+        "CEMEX: Cash not found in SEC tags",
+        "CEMEX: Total debt not found in SEC tags"
+      ],
+      "output": {
+        "total_rows": 81,
+        "red_count": 10,
+        "amber_count": 26,
+        "green_count": 45,
+        "html_bytes": 781563
+      },
+      "logged_at": "2026-05-18T18:29:54.724096+00:00"
     }
   ]
 }
