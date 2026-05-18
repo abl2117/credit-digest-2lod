@@ -1502,11 +1502,35 @@ def _build_hyperscaler_chart_html(sec_data, chart_id="hyperCapexChart"):
         var totals = {totals_json};
         var ctx = document.getElementById('{chart_id}');
         if (!ctx) return;
+
+        // Custom plugin: draw column totals above each stacked bar
+        var totalLabelsPlugin = {{
+          id: 'totalLabels_{chart_id}',
+          afterDatasetsDraw: function(chart) {{
+            var ctxCanvas = chart.ctx;
+            ctxCanvas.save();
+            ctxCanvas.font = '600 11px monospace';
+            ctxCanvas.fillStyle = '#cdd5df';
+            ctxCanvas.textAlign = 'center';
+            ctxCanvas.textBaseline = 'bottom';
+            var meta = chart.getDatasetMeta(chart.data.datasets.length - 1);
+            for (var i = 0; i < meta.data.length; i++) {{
+              var bar = meta.data[i];
+              var total = totals[i];
+              if (total == null || bar == null) continue;
+              var label = '$' + Math.round(total) + 'B';
+              ctxCanvas.fillText(label, bar.x, bar.y - 4);
+            }}
+            ctxCanvas.restore();
+          }}
+        }};
+
         new Chart(ctx, {{
           type: 'bar',
           data: {{ labels: labels, datasets: datasets }},
           options: {{
             responsive: true, maintainAspectRatio: false,
+            layout: {{ padding: {{ top: 24 }} }},
             plugins: {{
               legend: {{ position: 'top', labels: {{ color: '#a0b4c8', font: {{ size: 11 }} }} }},
               tooltip: {{ callbacks: {{ label: function(ctx) {{ return ctx.dataset.label + ': $' + (ctx.parsed.y||0).toFixed(1) + 'Bn'; }} }} }}
@@ -1515,7 +1539,8 @@ def _build_hyperscaler_chart_html(sec_data, chart_id="hyperCapexChart"):
               x: {{ stacked: true, ticks: {{ color: '#7090a8' }}, grid: {{ color: '#1e2a3a' }} }},
               y: {{ stacked: true, ticks: {{ color: '#7090a8', callback: function(v) {{ return '$' + v + 'B'; }} }}, grid: {{ color: '#1e2a3a' }} }}
             }}
-          }}
+          }},
+          plugins: [totalLabelsPlugin]
         }});
       }})();
     </script>
@@ -1628,6 +1653,7 @@ def _build_rpo_chart_html(sec_data, chart_id="rpoChart"):
             "stack": "rpo",
         })
     datasets_json = json.dumps(datasets)
+    totals_json = json.dumps([r.get("total") for r in history])
 
     # Latest period total + YoY (5 quarters back) callout
     latest = history[-1] if history else None
@@ -1653,7 +1679,7 @@ def _build_rpo_chart_html(sec_data, chart_id="rpoChart"):
       <div class="hyper-chart-header">
         <div>
           <h3 class="tmt-section-title">Hyperscaler Revenue Backlog (RPO, Stacked)</h3>
-          <div class="tmt-section-subtitle">Remaining Performance Obligation, last 8 quarters. Forward demand signal: contracted-but-not-yet-recognized cloud revenue. Includes {contributors_str}{excluded_note}.</div>
+          <div class="tmt-section-subtitle">Remaining Performance Obligation (RPO), last 8 quarters. Forward demand signal: contracted-but-not-yet-recognized cloud revenue. Includes {contributors_str}{excluded_note}. Amazon excluded when applicable because AWS RPO is not separately tagged in SEC XBRL; total Amazon ContractWithCustomerLiability would include Prime memberships and gift card balances, materially overstating AWS commercial backlog.</div>
         </div>
         <div class="hyper-chart-callout">
           <div class="hyper-chart-callout-label">Latest quarter total</div>
@@ -1670,13 +1696,38 @@ def _build_rpo_chart_html(sec_data, chart_id="rpoChart"):
         if (typeof Chart === 'undefined') {{ return; }}
         var labels = {labels_json};
         var datasets = {datasets_json};
+        var totals = {totals_json};
         var ctx = document.getElementById('{chart_id}');
         if (!ctx) return;
+
+        // Custom plugin: draw column totals above each stacked bar
+        var totalLabelsPlugin = {{
+          id: 'totalLabels_{chart_id}',
+          afterDatasetsDraw: function(chart) {{
+            var ctxCanvas = chart.ctx;
+            ctxCanvas.save();
+            ctxCanvas.font = '600 11px monospace';
+            ctxCanvas.fillStyle = '#cdd5df';
+            ctxCanvas.textAlign = 'center';
+            ctxCanvas.textBaseline = 'bottom';
+            var meta = chart.getDatasetMeta(chart.data.datasets.length - 1);
+            for (var i = 0; i < meta.data.length; i++) {{
+              var bar = meta.data[i];
+              var total = totals[i];
+              if (total == null || bar == null) continue;
+              var label = '$' + Math.round(total) + 'B';
+              ctxCanvas.fillText(label, bar.x, bar.y - 4);
+            }}
+            ctxCanvas.restore();
+          }}
+        }};
+
         new Chart(ctx, {{
           type: 'bar',
           data: {{ labels: labels, datasets: datasets }},
           options: {{
             responsive: true, maintainAspectRatio: false,
+            layout: {{ padding: {{ top: 24 }} }},
             plugins: {{
               legend: {{ position: 'top', labels: {{ color: '#a0b4c8', font: {{ size: 11 }} }} }},
               tooltip: {{ callbacks: {{ label: function(ctx) {{ return ctx.dataset.label + ': $' + (ctx.parsed.y||0).toFixed(1) + 'Bn'; }} }} }}
@@ -1685,7 +1736,8 @@ def _build_rpo_chart_html(sec_data, chart_id="rpoChart"):
               x: {{ stacked: true, ticks: {{ color: '#7090a8' }}, grid: {{ color: '#1e2a3a' }} }},
               y: {{ stacked: true, ticks: {{ color: '#7090a8', callback: function(v) {{ return '$' + v + 'B'; }} }}, grid: {{ color: '#1e2a3a' }} }}
             }}
-          }}
+          }},
+          plugins: [totalLabelsPlugin]
         }});
       }})();
     </script>
@@ -2654,7 +2706,7 @@ footer li strong{color:#ffaaaa}
   <ul>
     <li><strong>US Data Center Construction</strong>: monthly dollar value of private data center construction put in place in the US. Sourced from the US Census Bureau Value of Construction Put in Place (VIP) report via Our World in Data. The number represents the dollar value of construction work performed during the month (materials installed, labor performed) on private-sector data center projects nationwide. Includes new construction, additions, alterations, and major replacements; excludes maintenance and government-owned projects. Values are inflation-adjusted to constant 2021 US dollars using BLS Producer Price Index for new office building construction. Reported in millions of dollars per month. Lagged approximately 6 weeks (the May release covers March data). Chart shows monthly level and month-over-month change. KPI tiles show latest value, YoY %, 3-month average MoM change, and 5-year cumulative growth. <em>Why it matters for credit:</em> this is the macro demand signal for the entire data center buildout cycle. Rising values mean more physical construction; flattening values would signal cycle deceleration before it shows in hyperscaler earnings.</li>
     <li><strong>Hyperscaler CapEx (Stacked, Quarterly)</strong>: quarterly CapEx for Microsoft, Alphabet, Amazon, and Oracle going back up to 16 quarters. Bars synchronize on calendar quarter end. <em>Public-company supply commitment, quarterly cadence to surface inflection points.</em></li>
-    <li><strong>Hyperscaler Revenue Backlog (RPO)</strong>: quarterly Remaining Performance Obligation for the same 4 hyperscalers, last 8 quarters. From SEC EDGAR XBRL <code>RevenueRemainingPerformanceObligation</code> tag. <em>Contracted demand: revenue under signed contracts but not yet recognized. Forward demand signal.</em> Names with no RPO disclosure are noted in the chart subtitle.</li>
+    <li><strong>Hyperscaler Revenue Backlog (RPO)</strong>: quarterly Remaining Performance Obligation for hyperscalers, last 8 quarters. Pulled from SEC EDGAR XBRL <code>RevenueRemainingPerformanceObligation</code> and <code>RemainingPerformanceObligation</code> tags. <em>Contracted demand: revenue under signed contracts but not yet recognized. Forward demand signal.</em> Amazon may be excluded from the chart because AWS RPO is not separately tagged in SEC XBRL filings; including their broader ContractWithCustomerLiability would mix Prime memberships and gift card balances with AWS commercial backlog. Names with no RPO disclosure are noted in the chart subtitle.</li>
     <li><strong>Five subsection tables</strong>: Hyperscalers, Data Center &amp; Tower REITs, Telecom, Hardware &amp; EMS, Software/Payments/Services. Filter pills (Red/Amber/Green) apply across all subsections.</li>
   </ul>
   <p><strong>How the three charts work together</strong>: data center construction shows what's being physically built. Hyperscaler CapEx shows the public-company portion of that spend. RPO shows the contracted demand that buildout is serving. Rising construction and CapEx with rising RPO is a healthy expansion. Rising construction and CapEx with flat or falling RPO is the classic overbuild signal.</p>
