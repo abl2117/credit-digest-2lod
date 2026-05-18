@@ -63,6 +63,24 @@ if os.path.exists('ratings_override.json'):
     except Exception as e:
         print(f"WARNING: ratings_override.json failed to parse: {e}")
 
+# news_override.json: per-company key_dev override for cases where Claude's
+# search missed a material development. Structure:
+# {
+#   "Flex Ltd": {
+#     "key_dev": "Announced spin-off of data center EMS business and acquisition of Electrical Power Products; S&P affirmed BBB-/Stable May 6 2026.",
+#     "expires": "2026-07-06"  # optional; falls off after this date
+#   }
+# }
+NEWS_OVERRIDE = {}
+if os.path.exists('news_override.json'):
+    try:
+        with open('news_override.json', 'r', encoding='utf-8') as f:
+            NEWS_OVERRIDE = json.load(f)
+        active_count = sum(1 for k in NEWS_OVERRIDE if not k.startswith('_'))
+        print(f"Loaded news_override.json with {active_count} news overrides.")
+    except Exception as e:
+        print(f"WARNING: news_override.json failed to parse: {e}")
+
 WATCHLIST = {
     "AT&T":                    {"ticker": "T",     "filer_type": "10-K", "sector": "Telecom"},
     "Verizon":                 {"ticker": "VZ",    "filer_type": "10-K", "sector": "Telecom"},
@@ -467,6 +485,24 @@ CRITICAL ACCURACY REQUIREMENTS:
 - A rating action includes: upgrade, downgrade, affirmation, outlook change, or watch placement
 - For each rating, the date should reflect the most recent rating action (including outlook revisions or affirmations), not the date of original rating assignment
 
+KEY DEVELOPMENT (key_dev field) - CRITICAL FOR CREDIT SURVEILLANCE:
+For each name, search for any of these MATERIAL CREDIT EVENTS in the last 60 days:
+1. Rating actions: upgrades, downgrades, outlook changes, ratings affirmed with comments
+2. Capital structure: spin-off announcements, M&A (acquisitions or divestitures), debt issuance, refinancing, dividend changes, share buyback authorizations
+3. Financial events: covenant amendments, covenant breaches, defaults, missed payments
+4. Strategic events: management changes (CEO/CFO), restructuring, major contract wins or losses, strategic reviews, going private discussions
+5. Earnings: significant beats, misses, guidance changes, withdrawn guidance
+6. Legal/Regulatory: SEC investigations, material litigation, regulatory penalties, going concern warnings
+7. Operational: major customer wins or losses, supply chain disruptions, plant closures
+
+Apply this rule regardless of green/amber/red status. A name can be GREEN-rated and still have material credit-relevant news (e.g., a BBB- name announcing a spin-off and acquisition is still material).
+
+Search queries to use for each name:
+- "[Company name] spin-off OR acquisition OR divestiture 2026"
+- "[Company name] credit rating action 2026"
+- "[Company name] 8-K SEC filing material event"
+- "[Company name] debt issuance OR refinancing 2026"
+
 Use web search to source values. For well-known public companies, use your best available knowledge if a specific value is not directly returned by search. Only return "n/a" if the value is genuinely unknowable.
 
 CONCERN SCORE - compute for every row as an integer 0-100:
@@ -499,8 +535,7 @@ Rules:
 - Outlook: Stable, Positive, Negative, RUR, or n/a.
 - Rating date: YYYY-MM-DD format, date of most recent action.
 - action: use one of "Monitor" (green), "Watch" (amber), "Review" (red, manageable), "Escalate" (red, urgent). Pick based on severity, not just status.
-- key_dev for GREEN: exactly "No material news."
-- key_dev for AMBER/RED: 1-2 sentences, under 200 characters.
+- key_dev: 1-2 sentences, under 200 characters. Cite the EVENT (e.g., "Announced spin-off of data center EMS business and acquisition of Electrical Power Products; S&P affirmed BBB-/Stable May 6 2026."). If a name truly has NO material news in the last 60 days, return exactly "No material news.". Do not default to "No material news." just because status is green - check for material credit events first.
 - Public information only."""
 
 PROMPT_B = f"""Today is {datetime_str}. You are generating structured data for a morning credit intelligence dashboard for publicly listed US and global corporates.
@@ -547,6 +582,23 @@ DO NOT search for HY OAS or IG OAS. Always return "n/a" for those fields. Source
 
 Use web search to source values. For well-known public companies, use your best available knowledge if a specific value is not directly returned by search. Only return "n/a" if the value is genuinely unknowable.
 
+KEY DEVELOPMENT (key_dev field) - CRITICAL FOR CREDIT SURVEILLANCE:
+For each name, search for any of these MATERIAL CREDIT EVENTS in the last 60 days:
+1. Rating actions: upgrades, downgrades, outlook changes, ratings affirmed with comments
+2. Capital structure: spin-off announcements, M&A (acquisitions or divestitures), debt issuance, refinancing, dividend changes, share buyback authorizations
+3. Financial events: covenant amendments, covenant breaches, defaults, missed payments
+4. Strategic events: management changes (CEO/CFO), restructuring, major contract wins or losses, strategic reviews, going private discussions
+5. Earnings: significant beats, misses, guidance changes, withdrawn guidance
+6. Legal/Regulatory: SEC investigations, material litigation, regulatory penalties, going concern warnings
+7. Operational: major customer wins or losses, supply chain disruptions, plant closures
+
+Apply this rule regardless of green/amber/red status. A name can be GREEN-rated and still have material credit-relevant news.
+
+Search queries to use for each name:
+- "[Company name] spin-off OR acquisition OR divestiture 2026"
+- "[Company name] credit rating action 2026"
+- "[Company name] 8-K SEC filing material event"
+
 CONCERN SCORE - compute for every row as an integer 0-100:
 Start at 0 and add points as follows:
 - +25 if status is red
@@ -577,8 +629,7 @@ Rules:
 - Outlook: Stable, Positive, Negative, RUR, or n/a.
 - Rating date: YYYY-MM-DD format.
 - action: use one of "Monitor" (green), "Watch" (amber), "Review" (red, manageable), "Escalate" (red, urgent). Pick based on severity, not just status.
-- key_dev for GREEN: exactly "No material news."
-- key_dev for AMBER/RED: 1-2 sentences, under 200 characters.
+- key_dev: 1-2 sentences, under 200 characters. Cite the EVENT. If a name truly has NO material news in the last 60 days, return exactly "No material news.". Do not default to "No material news." just because status is green.
 - top3: 3 names from across BOTH batches most requiring attention today.
 - macro values: hy_oas and ig_oas always "n/a" (FRED takes over). treasury yields and vix one decimal. sp500 integer string no comma. sp500_1d with + or - prefix.
 - Public information only."""
@@ -689,7 +740,9 @@ def parse_json(raw, label):
 
 def apply_overrides(rows):
     overridden = 0
+    news_overridden = 0
     rating_fields = ['moodys_rating','moodys_outlook','moodys_date','sp_rating','sp_outlook','sp_date','fitch_rating','fitch_outlook','fitch_date']
+    today_date = datetime.now().date()
     for r in rows:
         co = r.get('company','')
         if co in RATINGS_OVERRIDE:
@@ -698,8 +751,28 @@ def apply_overrides(rows):
                 if f in ov:
                     r[f] = ov[f]
             overridden += 1
+        # Apply news override if present and not expired
+        if co in NEWS_OVERRIDE:
+            nv = NEWS_OVERRIDE[co]
+            # Check expiry
+            expires_str = nv.get('expires')
+            expired = False
+            if expires_str:
+                try:
+                    expires_date = datetime.strptime(expires_str, '%Y-%m-%d').date()
+                    if today_date > expires_date:
+                        expired = True
+                except (ValueError, TypeError):
+                    pass
+            if not expired:
+                key_dev = nv.get('key_dev')
+                if key_dev:
+                    r['key_dev'] = key_dev
+                    news_overridden += 1
     if overridden:
-        print(f"Applied manual overrides to {overridden} companies.")
+        print(f"Applied manual ratings overrides to {overridden} companies.")
+    if news_overridden:
+        print(f"Applied manual news overrides to {news_overridden} companies.")
     return rows
 
 
