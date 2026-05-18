@@ -1,0 +1,13 @@
+{
+  "_comment": "Manual news overrides. Add a company name as key; value object must have 'key_dev' (the news string, under 200 chars) and optionally 'expires' (YYYY-MM-DD; auto-removes after this date).",
+  "_example": {
+    "Company Name": {
+      "key_dev": "Brief description of material event under 200 characters.",
+      "expires": "2026-07-31"
+    }
+  },
+  "Flex Ltd": {
+    "key_dev": "Announced spin-off of data center EMS business (~$6.6Bn revenue) and acquisition of Electrical Power Products. S&P affirmed BBB-/Stable May 6 2026; pro forma leverage expected to remain below 3x.",
+    "expires": "2026-07-06"
+  }
+}
