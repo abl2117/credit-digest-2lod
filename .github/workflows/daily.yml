@@ -68,19 +68,9 @@ jobs:
           fi
 
       - name: Commit updated files
-       run: |
+        run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          echo "=== DIAG 1: does generated index.html contain the stub? ==="
-          grep -c "DATA QUALITY INVESTIGATION" index.html || echo "grep returned 0 or failed"
-          echo "=== DIAG 2: file size ==="
-          wc -c index.html
-          echo "=== DIAG 3: git status BEFORE add ==="
-          git status --short
           git add index.html runs.json macro_cache.json data_center_cache.json financials_cache.json claude_cache.json backtest_results.json 2>/dev/null || true
-          echo "=== DIAG 4: git status AFTER add ==="
-          git status --short
-          echo "=== DIAG 5: git diff --cached --stat ==="
-          git diff --cached --stat
           git diff --cached --quiet || git commit -m "Daily credit digest update"
           git push
