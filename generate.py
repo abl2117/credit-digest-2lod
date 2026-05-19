@@ -1506,6 +1506,7 @@ def _detect_fiscal_year_ends(sec_for_co, max_count=3):
     """
     bh = sec_for_co.get("_balance_history", {}) or {}
     h = sec_for_co.get("_history", {}) or {}
+    ha = sec_for_co.get("_history_annual", {}) or {}
     candidates = []
 
     # Approach 1: explicitly tagged 10-K entries from any source
@@ -1523,6 +1524,12 @@ def _detect_fiscal_year_ends(sec_for_co, max_count=3):
                 pd = entry.get("period_end")
                 if pd:
                     candidates.append(pd)
+    # Annual history is by definition from 10-K filings: take all period_ends
+    for source in ("revenue", "op_income", "capex", "ocf"):
+        for entry in ha.get(source, []) or []:
+            pd = entry.get("period_end")
+            if pd:
+                candidates.append(pd)
 
     if candidates:
         return sorted(set(candidates), reverse=True)[:max_count]
@@ -1643,22 +1650,50 @@ def _balance_at(history, year_end_date, tolerance_days=60):
     return best
 
 
+def _annual_value_or_sum(history_annual, history_quarterly, year_end_date):
+    """
+    Get year-end value: prefer direct annual record (from 10-K), fall back to 4-quarter sum.
+
+    Companies like telecoms and utilities often report D&A, CapEx, and CFO only annually.
+    Without checking annual history first, we'd return None for those names' historical years.
+    """
+    # First try: exact annual record matching the year-end
+    if history_annual:
+        try:
+            target = datetime.strptime(year_end_date, "%Y-%m-%d").date()
+            for rec in history_annual:
+                pd_str = rec.get("period_end")
+                if not pd_str: continue
+                try:
+                    pd = datetime.strptime(pd_str, "%Y-%m-%d").date()
+                except (ValueError, TypeError):
+                    continue
+                # Match within 5 days of year-end (handles fiscal year reporting variations)
+                if abs((pd - target).days) <= 5 and rec.get("value") is not None:
+                    return rec.get("value")
+        except (ValueError, TypeError):
+            pass
+    # Fallback: sum 4 quarterly records around year-end
+    return _annual_sum_around(history_quarterly, year_end_date)
+
+
 def historical_snapshots(sec_for_co):
     """
     Build year-by-year snapshots: Year-3, Year-2, Year-1, LTM.
-    Uses _history (flow) and _balance_history (instant) from SEC cache.
+    Uses _history (quarterly flow), _history_annual (annual flow), and _balance_history (instant).
     """
     if not sec_for_co: return []
     year_ends = _detect_fiscal_year_ends(sec_for_co, max_count=3)
     history = sec_for_co.get("_history", {}) or {}
+    history_annual = sec_for_co.get("_history_annual", {}) or {}
     balance = sec_for_co.get("_balance_history", {}) or {}
     snapshots = []
     for ye in reversed(year_ends):
-        rev = _annual_sum_around(history.get("revenue"), ye)
-        opi = _annual_sum_around(history.get("op_income"), ye)
-        da = _annual_sum_around(history.get("da"), ye)
-        ocf = _annual_sum_around(history.get("ocf"), ye)
-        capex = _annual_sum_around(history.get("capex"), ye)
+        rev = _annual_value_or_sum(history_annual.get("revenue"), history.get("revenue"), ye)
+        opi = _annual_value_or_sum(history_annual.get("op_income"), history.get("op_income"), ye)
+        da = _annual_value_or_sum(history_annual.get("da"), history.get("da"), ye)
+        ocf = _annual_value_or_sum(history_annual.get("ocf"), history.get("ocf"), ye)
+        capex = _annual_value_or_sum(history_annual.get("capex"), history.get("capex"), ye)
         cash = _balance_at(balance.get("cash"), ye)
         lt = _balance_at(balance.get("lt_debt"), ye)
         st = _balance_at(balance.get("st_debt"), ye)
