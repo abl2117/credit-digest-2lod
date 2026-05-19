@@ -273,7 +273,75 @@ def apply_market_overrides(rows, market_data):
     return rows
 
 
+def compute_status_from_flags(rows):
+    """
+    Four-tier status driven by 15-flag framework count.
+
+    Tiers (mapped to status field + severity field for color coding):
+      - CRITICAL (status=red, severity=critical):
+          >= 4 flagged, OR (>= 3 flagged AND >= 2 watch)
+      - HIGH (status=red, severity=high):
+          3 flagged, OR (2 flagged AND >= 3 watch)
+      - AMBER (status=amber, severity=watch):
+          1-2 flagged, OR (0 flagged AND >= 4 watch)
+      - GREEN (status=green, severity=monitor):
+          0 flagged AND <= 3 watch
+
+    Action mapping:
+      - CRITICAL -> ESCALATE
+      - HIGH -> REVIEW
+      - AMBER -> WATCH
+      - GREEN -> MONITOR
+
+    Internally we keep status as 3 values (red/amber/green) to preserve
+    backwards compatibility with existing CSS, filter pills, and counters.
+    The new severity field drives the visual distinction between CRITICAL
+    and HIGH (both red status but different visual treatment).
+    """
+    upgrade_count = 0
+    downgrade_count = 0
+    transitions = []
+    for r in rows:
+        original_status = (r.get('status') or 'green').lower()
+        flag_count = int(r.get('_flag_count', 0) or 0)
+        watch_count = int(r.get('_watch_count', 0) or 0)
+
+        # Determine tier
+        if flag_count >= 4 or (flag_count >= 3 and watch_count >= 2):
+            new_status, severity, action = 'red', 'critical', 'Escalate'
+        elif flag_count >= 3 or (flag_count >= 2 and watch_count >= 3):
+            new_status, severity, action = 'red', 'high', 'Review'
+        elif flag_count >= 1 or watch_count >= 4:
+            new_status, severity, action = 'amber', 'watch', 'Watch'
+        else:
+            new_status, severity, action = 'green', 'monitor', 'Monitor'
+
+        if new_status != original_status:
+            if (original_status == 'green' and new_status in ('amber', 'red')) or \
+               (original_status == 'amber' and new_status == 'red'):
+                upgrade_count += 1
+                transitions.append(f"  {r.get('company','')}: {original_status} -> {new_status}/{severity} ({flag_count} flagged, {watch_count} watch)")
+            else:
+                downgrade_count += 1
+
+        r['status'] = new_status
+        r['severity'] = severity
+        r['action'] = action
+        r['_status_source'] = 'flag-driven'
+    print(f"Flag-driven status: {upgrade_count} escalations, {downgrade_count} de-escalations from initial Claude classification.")
+    if transitions:
+        for t in transitions[:10]:
+            print(t)
+        if len(transitions) > 10:
+            print(f"  ... and {len(transitions)-10} more")
+    return rows
+
+
 def compute_status_from_data(rows):
+    """
+    DEPRECATED legacy function. Retained for backwards compatibility but no longer
+    called from main(). Status is now driven by 15-flag count via compute_status_from_flags.
+    """
     def to_float(v):
         try:
             return float(str(v).replace(',','').replace('+','').replace('%','').strip())
@@ -1003,6 +1071,48 @@ def num_cell(v, suffix=''):
     return f'<td class="num-cell">{v}{suffix}</td>'
 
 
+def week52_cell(level_v, current_v, kind='high'):
+    """
+    Render 52W high or low with context: shows the price AND % distance from current.
+    For 52W high: shows "% below high" (negative number = how much current price is below 52W high)
+    For 52W low: shows "% above low" (positive number = how much current price is above 52W low)
+    """
+    level_str = str(level_v or 'n/a').strip()
+    if not level_str or level_str == 'n/a':
+        return '<td class="num-cell stock-flat">n/a</td>'
+    try:
+        level = float(level_str)
+        current = float(str(current_v or '').replace('$','').replace(',','').strip())
+        if level == 0:
+            return f'<td class="num-cell">{level_str}</td>'
+        pct = (current - level) / level * 100
+        if kind == 'high':
+            # pct will be 0 or negative; show as "-X.X%" in red if material
+            if pct >= -2:
+                color_class = 'stock-flat'
+                pct_str = f"{pct:+.1f}%"
+            elif pct >= -10:
+                color_class = 'stock-down'
+                pct_str = f"{pct:.1f}%"
+            else:
+                color_class = 'stock-down'
+                pct_str = f"{pct:.1f}%"
+        else:
+            # 52W low: pct will be 0 or positive; show as "+X.X%" in green if material
+            if pct <= 2:
+                color_class = 'stock-flat'
+                pct_str = f"{pct:+.1f}%"
+            elif pct <= 20:
+                color_class = 'stock-up'
+                pct_str = f"+{pct:.1f}%"
+            else:
+                color_class = 'stock-up'
+                pct_str = f"+{pct:.1f}%"
+        return f'<td class="num-cell"><div style="line-height:1.3">{level_str}<div class="{color_class}" style="font-size:9px;font-weight:600">{pct_str}</div></div></td>'
+    except (ValueError, TypeError):
+        return f'<td class="num-cell">{level_str}</td>'
+
+
 def yoy_cell(v):
     v = str(v or 'n/a').strip()
     if not v or v == 'n/a':
@@ -1145,7 +1255,21 @@ def concern_cell_redesigned(r, status):
     )
 
 
-def status_cell_redesigned(status):
+def status_cell_redesigned(status, severity=None):
+    """
+    Render status badge with four-tier severity coloring.
+
+    severity options:
+      - 'critical' -> deep maroon background, "CRITICAL" label
+      - 'high'     -> bright red background, "HIGH" label
+      - 'watch'    -> amber background (same as legacy amber), "AMBER" label
+      - 'monitor'  -> green background (same as legacy green), "GREEN" label
+      - None       -> falls back to legacy status (red/amber/green)
+    """
+    if severity in ('critical', 'high', 'watch', 'monitor'):
+        label_map = {'critical': 'CRITICAL', 'high': 'HIGH', 'watch': 'AMBER', 'monitor': 'GREEN'}
+        label = label_map[severity]
+        return f'<td><span class="status-badge severity-{severity}">{label}</span></td>'
     return f'<td><span class="status-badge {status}">{status.upper()}</span></td>'
 
 
@@ -1159,12 +1283,23 @@ def company_cell_redesigned(r):
 
 
 def action_cell_redesigned(r):
-    action = r.get('action', 'Monitor')
-    action_l = action.lower()
-    if action_l in ('escalate', 'sell'): cls, text = 'red', 'Escalate'
-    elif action_l in ('review', 'reduce'): cls, text = 'red', 'Review'
-    elif action_l == 'watch': cls, text = 'amber', 'Watch'
-    else: cls, text = 'green', 'Monitor'
+    """Action button styled per severity tier (escalate/review/watch/monitor)."""
+    severity = (r.get('severity') or '').lower()
+    if severity == 'critical':
+        cls, text = 'escalate', 'Escalate'
+    elif severity == 'high':
+        cls, text = 'review', 'Review'
+    elif severity == 'watch':
+        cls, text = 'watch', 'Watch'
+    elif severity == 'monitor':
+        cls, text = 'monitor', 'Monitor'
+    else:
+        # Fallback to action field if severity not set (defensive)
+        action_l = (r.get('action') or 'Monitor').lower()
+        if action_l in ('escalate', 'sell'): cls, text = 'escalate', 'Escalate'
+        elif action_l in ('review', 'reduce'): cls, text = 'review', 'Review'
+        elif action_l == 'watch': cls, text = 'watch', 'Watch'
+        else: cls, text = 'monitor', 'Monitor'
     return f'<td><span class="action-redesigned {cls}">{text}</span></td>'
 
 
@@ -2307,20 +2442,29 @@ def build_html(all_rows, macro, top3, datetime_str, commodities=None, fred_data=
     sec_data = sec_data or {}
     census_data = census_data or {}
     overview_rows, market_rows, fin_summary_rows, fin_detail_rows = [], [], [], []
+    # Four-tier counters (severity-based)
+    crit_count = high_count = watch_count = mon_count = 0
+    # Legacy 3-tier counters (status-based) for backwards compatibility
     g_count = a_count = r_count = 0
+    name_count = len(all_rows)
 
     for r in all_rows:
         status = r.get('status','green').lower()
+        severity = r.get('severity','').lower()
         if status == 'green': g_count += 1
         elif status == 'amber': a_count += 1
         elif status == 'red': r_count += 1
+        if severity == 'critical': crit_count += 1
+        elif severity == 'high': high_count += 1
+        elif severity == 'watch': watch_count += 1
+        elif severity == 'monitor': mon_count += 1
         co = r.get('company', '')
         co_slug = re.sub(r'[^a-z0-9]+', '-', co.lower()).strip('-')
 
         overview_rows.append(
-            f'<tr data-status="{status}" data-company="{co.lower()}" data-sector="{r.get("sector","")}">'
+            f'<tr data-status="{status}" data-severity="{r.get("severity","")}" data-company="{co.lower()}" data-sector="{r.get("sector","")}">'
             + company_cell_redesigned(r)
-            + status_cell_redesigned(status)
+            + status_cell_redesigned(status, r.get('severity'))
             + concern_cell_redesigned(r, status)
             + ratings_cell_compact(r)
             + last_action_cell(r)
@@ -2351,8 +2495,8 @@ def build_html(all_rows, macro, top3, datetime_str, commodities=None, fred_data=
             + stock_cell(r.get('stock_1m'))
             + stock_cell(r.get('stock_ytd'))
             + stock_cell(r.get('stock_1y'))
-            + num_cell(r.get('week52_high'))
-            + num_cell(r.get('week52_low'))
+            + week52_cell(r.get('week52_high'), r.get('price'), 'high')
+            + week52_cell(r.get('week52_low'), r.get('price'), 'low')
             + f'<td>{r.get("earnings","TBD")}</td>'
             + '</tr>'
         )
@@ -2494,6 +2638,18 @@ header{background:linear-gradient(135deg,#6b0000 0%,#8B0000 60%,#a00000 100%);co
 .pills{display:flex;gap:8px;justify-content:flex-end}
 .pill{padding:5px 14px;border-radius:3px;font-weight:700;font-size:11px;color:#fff;letter-spacing:.5px;font-family:"IBM Plex Mono",monospace}
 .pill.red{background:#cc0000}.pill.amber{background:#e6a700}.pill.green{background:#2e7d32}
+.pill.severity-critical-pill{background:#8B0000;color:#fff}
+.pill.severity-high-pill{background:#DC2626;color:#fff}
+.pill.severity-watch-pill{background:#e6a700;color:#fff}
+.pill.severity-monitor-pill{background:#2e7d32;color:#fff}
+.status-legend{background:#0f1620;border:1px solid #1e2a3a;border-radius:4px;margin:10px 28px;padding:14px 18px;font-size:11px;font-family:"IBM Plex Mono",monospace}
+.status-legend.hidden{display:none}
+.status-legend h4{margin:0 0 10px 0;font-size:11px;color:#cfd8e3;letter-spacing:1.5px;text-transform:uppercase}
+.status-legend .legend-row{display:flex;align-items:center;gap:14px;padding:7px 0;border-bottom:1px solid #16202b}
+.status-legend .legend-row:last-of-type{border-bottom:none}
+.status-legend .legend-desc{color:#a0afbf;flex:1;line-height:1.5;font-size:11px}
+.status-legend .status-badge{min-width:80px;text-align:center;font-size:11px;padding:4px 8px}
+.status-legend .legend-footnote{margin-top:10px;font-size:10px;color:#5a7287;font-style:italic;padding-top:8px;border-top:1px solid #16202b}
 .last-refresh{font-size:10px;margin-top:6px;opacity:.7;font-family:"IBM Plex Mono",monospace}
 .macro-strip{background:#0d1520;border-bottom:1px solid #1e3a5f;padding:10px 28px;display:flex;gap:0;flex-wrap:wrap;align-items:center}
 .macro-item{padding:4px 20px;border-right:1px solid #1e3a5f;display:flex;flex-direction:column;align-items:center;gap:2px}
@@ -2544,6 +2700,12 @@ tbody tr:hover{background:#0d1520}
 .status-badge.red{color:#ff6b6b;background:rgba(255,107,107,.12)}
 .status-badge.amber{color:#f0b429;background:rgba(240,180,41,.12)}
 .status-badge.green{color:#4ec38a;background:rgba(78,195,138,.12)}
+/* Four-tier severity colors (severity drives visual distinction within red status) */
+.status-badge.severity-critical{color:#fff;background:#8B0000;border:1px solid #8B0000}
+.status-badge.severity-high{color:#fff;background:#DC2626;border:1px solid #DC2626}
+.status-badge.severity-watch{color:#f0b429;background:rgba(240,180,41,.12);border:1px solid rgba(240,180,41,.4)}
+.status-badge.severity-monitor{color:#4ec38a;background:rgba(78,195,138,.12);border:1px solid rgba(78,195,138,.4)}
+.severity-label{font-size:9px;letter-spacing:1.2px;opacity:.85;margin-top:2px;display:block}
 .concern-cell{padding:10px 12px;font-family:"IBM Plex Mono",monospace}
 .concern-num{font-weight:700;font-size:18px;line-height:1}
 .concern-denom{font-size:11px;color:#3a4a5a;font-weight:400;margin-left:2px}
@@ -2615,6 +2777,11 @@ tbody tr:hover{background:#0d1520}
 .action-redesigned.red{background:#3a0000;color:#ff6b6b;border:1px solid #8B0000}
 .action-redesigned.amber{background:#2a1a00;color:#f0b429;border:1px solid #8b6200}
 .action-redesigned.green{background:#001a0a;color:#4ec38a;border:1px solid #1a5c32}
+/* Four-tier action button colors aligned with severity */
+.action-redesigned.escalate{background:#8B0000;color:#fff;border:1px solid #8B0000}
+.action-redesigned.review{background:#1a0a0a;color:#DC2626;border:1px solid #DC2626}
+.action-redesigned.watch{background:#2a1a00;color:#f0b429;border:1px solid #8b6200}
+.action-redesigned.monitor{background:#001a0a;color:#4ec38a;border:1px solid #1a5c32}
 .price-cell{font-weight:700;color:#a0c4e8}
 .src-tag{display:inline-block;font-family:"IBM Plex Mono",monospace;font-size:8px;letter-spacing:.5px;padding:1px 4px;border-radius:2px;margin-left:6px;vertical-align:middle;cursor:help}
 .src-tag.sec{background:#001a0a;color:#4ec38a;border:1px solid #1a5c32}
@@ -2645,13 +2812,13 @@ tbody tr:hover{background:#0d1520}
 .tmt-section-title{font-family:"IBM Plex Mono",monospace;font-size:13px;color:#8B0000;text-transform:uppercase;letter-spacing:1.5px;font-weight:700;margin:0}
 .tmt-section-subtitle{font-size:11px;color:#7090a8;font-style:italic}
 .tmt-table{width:100%;border-collapse:collapse;table-layout:auto}
-.tmt-table th{background:#0d1117;color:#4a6080;padding:8px 10px;font-size:10px;letter-spacing:.5px;text-transform:uppercase;border-bottom:1px solid #1e2a3a;font-family:"IBM Plex Mono",monospace;font-weight:600;text-align:right;cursor:pointer;white-space:nowrap}
-.tmt-table th:first-child,.tmt-table th:nth-child(2){text-align:left}
+.tmt-table th{background:#0d1117;color:#4a6080;padding:8px 10px;font-size:10px;letter-spacing:.5px;text-transform:uppercase;border-bottom:1px solid #1e2a3a;font-family:"IBM Plex Mono",monospace;font-weight:600;text-align:center;cursor:pointer;white-space:nowrap}
+.tmt-table th:first-child{text-align:left}
 .tmt-table th:hover{background:#0d1520;color:#a0b4c8}
-.tmt-table tbody td{padding:8px 10px;border-bottom:1px solid #0d1520;font-size:12px;vertical-align:middle;text-align:right}
+.tmt-table tbody td{padding:8px 10px;border-bottom:1px solid #0d1520;font-size:12px;vertical-align:middle;text-align:center}
 .tmt-table tbody td.co-cell{text-align:left}
 .tmt-table tbody tr:hover{background:#0d1520}
-.tmt-table .num-cell{text-align:right}
+.tmt-table .num-cell{text-align:center}
 .tmt-missing{color:#3a4a5a;font-size:11px;font-style:italic;text-align:left;padding-left:10px}
 .macro-tab-content{padding:24px 28px}
 .macro-tab-intro{color:#a0b4c8;font-size:12px;line-height:1.5;margin-bottom:24px;padding-bottom:14px;border-bottom:1px solid #1e2a3a;max-width:960px}
@@ -2730,13 +2897,22 @@ footer li strong{color:#ffaaaa}
   function applyAll(){
     var q=(search.value||'').toLowerCase();
     var sv=sel.value;
-    var g=0,a=0,r=0;
+    var crit=0,high=0,wat=0,mon=0;
     document.querySelectorAll('.pane tbody tr[data-status]').forEach(function(row){
       if(row.classList.contains('fin-detail-row'))return;
       var st=(row.dataset.status||'').toLowerCase();
+      var sev=(row.dataset.severity||'').toLowerCase();
       var co=(row.dataset.company||'');
       var sc=(row.dataset.sector||'');
-      var pf=af==='all'||st===af;
+      // Four-tier filter: 'critical'/'high' match severity, 'amber'/'green' match status (legacy)
+      var pf=af==='all';
+      if(!pf){
+        if(af==='critical')pf=(sev==='critical');
+        else if(af==='high')pf=(sev==='high');
+        else if(af==='amber')pf=(st==='amber'||sev==='watch');
+        else if(af==='green')pf=(st==='green'||sev==='monitor');
+        else pf=(st===af);
+      }
       var ps=!q||co.indexOf(q)>-1;
       var psc=sv==='all'||sc===sv;
       var sh=pf&&ps&&psc;
@@ -2752,15 +2928,20 @@ footer li strong{color:#ffaaaa}
         }
       }
     });
+    // Recount visible Overview rows by severity tier
     document.querySelectorAll('#pane-overview tbody tr').forEach(function(row){
       if(row.style.display!=='none'){
-        var st=(row.dataset.status||'').toLowerCase();
-        if(st==='green')g++;else if(st==='amber')a++;else if(st==='red')r++;
+        var sev=(row.dataset.severity||'').toLowerCase();
+        if(sev==='critical')crit++;
+        else if(sev==='high')high++;
+        else if(sev==='watch')wat++;
+        else if(sev==='monitor')mon++;
       }
     });
-    document.getElementById('greenCount').textContent='GREEN '+g;
-    document.getElementById('amberCount').textContent='AMBER '+a;
-    document.getElementById('redCount').textContent='RED '+r;
+    var critEl=document.getElementById('critCount');if(critEl)critEl.textContent='CRITICAL '+crit;
+    var highEl=document.getElementById('highCount');if(highEl)highEl.textContent='HIGH '+high;
+    var watEl=document.getElementById('watchCount');if(watEl)watEl.textContent='AMBER '+wat;
+    var monEl=document.getElementById('monCount');if(monEl)monEl.textContent='MONITOR '+mon;
   }
 
   btns.forEach(function(b){b.addEventListener('click',function(){
@@ -2815,13 +2996,14 @@ footer li strong{color:#ffaaaa}
 <header>
   <div>
     <div class="title">MORNING CREDIT DIGEST</div>
-    <div class="subtitle">2LOD Credit Surveillance &nbsp;&bull;&nbsp; US Corporate Watchlist &nbsp;&bull;&nbsp; 82 Names</div>
+    <div class="subtitle">2LOD Credit Surveillance &nbsp;&bull;&nbsp; US Corporate Watchlist &nbsp;&bull;&nbsp; {name_count} Names</div>
   </div>
   <div class="right-block">
     <div class="pills">
-      <span class="pill green" id="greenCount">GREEN {g_count}</span>
-      <span class="pill amber" id="amberCount">AMBER {a_count}</span>
-      <span class="pill red" id="redCount">RED {r_count}</span>
+      <span class="pill severity-monitor-pill" id="monCount" title="Monitor: 0 flagged AND ≤ 3 watch">MONITOR {mon_count}</span>
+      <span class="pill severity-watch-pill" id="watchCount" title="Watch: 1-2 flagged OR (0 flagged AND ≥ 4 watch)">AMBER {watch_count}</span>
+      <span class="pill severity-high-pill" id="highCount" title="High: 3 flagged OR (2 flagged AND ≥ 3 watch)">HIGH {high_count}</span>
+      <span class="pill severity-critical-pill" id="critCount" title="Critical: ≥ 4 flagged OR (≥ 3 flagged AND ≥ 2 watch)">CRITICAL {crit_count}</span>
     </div>
     <div class="last-refresh">Updated: {datetime_str} &nbsp;&bull;&nbsp; Mode: <span style="font-weight:700;color:{'#4ec38a' if run_mode == 'full' else '#7090a8'}">{run_mode.upper()}</span></div>
   </div>
@@ -2838,11 +3020,33 @@ footer li strong{color:#ffaaaa}
 </div>
 <div class="controls">
   <button class="active" data-filter="all">All</button>
-  <button data-filter="red">Red</button>
-  <button data-filter="amber">Amber</button>
-  <button data-filter="green">Green</button>
+  <button data-filter="critical" title="Critical: ≥ 4 flagged OR (≥ 3 flagged AND ≥ 2 watch)">Critical</button>
+  <button data-filter="high" title="High: 3 flagged OR (2 flagged AND ≥ 3 watch)">High</button>
+  <button data-filter="amber" title="Amber: 1-2 flagged OR (0 flagged AND ≥ 4 watch)">Amber</button>
+  <button data-filter="green" title="Monitor: 0 flagged AND ≤ 3 watch">Monitor</button>
   <input type="text" id="searchBox" placeholder="Search company...">
   <select id="sectorFilter"><option value="all">All Sectors</option></select>
+  <button id="statusLegendToggle" type="button" style="margin-left:auto;font-size:11px;color:#7eb3cf;background:transparent;border:1px dashed #2d4a5d;padding:5px 10px;cursor:pointer;border-radius:3px;" title="Toggle status definitions" onclick="document.getElementById('statusLegend').classList.toggle('hidden')">&#9432; What do statuses mean?</button>
+</div>
+<div id="statusLegend" class="status-legend hidden">
+  <h4>STATUS DEFINITIONS</h4>
+  <div class="legend-row">
+    <span class="status-badge severity-critical">CRITICAL</span>
+    <span class="legend-desc">≥ 4 flagged, OR (≥ 3 flagged AND ≥ 2 watch). Immediate escalation required.</span>
+  </div>
+  <div class="legend-row">
+    <span class="status-badge severity-high">HIGH</span>
+    <span class="legend-desc">3 flagged, OR (2 flagged AND ≥ 3 watch). Active credit review needed.</span>
+  </div>
+  <div class="legend-row">
+    <span class="status-badge severity-watch">AMBER</span>
+    <span class="legend-desc">1-2 flagged, OR (0 flagged AND ≥ 4 watch). Elevated monitoring.</span>
+  </div>
+  <div class="legend-row">
+    <span class="status-badge severity-monitor">GREEN</span>
+    <span class="legend-desc">0 flagged AND ≤ 3 watch. Standard monitoring cadence.</span>
+  </div>
+  <div class="legend-footnote">Status is computed deterministically after every run from the 15-flag framework. Full methodology in the Methodology tab.</div>
 </div>
 
 <div class="pane active" id="pane-overview">
@@ -2929,14 +3133,42 @@ footer li strong{color:#ffaaaa}
   </table>
   <p><strong>Why this design</strong>: ratings change quarterly at most, news changes daily for stressed names but rarely for stable green names. Refreshing everything daily wastes API budget. The cheap mode keeps the dashboard fresh on metrics that matter daily (stock prices, macro, news for at-risk names) while preserving cache for stable items. Cost: roughly $60-80/month sustained, vs $150+ daily-full equivalent.</p>
   <p><strong>Manual trigger</strong>: any time, via the GitHub Actions tab. Defaults to auto mode (full on Friday, cheap otherwise), with the option to force full or cheap mode. Manual triggers in full mode cost ~$5-7 per run; cheap mode triggers cost ~$1.50.</p>
-  <p><strong>Override files</strong> (ratings_override.json and news_override.json) are applied on every run regardless of mode, so manually entered data appears immediately.</p>
+  <p><strong>Override files</strong> (<code>ratings_override.json</code> and <code>news_override.json</code>) are applied on every run regardless of mode, so manually entered data appears immediately.</p>
 
-  <h2>Status Definitions</h2>
-  <p>Status is computed deterministically from underlying data after each run, not provided by any analyst or model. Same inputs always produce the same status.</p>
+  <h2>Manual Overrides</h2>
+  <p>Two JSON files in the repo allow manual data injection when automated sources miss something material.</p>
+  <p><strong>news_override.json</strong>: Per-company key development override. Use when a material credit event happens but Claude's web search didn't pick it up. Each entry has an optional expiry date for auto-cleanup.</p>
+  <pre style="background:#0d1520;padding:14px;border-radius:4px;font-size:11px;color:#a0c4e8;border-left:3px solid #5a8fa8;overflow-x:auto;">{
+  "Flex Ltd": {
+    "key_dev": "Announced spin-off of data center EMS business; S&amp;P affirmed BBB- May 6 2026.",
+    "expires": "2026-07-06"
+  },
+  "Boeing": {
+    "key_dev": "FAA approved 737 MAX production rate increase to 38/month."
+  }
+}</pre>
+  <p>To add: open <code>news_override.json</code> in the repo, click the pencil icon, add an entry, commit. Next workflow run picks it up. Expired entries auto-fall-off after their expires date.</p>
+  <p><strong>ratings_override.json</strong>: Per-company rating override. Use when Moody's, S&amp;P, or Fitch update a rating between full runs. Same format with rating fields instead of key_dev.</p>
+
+  <h2>Quick Reference</h2>
+  <p>Status across every tab is driven by one source of truth: the 15-flag red flag framework. Each flag has explicit numerical thresholds. The combined count of FLAGGED + WATCH per name determines its tier.</p>
   <table class="methodology-table">
-    <tr><td><span class="status-badge red">RED</span></td><td>Concern &ge; 70, action Review/Escalate, 2+ negative outlooks, YTD &lt; -30%, or leverage &gt;5x AND FCF negative.</td></tr>
-    <tr><td><span class="status-badge amber">AMBER</span></td><td>Concern &ge; 30, action Watch, 1 negative outlook, leverage &gt; 5x, FCF negative, YTD &lt; -20%, or 1M &lt; -15%.</td></tr>
-    <tr><td><span class="status-badge green">GREEN</span></td><td>No triggers fired.</td></tr>
+    <tr><th>Tier</th><th>Trigger</th><th>Action</th></tr>
+    <tr><td><span class="status-badge severity-critical">CRITICAL</span></td><td>&ge; 4 flagged, OR (&ge; 3 flagged AND &ge; 2 watch)</td><td>Escalate</td></tr>
+    <tr><td><span class="status-badge severity-high">HIGH</span></td><td>3 flagged, OR (2 flagged AND &ge; 3 watch)</td><td>Review</td></tr>
+    <tr><td><span class="status-badge severity-watch">AMBER</span></td><td>1-2 flagged, OR (0 flagged AND &ge; 4 watch)</td><td>Watch</td></tr>
+    <tr><td><span class="status-badge severity-monitor">GREEN</span></td><td>0 flagged AND &le; 3 watch</td><td>Monitor</td></tr>
+  </table>
+  <p><strong>Note on methodology change</strong>: prior versions of this dashboard used a separate concern_score (0-100 composite) from Claude. As of May 2026, status is driven purely by the 15-flag framework for consistency across all tabs and to align with auditable credit officer practice. See Red Flags Framework section below for the 15 flag definitions.</p>
+
+  <h2>Status Definitions (detailed)</h2>
+  <p>Each row's status badge and corresponding action button are computed after every run from the 15-flag count. Tiers are mutually exclusive: a name belongs to exactly one tier.</p>
+  <table class="methodology-table">
+    <tr><th>Tier</th><th>Description</th><th>Threshold</th></tr>
+    <tr><td><span class="status-badge severity-critical">CRITICAL</span></td><td>Immediate credit committee attention required. Significant or compounding credit deterioration across multiple categories.</td><td>4+ hard flags, OR 3+ hard + 2+ watch</td></tr>
+    <tr><td><span class="status-badge severity-high">HIGH</span></td><td>Active credit review needed within current cycle. Pattern of credit stress emerging.</td><td>3 hard flags, OR 2 hard + 3+ watch</td></tr>
+    <tr><td><span class="status-badge severity-watch">AMBER</span></td><td>Elevated monitoring. Single material concern, or multiple early warnings.</td><td>1-2 hard flags, OR 0 hard + 4+ watch</td></tr>
+    <tr><td><span class="status-badge severity-monitor">GREEN</span></td><td>Standard monitoring cadence. No or minimal credit stress signals.</td><td>0 hard flags AND 0-3 watch flags</td></tr>
   </table>
 
   <h2>Financial Metric Definitions</h2>
@@ -2964,7 +3196,7 @@ footer li strong{color:#ffaaaa}
     <tr><td><strong>Market Cap</strong></td><td>Current share price times shares outstanding. From yfinance fast_info.</td><td>yfinance</td></tr>
     <tr><td><strong>EV (Enterprise Value)</strong></td><td>Market Cap + Total Debt - Cash. The theoretical takeover price: what an acquirer would pay equity holders plus assume in debt, less captured cash. Shown as n/a when any of the three inputs is missing.</td><td>Derived</td></tr>
     <tr><td><strong>1D / 1M / YTD / 1Y %</strong></td><td>Total return percentage change from previous close, 22 trading days back, start of calendar year, and 252 trading days back respectively. Negative values shown in red, positive in green.</td><td>yfinance</td></tr>
-    <tr><td><strong>52W High / Low</strong></td><td>Highest and lowest adjusted close over trailing 252 trading days.</td><td>yfinance</td></tr>
+    <tr><td><strong>52W High / Low</strong></td><td>Highest and lowest adjusted close over trailing 252 trading days. Each cell shows the price plus a context % indicating how far current price is from that level: 52W High shows "% below high" (red if &gt; 10% below), 52W Low shows "% above low" (green if &gt; 20% above).</td><td>yfinance</td></tr>
   </table>
 
   <h2>Data Source Tags</h2>
@@ -3217,9 +3449,15 @@ def main():
         )
         print(f"Census: {census_metadata.get('rows_returned', 0)} monthly observations")
 
-    all_rows = compute_status_from_data(all_rows)
+    # Pipeline reordering for flag-driven status:
+    # 1. Apply provisional status from Claude (existing rows already have status field)
+    # 2. Run news refresh based on provisional status (so amber/red names get fresh news)
+    # 3. Save cache if full mode (preserves Claude output even before reclassification)
+    # 4. Evaluate 15-flag framework (needs key_dev for Flag 11, financials for others)
+    # 5. Recompute final status from flag count (overrides Claude's provisional)
+    # 6. Build HTML with final status
 
-    # Mode-specific news refresh
+    # Mode-specific news refresh (uses provisional status from Claude)
     if run_mode == "full":
         # Second-pass news search for amber/red names that returned "No material news"
         all_rows = second_pass_news(all_rows)
@@ -3229,11 +3467,36 @@ def main():
         # Cheap mode: targeted news refresh ONLY for amber/red names
         all_rows = cheap_mode_news_refresh(all_rows)
 
+    # Evaluate 15-flag framework (the canonical credit stress model)
     flag_summary = None
     if RED_FLAGS_AVAILABLE:
         all_rows, flag_summary = red_flags.evaluate_flags(all_rows, sec_data)
         flagged_co = sum(1 for r in all_rows if r.get('_flag_count', 0) >= 1)
         print(f"Red Flags: {flag_summary['total_flagged_triggers']} total flagged triggers across {flagged_co} companies")
+
+    # Recompute status from flag count (replaces concern_score-driven logic)
+    all_rows = compute_status_from_flags(all_rows)
+
+    # Recompute top3 based on flag count (deterministic, no longer Claude's judgment)
+    sorted_for_top3 = sorted(
+        all_rows,
+        key=lambda r: (
+            -int(r.get('_flag_count', 0) or 0),
+            -int(r.get('_watch_count', 0) or 0),
+            r.get('company', '')
+        )
+    )
+    top3 = []
+    for r in sorted_for_top3[:3]:
+        co = r.get('company', '')
+        flag_count = int(r.get('_flag_count', 0) or 0)
+        watch_count = int(r.get('_watch_count', 0) or 0)
+        key_dev = r.get('key_dev', 'No material news.')
+        # Truncate key_dev to fit
+        if len(key_dev) > 180:
+            key_dev = key_dev[:177] + "..."
+        note = f"{flag_count} flagged + {watch_count} watch. {key_dev}"
+        top3.append({"name": co, "note": note})
 
     print(f"Run mode: {run_mode} | Batch A: {len(rows_a)} rows, Batch B: {len(rows_b)} rows, Total: {len(all_rows)}")
 
