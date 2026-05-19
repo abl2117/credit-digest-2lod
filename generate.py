@@ -1255,22 +1255,60 @@ def concern_cell_redesigned(r, status):
     )
 
 
-def status_cell_redesigned(status, severity=None):
+def _build_status_tooltip(row):
+    """Build hover-text explaining why a row has its status (which flags fired)."""
+    flags = row.get('_flags', {}) or {}
+    if not flags:
+        return ""
+    fired = []
+    watched = []
+    # Stable order: by flag id (1..15)
+    for fid in sorted(flags.keys(), key=lambda x: (len(str(x)), str(x))):
+        state = (flags[fid].get('state') or '').upper()
+        reason = flags[fid].get('reason') or ''
+        if state == 'FLAGGED':
+            fired.append(f"  • {fid}: {reason}")
+        elif state == 'WATCH':
+            watched.append(f"  ~ {fid}: {reason}")
+    co = row.get('company', '')
+    severity = (row.get('severity') or '').upper()
+    fc = int(row.get('_flag_count', 0) or 0)
+    wc = int(row.get('_watch_count', 0) or 0)
+    parts = [f"{co} - {severity}", f"{fc} flagged + {wc} watch", ""]
+    if fired:
+        parts.append("FLAGGED:")
+        parts.extend(fired)
+    if watched:
+        if fired:
+            parts.append("")
+        parts.append("WATCH:")
+        parts.extend(watched)
+    if not fired and not watched:
+        parts.append("No flag triggers fired.")
+    # title attribute can't contain certain characters easily; use plain text
+    tooltip = "\n".join(parts).replace('"', "'")
+    return tooltip
+
+
+def status_cell_redesigned(status, severity=None, row=None):
     """
-    Render status badge with four-tier severity coloring.
+    Render status badge with four-tier severity coloring and a hover tooltip
+    showing WHY (which flags fired).
 
     severity options:
-      - 'critical' -> deep maroon background, "CRITICAL" label
-      - 'high'     -> bright red background, "HIGH" label
-      - 'watch'    -> amber background (same as legacy amber), "AMBER" label
-      - 'monitor'  -> green background (same as legacy green), "GREEN" label
+      - 'critical' -> red text on faint tint, "CRITICAL" label
+      - 'high'     -> orange text on faint tint, "HIGH" label
+      - 'watch'    -> amber text on amber tint, "AMBER" label
+      - 'monitor'  -> green text on green tint, "GREEN" label
       - None       -> falls back to legacy status (red/amber/green)
     """
+    tooltip = _build_status_tooltip(row) if row else ""
+    title_attr = f' title="{tooltip}"' if tooltip else ""
     if severity in ('critical', 'high', 'watch', 'monitor'):
         label_map = {'critical': 'CRITICAL', 'high': 'HIGH', 'watch': 'AMBER', 'monitor': 'GREEN'}
         label = label_map[severity]
-        return f'<td><span class="status-badge severity-{severity}">{label}</span></td>'
-    return f'<td><span class="status-badge {status}">{status.upper()}</span></td>'
+        return f'<td><span class="status-badge severity-{severity}"{title_attr}>{label}</span></td>'
+    return f'<td><span class="status-badge {status}"{title_attr}>{status.upper()}</span></td>'
 
 
 def status_label_cell(status, severity=None):
@@ -1280,9 +1318,9 @@ def status_label_cell(status, severity=None):
     Falls back to legacy status if no severity provided.
     """
     if severity == 'critical':
-        return '<td class="status severity-critical-text" style="color:#fff;background:#8B0000;font-weight:700;text-align:center">CRITICAL</td>'
+        return '<td class="status" style="color:#ff5a5a;background:rgba(255,90,90,.10);font-weight:700;text-align:center">CRITICAL</td>'
     elif severity == 'high':
-        return '<td class="status severity-high-text" style="color:#fff;background:#DC2626;font-weight:700;text-align:center">HIGH</td>'
+        return '<td class="status" style="color:#ff8a3d;background:rgba(255,138,61,.10);font-weight:700;text-align:center">HIGH</td>'
     elif severity == 'watch':
         return f'<td class="status amber">AMBER</td>'
     elif severity == 'monitor':
@@ -1600,6 +1638,9 @@ def historical_snapshots(sec_for_co):
             "period_end": ye, "period_label": label,
             "revenue": rev / 1e9 if rev is not None else None,
             "op_income": opi / 1e9 if opi is not None else None,
+            "da": da / 1e9 if da is not None else None,
+            "ocf": ocf / 1e9 if ocf is not None else None,
+            "capex": -abs(capex) / 1e9 if capex is not None else None,
             "ebitda": ebitda / 1e9 if ebitda is not None else None,
             "ebitda_margin": ebitda_margin, "op_margin": op_margin,
             "fcf": fcf / 1e9 if fcf is not None else None,
@@ -1621,7 +1662,10 @@ def historical_snapshots(sec_for_co):
     snapshots.append({
         "period_end": ltm_period, "period_label": ltm_label,
         "revenue": _to_float_safe(sec_for_co.get("revenue_ltm")),
-        "op_income": None,
+        "op_income": _to_float_safe(sec_for_co.get("op_income_ltm")),
+        "da": _to_float_safe(sec_for_co.get("da_ltm")),
+        "ocf": _to_float_safe(sec_for_co.get("ocf_ltm")),
+        "capex": (-abs(_to_float_safe(sec_for_co.get("capex_ltm"))) if _to_float_safe(sec_for_co.get("capex_ltm")) is not None else None),
         "ebitda": _to_float_safe(sec_for_co.get("ebitda_ltm")),
         "ebitda_margin": _to_float_safe(sec_for_co.get("ebitda_margin")),
         "op_margin": _to_float_safe(sec_for_co.get("op_margin")),
@@ -1640,6 +1684,13 @@ def _fmt_cur(v):
     if v is None: return "n/a"
     if v < 0: return f"-${abs(v):,.1f}"
     return f"${v:,.1f}"
+
+
+def _fmt_cur_bold(v):
+    """Currency formatter for emphasized rows like EBITDA and FCF (the bottom-line totals)."""
+    if v is None: return "n/a"
+    if v < 0: return f'<strong>-${abs(v):,.1f}</strong>'
+    return f'<strong>${v:,.1f}</strong>'
 
 
 def _fmt_pct(v):
@@ -1676,10 +1727,13 @@ def fin_detail_html(co_name, sec_for_co):
     period_headers = "".join(f'<th>{s["period_label"]}</th>' for s in snapshots)
     income_metrics = [
         ("Revenue", "revenue", _fmt_cur, False),
-        ("EBITDA", "ebitda", _fmt_cur, False),
+        ("Operating Income", "op_income", _fmt_cur, False),
+        ("D&A (from CFS)", "da", _fmt_cur, False),
+        ("EBITDA", "ebitda", _fmt_cur_bold, False),
         ("EBITDA Margin", "ebitda_margin", _fmt_pct, False),
-        ("Operating Margin", "op_margin", _fmt_pct, False),
-        ("Free Cash Flow", "fcf", _fmt_cur, False),
+        ("Cash from Operations", "ocf", _fmt_cur, False),
+        ("CapEx", "capex", _fmt_cur, False),
+        ("Free Cash Flow", "fcf", _fmt_cur_bold, False),
     ]
     balance_metrics = [
         ("Cash", "cash", _fmt_cur, False),
@@ -2482,7 +2536,7 @@ def build_html(all_rows, macro, top3, datetime_str, commodities=None, fred_data=
         overview_rows.append(
             f'<tr data-status="{status}" data-severity="{r.get("severity","")}" data-company="{co.lower()}" data-sector="{r.get("sector","")}">'
             + company_cell_redesigned(r)
-            + status_cell_redesigned(status, r.get('severity'))
+            + status_cell_redesigned(status, r.get('severity'), r)
             + concern_cell_redesigned(r, status)
             + ratings_cell_compact(r)
             + last_action_cell(r)
@@ -2719,8 +2773,8 @@ tbody tr:hover{background:#0d1520}
 .status-badge.amber{color:#f0b429;background:rgba(240,180,41,.12)}
 .status-badge.green{color:#4ec38a;background:rgba(78,195,138,.12)}
 /* Four-tier severity colors (severity drives visual distinction within red status) */
-.status-badge.severity-critical{color:#fff;background:#8B0000;border:1px solid #8B0000}
-.status-badge.severity-high{color:#fff;background:#DC2626;border:1px solid #DC2626}
+.status-badge.severity-critical{color:#ff5a5a;background:rgba(255,90,90,.10);font-weight:700}
+.status-badge.severity-high{color:#ff8a3d;background:rgba(255,138,61,.10);font-weight:700}
 .status-badge.severity-watch{color:#f0b429;background:rgba(240,180,41,.12);border:1px solid rgba(240,180,41,.4)}
 .status-badge.severity-monitor{color:#4ec38a;background:rgba(78,195,138,.12);border:1px solid rgba(78,195,138,.4)}
 .severity-label{font-size:9px;letter-spacing:1.2px;opacity:.85;margin-top:2px;display:block}
@@ -2796,8 +2850,8 @@ tbody tr:hover{background:#0d1520}
 .action-redesigned.amber{background:#2a1a00;color:#f0b429;border:1px solid #8b6200}
 .action-redesigned.green{background:#001a0a;color:#4ec38a;border:1px solid #1a5c32}
 /* Four-tier action button colors aligned with severity */
-.action-redesigned.escalate{background:#8B0000;color:#fff;border:1px solid #8B0000}
-.action-redesigned.review{background:#1a0a0a;color:#DC2626;border:1px solid #DC2626}
+.action-redesigned.escalate{background:rgba(255,90,90,.12);color:#ff5a5a;border:1px solid rgba(255,90,90,.45)}
+.action-redesigned.review{background:rgba(255,138,61,.10);color:#ff8a3d;border:1px solid rgba(255,138,61,.45)}
 .action-redesigned.watch{background:#2a1a00;color:#f0b429;border:1px solid #8b6200}
 .action-redesigned.monitor{background:#001a0a;color:#4ec38a;border:1px solid #1a5c32}
 .price-cell{font-weight:700;color:#a0c4e8}
@@ -3151,22 +3205,7 @@ footer li strong{color:#ffaaaa}
   </table>
   <p><strong>Why this design</strong>: ratings change quarterly at most, news changes daily for stressed names but rarely for stable green names. Refreshing everything daily wastes API budget. The cheap mode keeps the dashboard fresh on metrics that matter daily (stock prices, macro, news for at-risk names) while preserving cache for stable items. Cost: roughly $60-80/month sustained, vs $150+ daily-full equivalent.</p>
   <p><strong>Manual trigger</strong>: any time, via the GitHub Actions tab. Defaults to auto mode (full on Friday, cheap otherwise), with the option to force full or cheap mode. Manual triggers in full mode cost ~$5-7 per run; cheap mode triggers cost ~$1.50.</p>
-  <p><strong>Override files</strong> (<code>ratings_override.json</code> and <code>news_override.json</code>) are applied on every run regardless of mode, so manually entered data appears immediately.</p>
-
-  <h2>Manual Overrides</h2>
-  <p>Two JSON files in the repo allow manual data injection when automated sources miss something material.</p>
-  <p><strong>news_override.json</strong>: Per-company key development override. Use when a material credit event happens but Claude's web search didn't pick it up. Each entry has an optional expiry date for auto-cleanup.</p>
-  <pre style="background:#0d1520;padding:14px;border-radius:4px;font-size:11px;color:#a0c4e8;border-left:3px solid #5a8fa8;overflow-x:auto;">{{
-  "Flex Ltd": {{
-    "key_dev": "Announced spin-off of data center EMS business; S&amp;P affirmed BBB- May 6 2026.",
-    "expires": "2026-07-06"
-  }},
-  "Boeing": {{
-    "key_dev": "FAA approved 737 MAX production rate increase to 38/month."
-  }}
-}}</pre>
-  <p>To add: open <code>news_override.json</code> in the repo, click the pencil icon, add an entry, commit. Next workflow run picks it up. Expired entries auto-fall-off after their expires date.</p>
-  <p><strong>ratings_override.json</strong>: Per-company rating override. Use when Moody's, S&amp;P, or Fitch update a rating between full runs. Same format with rating fields instead of key_dev.</p>
+  <p><strong>Override files</strong> (<code>ratings_override.json</code> and <code>news_override.json</code>) are applied on every run regardless of mode, so manually entered data appears immediately. These files allow manual injection of credit-relevant news or rating actions when automated sources miss something material.</p>
 
   <h2>Quick Reference</h2>
   <p>Status across every tab is driven by one source of truth: the 15-flag red flag framework. Each flag has explicit numerical thresholds. The combined count of FLAGGED + WATCH per name determines its tier.</p>
@@ -3195,10 +3234,9 @@ footer li strong{color:#ffaaaa}
     <tr><th>Metric</th><th>Definition</th><th>Source</th></tr>
     <tr><td><strong>Revenue (LTM)</strong></td><td>Sum of four most recent non-overlapping quarterly Revenue observations. For 20-F foreign filers, the latest annual filing.</td><td>SEC EDGAR XBRL <code>Revenues</code> or fallback chain</td></tr>
     <tr><td><strong>Growth YoY</strong></td><td>Current LTM Revenue divided by prior-year LTM Revenue, minus one. Compares 4 most recent quarters against the 4 preceding non-overlapping quarters.</td><td>Derived from Revenue history</td></tr>
-    <tr><td><strong>EBITDA</strong></td><td>Operating Income + Depreciation, Depreciation &amp; Amortization. LTM basis.</td><td>SEC EDGAR <code>OperatingIncomeLoss</code> + <code>DepreciationDepletionAndAmortization</code></td></tr>
+    <tr><td><strong>EBITDA</strong></td><td>Built bottom-up: Operating Income (from income statement) + Depreciation &amp; Amortization (sourced from the cash flow statement, since the income statement often does not break out D&amp;A separately). LTM basis.</td><td>SEC EDGAR <code>OperatingIncomeLoss</code> + <code>DepreciationDepletionAndAmortization</code> (CFS)</td></tr>
     <tr><td><strong>EBITDA Margin</strong></td><td>EBITDA divided by Revenue, expressed as percent.</td><td>Derived</td></tr>
-    <tr><td><strong>Operating Margin</strong></td><td>Operating Income divided by Revenue, expressed as percent.</td><td>Derived</td></tr>
-    <tr><td><strong>FCF (Free Cash Flow)</strong></td><td>Operating Cash Flow minus absolute value of Capital Expenditures. LTM basis. Note: this is unlevered FCF before financing.</td><td>SEC EDGAR <code>NetCashProvidedByUsedInOperatingActivities</code> + <code>PaymentsToAcquirePropertyPlantAndEquipment</code></td></tr>
+    <tr><td><strong>FCF (Free Cash Flow)</strong></td><td>GAAP unlevered FCF: Cash from Operations (CFO) minus absolute value of Capital Expenditures. LTM basis. This is the standard credit-analyst definition; not adjusted for working capital or capitalized leases.</td><td>SEC EDGAR <code>NetCashProvidedByUsedInOperatingActivities</code> &minus; <code>PaymentsToAcquirePropertyPlantAndEquipment</code></td></tr>
     <tr><td><strong>Cash</strong></td><td>Cash &amp; cash equivalents at most recent reporting date.</td><td>SEC EDGAR <code>CashAndCashEquivalentsAtCarryingValue</code></td></tr>
     <tr><td><strong>Long-Term Debt</strong></td><td>Non-current portion of total debt at most recent reporting date. Tag chain walks 15 candidates including capital lease obligations, senior notes, secured/unsecured debt, mortgages payable.</td><td>SEC EDGAR fallback chain (15 candidate tags)</td></tr>
     <tr><td><strong>Short-Term Debt</strong></td><td>Current portion of long-term debt + commercial paper + short-term borrowings. Tag chain walks 8 candidates.</td><td>SEC EDGAR fallback chain</td></tr>
