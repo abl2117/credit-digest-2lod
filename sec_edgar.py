@@ -74,18 +74,9 @@ TAG_CHAINS = {
         "NetCashProvidedByUsedInOperatingActivities",
         "NetCashProvidedByUsedInOperatingActivitiesContinuingOperations",
     ],
-    # CapEx: expanded to cover Amazon (which uses PaymentsToAcquirePropertyPlantAndEquipmentExcludingCapitalLeases
-    # in recent quarters reflecting their split between purchases and leases),
-    # plus other variants used across tech and capital-intensive issuers.
     "capex": [
         "PaymentsToAcquirePropertyPlantAndEquipment",
-        "PaymentsToAcquirePropertyPlantAndEquipmentExcludingCapitalLeases",
-        "PaymentsForAcquisitionOfPropertyEquipmentAndInternalUseSoftware",
-        "PaymentsToAcquireProductiveAssets",
         "PaymentsForCapitalImprovements",
-        "PurchaseOfPropertyAndEquipment",
-        "PaymentsToAcquireMachineryAndEquipment",
-        "PaymentsToAcquireBuildings",
     ],
     "cash": [
         "CashAndCashEquivalentsAtCarryingValue",
@@ -127,21 +118,6 @@ TAG_CHAINS = {
         "InterestExpense",
         "InterestExpenseDebt",
         "InterestAndDebtExpense",
-    ],
-    # Revenue Remaining Performance Obligation (RPO) - the contracted-but-not-yet-recognized
-    # revenue disclosure required under ASC 606. Used as a forward demand signal for
-    # hyperscalers. ONLY true RPO tags are included; we deliberately exclude:
-    #   - DeferredRevenue and ContractWithCustomerLiability variants. These represent
-    #     billed-and-collected-but-not-recognized revenue, a SUBSET of RPO. For Amazon
-    #     specifically these tags include Prime membership prepayments, gift card balances,
-    #     and AWS prepayments, which is much broader than AWS commercial backlog.
-    # If a hyperscaler doesn't tag true RPO, the chart will correctly show them as missing
-    # rather than substitute a misleading proxy.
-    "revenue_backlog": [
-        "RevenueRemainingPerformanceObligation",
-        "RemainingPerformanceObligation",
-        "RevenueRemainingPerformanceObligationAmount",
-        "RemainingPerformanceObligationAmount",
     ],
 }
 
@@ -482,13 +458,12 @@ def _history_units_for_tag(facts, tag, taxonomy="us-gaap"):
     return units.get("USD")
 
 
-def _extract_quarterly_history_for_tag(facts, tag, max_quarters=20):
+def _extract_quarterly_history_for_tag(facts, tag, max_quarters=12):
     units = _history_units_for_tag(facts, tag)
     if not units:
         return []
     today = datetime.now().date()
-    # 6-year window to accommodate 5-year hyperscaler CapEx charts
-    cutoff = today - timedelta(days=6 * 365)
+    cutoff = today - timedelta(days=3 * 365)
     raw = []
     for f in units:
         start, end = f.get("start"), f.get("end")
@@ -517,13 +492,12 @@ def _extract_quarterly_history_for_tag(facts, tag, max_quarters=20):
     return out[:max_quarters]
 
 
-def _extract_balance_history_for_tag(facts, tag, max_periods=20):
+def _extract_balance_history_for_tag(facts, tag, max_periods=12):
     units = _history_units_for_tag(facts, tag)
     if not units:
         return []
     today = datetime.now().date()
-    # 6-year window to accommodate hyperscaler RPO and CapEx charts
-    cutoff = today - timedelta(days=6 * 365)
+    cutoff = today - timedelta(days=3 * 365)
     raw = []
     for f in units:
         end = f.get("end")
@@ -548,7 +522,7 @@ def _extract_balance_history_for_tag(facts, tag, max_periods=20):
     return out[:max_periods]
 
 
-def _extract_quarterly_history(facts, tag_chain, max_quarters=20):
+def _extract_quarterly_history(facts, tag_chain, max_quarters=12):
     for _units, tag in _iter_concept_candidates(facts, tag_chain):
         hist = _extract_quarterly_history_for_tag(facts, tag, max_quarters)
         if hist:
@@ -556,7 +530,7 @@ def _extract_quarterly_history(facts, tag_chain, max_quarters=20):
     return []
 
 
-def _extract_balance_history(facts, tag_chain, max_periods=20):
+def _extract_balance_history(facts, tag_chain, max_periods=12):
     for _units, tag in _iter_concept_candidates(facts, tag_chain):
         hist = _extract_balance_history_for_tag(facts, tag, max_periods)
         if hist:
@@ -623,10 +597,6 @@ def _extract_metrics(facts, filer_type):
     if ebitda_ltm and intex_ltm and intex_ltm > 0:
         interest_coverage = round(ebitda_ltm / intex_ltm, 1)
 
-    # Revenue Remaining Performance Obligation (RPO). Instant fact at period end.
-    # Companies that don't tag this (most hardware/industrial names) return None.
-    rpo, rpo_end, rpo_tag = _latest_balance_sheet(facts, TAG_CHAINS["revenue_backlog"])
-
     history = {
         "revenue": _extract_quarterly_history_for_tag(facts, rev_tag),
         "op_income": _extract_quarterly_history_for_tag(facts, opi_tag),
@@ -639,11 +609,14 @@ def _extract_metrics(facts, filer_type):
         "cash": _extract_balance_history_for_tag(facts, cash_tag),
         "lt_debt": _extract_balance_history_for_tag(facts, lt_tag),
         "st_debt": _extract_balance_history_for_tag(facts, st_tag),
-        "revenue_backlog": _extract_balance_history_for_tag(facts, rpo_tag),
     }
 
     return {
         "revenue_ltm": to_bn(rev_ltm),
+        "op_income_ltm": to_bn(opi_ltm),
+        "da_ltm": to_bn(da_ltm),
+        "ocf_ltm": to_bn(ocf_ltm),
+        "capex_ltm": to_bn(capex_ltm),
         "ebitda_ltm": to_bn(ebitda_ltm),
         "fcf_ltm": to_bn(fcf_ltm),
         "cash": to_bn(cash),
@@ -657,14 +630,12 @@ def _extract_metrics(facts, filer_type):
         "revenue_yoy_pct": round(rev_yoy, 1) if rev_yoy is not None else None,
         "interest_expense_ltm": to_bn(intex_ltm),
         "interest_coverage": interest_coverage,
-        "revenue_backlog": to_bn(rpo),
         "_period_end": rev_end or opi_end or cash_end,
         "_filing_form": rev_form or opi_form,
         "_tags_used": {
             "revenue": rev_tag, "op_income": opi_tag, "da": da_tag,
             "ocf": ocf_tag, "capex": capex_tag, "cash": cash_tag,
             "lt_debt": lt_tag, "st_debt": st_tag, "interest_expense": intex_tag,
-            "revenue_backlog": rpo_tag,
         },
         "_history": history,
         "_balance_history": balance_history,
