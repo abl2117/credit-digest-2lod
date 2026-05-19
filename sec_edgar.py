@@ -128,6 +128,18 @@ TAG_CHAINS = {
         "InterestExpenseDebt",
         "InterestAndDebtExpense",
     ],
+    # Revenue Backlog (RPO) - instant balance sheet fact representing contracted
+    # but not yet recognized revenue. Forward demand signal for cloud businesses.
+    # IMPORTANT: chain TIGHTENED to true RPO tags only. Previous wider chain
+    # included DeferredRevenue and ContractWithCustomerLiability which inflated
+    # Amazon's contribution (Prime memberships + gift card balances overstating
+    # AWS commercial backlog).
+    "revenue_backlog": [
+        "RevenueRemainingPerformanceObligation",
+        "RemainingPerformanceObligation",
+        "RevenueRemainingPerformanceObligationAmount",
+        "RemainingPerformanceObligationAmount",
+    ],
 }
 
 
@@ -662,10 +674,17 @@ def _extract_metrics(facts, filer_type):
         "capex": _extract_annual_history_for_tag(facts, capex_tag),
         "interest_expense": _extract_annual_history_for_tag(facts, intex_tag),
     }
+    # RPO/revenue backlog: instant balance sheet fact, treat like a balance item
+    rpo_tag = None
+    for tag in TAG_CHAINS["revenue_backlog"]:
+        if _history_units_for_tag(facts, tag):
+            rpo_tag = tag
+            break
     balance_history = {
         "cash": _extract_balance_history_for_tag(facts, cash_tag),
         "lt_debt": _extract_balance_history_for_tag(facts, lt_tag),
         "st_debt": _extract_balance_history_for_tag(facts, st_tag),
+        "revenue_backlog": _extract_balance_history_for_tag(facts, rpo_tag) if rpo_tag else [],
     }
 
     return {
