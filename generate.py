@@ -212,6 +212,8 @@ def fetch_market_data():
             prev = float(closes.iloc[-2]) if len(closes) > 1 else current
             one_m_idx = max(0, len(closes) - 22)
             month_ago = float(closes.iloc[one_m_idx])
+            # 1Y return: first close in the 1y download window
+            year_ago = float(closes.iloc[0]) if len(closes) > 0 else current
             ytd_closes = closes[closes.index.date >= year_start]
             ytd_start = float(ytd_closes.iloc[0]) if len(ytd_closes) > 0 else current
             wk52_high = float(closes.max())
@@ -227,6 +229,7 @@ def fetch_market_data():
                 "stock_1d": pct(current, prev),
                 "stock_1m": pct(current, month_ago),
                 "stock_ytd": pct(current, ytd_start),
+                "stock_1y": pct(current, year_ago),
                 "week52_high": f"{wk52_high:.2f}",
                 "week52_low": f"{wk52_low:.2f}",
             }
@@ -259,6 +262,7 @@ def apply_market_overrides(rows, market_data):
             r['stock_1d'] = md['stock_1d']
             r['stock_1m'] = md['stock_1m']
             r['stock_ytd'] = md['stock_ytd']
+            r['stock_1y'] = md.get('stock_1y', 'n/a')
             r['week52_high'] = md['week52_high']
             r['week52_low'] = md['week52_low']
             if 'mkt_cap' in md:
@@ -774,6 +778,195 @@ def apply_overrides(rows):
     if news_overridden:
         print(f"Applied manual news overrides to {news_overridden} companies.")
     return rows
+
+
+# =============================================================================
+# Smart Caching Architecture
+# =============================================================================
+# Two run modes:
+#   "full":  Full Claude refresh (Batches A+B + second-pass). ~$5-7/run.
+#            Runs on Fridays, and also on Mon-Thu if cache is >10 days stale.
+#   "cheap": Skip Batches A+B. Use cached ratings + news. Selectively re-query
+#            Claude for news of amber/red names only (1 small call, ~$1.50).
+#            Market data, SEC EDGAR, FRED, OWID all refresh as normal.
+#
+# Cache file: claude_cache.json. Structure:
+# {
+#   "_last_full_refresh": "2026-05-15T12:00:00Z",
+#   "_run_id": "2026-05-15-0800",
+#   "rows": [
+#     { "company": "AT&T", "moodys_rating": "Baa2", ..., "key_dev": "...",
+#       "_cached_at": "2026-05-15T12:00:00Z" },
+#     ...
+#   ],
+#   "macro": { ... },
+#   "top3": [ ... ]
+# }
+# =============================================================================
+
+CLAUDE_CACHE_PATH = "claude_cache.json"
+CACHE_STALE_DAYS = 10  # Auto-escalate to full mode after this many days
+
+
+def determine_run_mode():
+    """
+    Decide whether this run is 'full' (Claude Batches A+B) or 'cheap' (cache reuse).
+
+    Logic:
+    - If env var RUN_MODE is explicitly set, use it (full|cheap|auto). Default: auto.
+    - In auto mode:
+      - Friday (weekday 4) -> full
+      - Other weekdays -> cheap, unless cache is missing/stale
+      - If claude_cache.json missing or _last_full_refresh > 10 days ago -> escalate to full
+    """
+    env_mode = os.environ.get("RUN_MODE", "auto").lower().strip()
+    if env_mode in ("full", "cheap"):
+        print(f"Run mode: {env_mode} (forced via RUN_MODE env var)")
+        return env_mode
+
+    today_local = now.date()
+    weekday = today_local.weekday()  # Monday=0, Friday=4
+    is_friday = (weekday == 4)
+
+    cache = None
+    if os.path.exists(CLAUDE_CACHE_PATH):
+        try:
+            with open(CLAUDE_CACHE_PATH, "r", encoding="utf-8") as f:
+                cache = json.load(f)
+        except Exception:
+            cache = None
+
+    cache_age_days = None
+    if cache and cache.get("_last_full_refresh"):
+        try:
+            last_full = datetime.fromisoformat(cache["_last_full_refresh"].replace("Z", "+00:00"))
+            cache_age_days = (datetime.now(pytz.utc) - last_full).days
+        except Exception:
+            cache_age_days = None
+
+    if not cache:
+        print(f"Run mode: full (no cache file found, building fresh)")
+        return "full"
+
+    if cache_age_days is not None and cache_age_days > CACHE_STALE_DAYS:
+        print(f"Run mode: full (cache is {cache_age_days} days old, exceeds {CACHE_STALE_DAYS}-day stale threshold)")
+        return "full"
+
+    if is_friday:
+        print(f"Run mode: full (Friday weekly refresh)")
+        return "full"
+
+    print(f"Run mode: cheap (cache is {cache_age_days} days old; non-Friday weekday)")
+    return "cheap"
+
+
+def load_claude_cache():
+    """Load cached Claude output from disk. Returns (rows_list, macro_dict, top3_list, last_refresh_str)."""
+    if not os.path.exists(CLAUDE_CACHE_PATH):
+        return [], {}, [], None
+    try:
+        with open(CLAUDE_CACHE_PATH, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        rows = data.get("rows", [])
+        macro = data.get("macro", {})
+        top3 = data.get("top3", [])
+        last_refresh = data.get("_last_full_refresh")
+        print(f"Loaded claude_cache.json: {len(rows)} rows, last full refresh {last_refresh}")
+        return rows, macro, top3, last_refresh
+    except Exception as e:
+        print(f"WARNING: claude_cache.json failed to load: {e}")
+        return [], {}, [], None
+
+
+def save_claude_cache(rows, macro, top3):
+    """Persist Claude output to disk for reuse on cheap-mode days."""
+    payload = {
+        "_last_full_refresh": datetime.now(pytz.utc).isoformat(),
+        "_run_id": now.strftime("%Y-%m-%d-%H%M"),
+        "rows": rows,
+        "macro": macro,
+        "top3": top3,
+    }
+    try:
+        with open(CLAUDE_CACHE_PATH, "w", encoding="utf-8") as f:
+            json.dump(payload, f, indent=2)
+        print(f"Saved claude_cache.json with {len(rows)} rows.")
+    except Exception as e:
+        print(f"WARNING: failed to save claude_cache.json: {e}")
+
+
+def cheap_mode_news_refresh(all_rows):
+    """
+    On cheap-mode days, refresh news ONLY for names currently flagged amber/red.
+    Green names keep their cached key_dev from the last full run.
+
+    Returns updated rows. Costs ~$1-2 per call (1 Claude call, max 15 names).
+    """
+    candidates = []
+    for r in all_rows:
+        status = str(r.get("status", "")).lower()
+        if status in ("amber", "red"):
+            candidates.append(r.get("company", ""))
+
+    if not candidates:
+        print("Cheap-mode news refresh: no amber/red names; skipping Claude call.")
+        return all_rows
+
+    # Cap at 15 to keep search budget per name high (~1.7 per name)
+    candidates = candidates[:15]
+    print(f"Cheap-mode news refresh: querying Claude for {len(candidates)} amber/red names: {', '.join(candidates)}")
+
+    names_str = "\n".join(f"- {co}" for co in candidates)
+    prompt = f"""Today is {datetime_str}. You are a credit analyst refreshing daily news for amber/red status names. Find the MOST RECENT material credit-relevant event for each.
+
+Companies:
+{names_str}
+
+For EACH company, search the web for material credit events in the last 14 days. Focus on:
+1. Rating actions (Moody's, S&P, Fitch press releases)
+2. M&A, spin-offs, divestitures, debt issuance, refinancing
+3. Earnings results, guidance changes
+4. Covenant breaches, defaults, going concern
+5. Material 8-K filings
+6. Strategic announcements (management changes, restructuring)
+
+Be specific: cite dates, dollar amounts. If truly no news in last 14 days, return "No material news."
+
+OUTPUT FORMAT: ONLY a single JSON object. Start with {{ end with }}. No preamble, no markdown.
+
+{{"updates": [{{"company": "Exact Name", "key_dev": "1-2 sentences under 200 chars with date"}}]}}
+
+Rules:
+- Include EVERY company in the list
+- Use the EXACT company name as input
+- Public information only"""
+
+    try:
+        raw = call_claude(prompt, "Cheap-mode news refresh")
+        data, err = parse_json(raw, "Cheap-mode news refresh")
+        if err or not data:
+            print(f"Cheap-mode news refresh: parse error; keeping cached news. Detail: {err}")
+            return all_rows
+        updates = data.get("updates", [])
+        name_to_update = {u.get("company", "").strip(): u.get("key_dev", "") for u in updates}
+        updated_count = 0
+        for r in all_rows:
+            co = r.get("company", "")
+            if co in name_to_update:
+                new_dev = name_to_update[co]
+                if new_dev and new_dev.lower() not in ("no material news.", "no material news", "n/a", ""):
+                    r["key_dev"] = new_dev
+                    updated_count += 1
+        print(f"Cheap-mode news refresh: updated {updated_count} of {len(candidates)} candidates.")
+    except Exception as e:
+        print(f"Cheap-mode news refresh: exception, keeping cached news. Detail: {str(e)[:200]}")
+    return all_rows
+
+
+# =============================================================================
+# End smart caching block
+# =============================================================================
+
 
 
 def is_stale(date_str):
@@ -2108,7 +2301,7 @@ def _fred_value(fred_data, key, mode="percent"):
         return "n/a"
 
 
-def build_html(all_rows, macro, top3, datetime_str, commodities=None, fred_data=None, sec_data=None, census_data=None):
+def build_html(all_rows, macro, top3, datetime_str, commodities=None, fred_data=None, sec_data=None, census_data=None, run_mode="full"):
     commodities = commodities or {}
     fred_data = fred_data or {}
     sec_data = sec_data or {}
@@ -2157,6 +2350,7 @@ def build_html(all_rows, macro, top3, datetime_str, commodities=None, fred_data=
             + stock_cell(r.get('stock_1d'))
             + stock_cell(r.get('stock_1m'))
             + stock_cell(r.get('stock_ytd'))
+            + stock_cell(r.get('stock_1y'))
             + num_cell(r.get('week52_high'))
             + num_cell(r.get('week52_low'))
             + f'<td>{r.get("earnings","TBD")}</td>'
@@ -2629,7 +2823,7 @@ footer li strong{color:#ffaaaa}
       <span class="pill amber" id="amberCount">AMBER {a_count}</span>
       <span class="pill red" id="redCount">RED {r_count}</span>
     </div>
-    <div class="last-refresh">Updated: {datetime_str}</div>
+    <div class="last-refresh">Updated: {datetime_str} &nbsp;&bull;&nbsp; Mode: <span style="font-weight:700;color:{'#4ec38a' if run_mode == 'full' else '#7090a8'}">{run_mode.upper()}</span></div>
   </div>
 </header>
 {macro_html}
@@ -2674,7 +2868,7 @@ footer li strong{color:#ffaaaa}
   <th data-type="text">Company</th><th data-type="text">Sector</th>
   <th data-type="num">Mkt Cap $Bn</th><th data-type="num">EV $Bn</th>
   <th data-type="text">Status</th><th data-type="num">Price $</th>
-  <th data-type="num">1D %</th><th data-type="num">1M %</th><th data-type="num">YTD %</th>
+  <th data-type="num">1D %</th><th data-type="num">1M %</th><th data-type="num">YTD %</th><th data-type="num">1Y %</th>
   <th data-type="num">52W High</th><th data-type="num">52W Low</th>
   <th data-type="date">Next Earnings</th>
 </tr></thead>
@@ -2726,6 +2920,17 @@ footer li strong{color:#ffaaaa}
 
 <div class="pane" id="pane-methodology">
 <div class="methodology-content">
+  <h2>Refresh Schedule</h2>
+  <p>The dashboard runs automatically Monday through Friday at 7:55 AM ET (set 5 minutes off the hour to avoid GitHub Actions cron congestion). Two refresh modes balance data freshness with API cost:</p>
+  <table class="methodology-table">
+    <tr><th>Mode</th><th>When</th><th>What Refreshes</th><th>What's Cached</th></tr>
+    <tr><td><strong>Full</strong></td><td>Friday morning, or any day if cache is &gt; 10 days stale, or manually triggered</td><td>All Claude data (Batches A+B + second-pass), all market data, all SEC EDGAR, all macro</td><td>Writes claude_cache.json for the week</td></tr>
+    <tr><td><strong>Cheap</strong></td><td>Monday through Thursday</td><td>Market data (yfinance), macro (FRED), data center construction, plus targeted Claude news refresh ONLY for amber/red names</td><td>Reuses Claude ratings + news from last Friday for green names</td></tr>
+  </table>
+  <p><strong>Why this design</strong>: ratings change quarterly at most, news changes daily for stressed names but rarely for stable green names. Refreshing everything daily wastes API budget. The cheap mode keeps the dashboard fresh on metrics that matter daily (stock prices, macro, news for at-risk names) while preserving cache for stable items. Cost: roughly $60-80/month sustained, vs $150+ daily-full equivalent.</p>
+  <p><strong>Manual trigger</strong>: any time, via the GitHub Actions tab. Defaults to auto mode (full on Friday, cheap otherwise), with the option to force full or cheap mode. Manual triggers in full mode cost ~$5-7 per run; cheap mode triggers cost ~$1.50.</p>
+  <p><strong>Override files</strong> (ratings_override.json and news_override.json) are applied on every run regardless of mode, so manually entered data appears immediately.</p>
+
   <h2>Status Definitions</h2>
   <p>Status is computed deterministically from underlying data after each run, not provided by any analyst or model. Same inputs always produce the same status.</p>
   <table class="methodology-table">
@@ -2758,7 +2963,7 @@ footer li strong{color:#ffaaaa}
     <tr><th>Metric</th><th>Definition</th><th>Source</th></tr>
     <tr><td><strong>Market Cap</strong></td><td>Current share price times shares outstanding. From yfinance fast_info.</td><td>yfinance</td></tr>
     <tr><td><strong>EV (Enterprise Value)</strong></td><td>Market Cap + Total Debt - Cash. The theoretical takeover price: what an acquirer would pay equity holders plus assume in debt, less captured cash. Shown as n/a when any of the three inputs is missing.</td><td>Derived</td></tr>
-    <tr><td><strong>1D / 1M / YTD %</strong></td><td>Total return percentage change from previous close, 22 trading days back, and start of calendar year respectively.</td><td>yfinance</td></tr>
+    <tr><td><strong>1D / 1M / YTD / 1Y %</strong></td><td>Total return percentage change from previous close, 22 trading days back, start of calendar year, and 252 trading days back respectively. Negative values shown in red, positive in green.</td><td>yfinance</td></tr>
     <tr><td><strong>52W High / Low</strong></td><td>Highest and lowest adjusted close over trailing 252 trading days.</td><td>yfinance</td></tr>
   </table>
 
@@ -2928,20 +3133,50 @@ Rules:
 def main():
     run_start = datetime.now(pytz.utc)
 
-    raw_a = call_claude(PROMPT_A, "Batch A")
-    raw_b = call_claude(PROMPT_B, "Batch B")
+    # Decide run mode (full vs cheap) based on day-of-week and cache freshness
+    run_mode = determine_run_mode()
 
-    data_a, err_a = parse_json(raw_a, "Batch A")
-    data_b, err_b = parse_json(raw_b, "Batch B")
+    if run_mode == "full":
+        # FULL MODE: Refresh Claude Batches A+B from scratch
+        raw_a = call_claude(PROMPT_A, "Batch A")
+        raw_b = call_claude(PROMPT_B, "Batch B")
 
-    if err_a: print(f"WARNING: {err_a}")
-    if err_b: print(f"WARNING: {err_b}")
+        data_a, err_a = parse_json(raw_a, "Batch A")
+        data_b, err_b = parse_json(raw_b, "Batch B")
 
-    rows_a = data_a.get('rows', []) if data_a else []
-    rows_b = data_b.get('rows', []) if data_b else []
-    all_rows = rows_a + rows_b
-    macro = (data_b or {}).get('macro', {}) or (data_a or {}).get('macro', {})
-    top3 = (data_b or {}).get('top3', []) or (data_a or {}).get('top3', [])
+        if err_a: print(f"WARNING: {err_a}")
+        if err_b: print(f"WARNING: {err_b}")
+
+        rows_a = data_a.get('rows', []) if data_a else []
+        rows_b = data_b.get('rows', []) if data_b else []
+        all_rows = rows_a + rows_b
+        macro = (data_b or {}).get('macro', {}) or (data_a or {}).get('macro', {})
+        top3 = (data_b or {}).get('top3', []) or (data_a or {}).get('top3', [])
+    else:
+        # CHEAP MODE: Load cached Claude output from last full run
+        cached_rows, cached_macro, cached_top3, last_refresh = load_claude_cache()
+        if not cached_rows:
+            # Fail-safe: cache load failed unexpectedly, fall back to full mode
+            print("WARNING: cheap-mode cache load failed, escalating to full mode")
+            run_mode = "full"
+            raw_a = call_claude(PROMPT_A, "Batch A")
+            raw_b = call_claude(PROMPT_B, "Batch B")
+            data_a, err_a = parse_json(raw_a, "Batch A")
+            data_b, err_b = parse_json(raw_b, "Batch B")
+            if err_a: print(f"WARNING: {err_a}")
+            if err_b: print(f"WARNING: {err_b}")
+            rows_a = data_a.get('rows', []) if data_a else []
+            rows_b = data_b.get('rows', []) if data_b else []
+            all_rows = rows_a + rows_b
+            macro = (data_b or {}).get('macro', {}) or (data_a or {}).get('macro', {})
+            top3 = (data_b or {}).get('top3', []) or (data_a or {}).get('top3', [])
+        else:
+            all_rows = cached_rows
+            macro = cached_macro
+            top3 = cached_top3
+            rows_a = []
+            rows_b = []
+            print(f"Cheap mode: reusing {len(all_rows)} rows from cache; skipping Batches A+B (saved ~$3-5)")
 
     all_rows = apply_overrides(all_rows)
 
@@ -2984,9 +3219,15 @@ def main():
 
     all_rows = compute_status_from_data(all_rows)
 
-    # Second-pass news search: targets amber/red names that returned "No material news"
-    # in the first pass. Catches credit-relevant events that Claude's broad search missed.
-    all_rows = second_pass_news(all_rows)
+    # Mode-specific news refresh
+    if run_mode == "full":
+        # Second-pass news search for amber/red names that returned "No material news"
+        all_rows = second_pass_news(all_rows)
+        # Save Claude output to cache for cheap-mode days to reuse
+        save_claude_cache(all_rows, macro, top3)
+    else:
+        # Cheap mode: targeted news refresh ONLY for amber/red names
+        all_rows = cheap_mode_news_refresh(all_rows)
 
     flag_summary = None
     if RED_FLAGS_AVAILABLE:
@@ -2994,9 +3235,9 @@ def main():
         flagged_co = sum(1 for r in all_rows if r.get('_flag_count', 0) >= 1)
         print(f"Red Flags: {flag_summary['total_flagged_triggers']} total flagged triggers across {flagged_co} companies")
 
-    print(f"Batch A: {len(rows_a)} rows, Batch B: {len(rows_b)} rows, Total: {len(all_rows)}")
+    print(f"Run mode: {run_mode} | Batch A: {len(rows_a)} rows, Batch B: {len(rows_b)} rows, Total: {len(all_rows)}")
 
-    html = build_html(all_rows, macro, top3, datetime_str, commodities, fred_data, sec_data, census_data)
+    html = build_html(all_rows, macro, top3, datetime_str, commodities, fred_data, sec_data, census_data, run_mode)
 
     with open('index.html', 'w', encoding='utf-8') as f:
         f.write(html)
