@@ -492,6 +492,44 @@ def _extract_quarterly_history_for_tag(facts, tag, max_quarters=12):
     return out[:max_quarters]
 
 
+def _extract_annual_history_for_tag(facts, tag, max_years=5):
+    """
+    Extract ANNUAL records (350-380 day spans) from 10-K filings.
+    Some companies (especially telecoms, utilities) report flow items like
+    D&A, CapEx, CFO only annually in 10-K, not quarterly in 10-Q.
+    Without this, historical EBITDA/FCF computation breaks for those names.
+    """
+    units = _history_units_for_tag(facts, tag)
+    if not units:
+        return []
+    today = datetime.now().date()
+    cutoff = today - timedelta(days=5 * 365)
+    raw = []
+    for f in units:
+        start, end = f.get("start"), f.get("end")
+        if not start or not end:
+            continue
+        try:
+            sd = datetime.strptime(start, "%Y-%m-%d").date()
+            ed = datetime.strptime(end, "%Y-%m-%d").date()
+            days = (ed - sd).days
+        except Exception:
+            continue
+        # Annual range: 350-380 days covers calendar year and 52/53-week fiscal years
+        if not (350 <= days <= 380):
+            continue
+        if ed < cutoff:
+            continue
+        raw.append(f)
+    deduped = _dedupe_by_end(raw)
+    out = [
+        {"period_end": f.get("end"), "value": f.get("val"), "form": f.get("form", "10-K")}
+        for f in deduped
+    ]
+    out.sort(key=lambda x: x["period_end"], reverse=True)
+    return out[:max_years]
+
+
 def _extract_balance_history_for_tag(facts, tag, max_periods=12):
     units = _history_units_for_tag(facts, tag)
     if not units:
@@ -605,6 +643,16 @@ def _extract_metrics(facts, filer_type):
         "capex": _extract_quarterly_history_for_tag(facts, capex_tag),
         "interest_expense": _extract_quarterly_history_for_tag(facts, intex_tag),
     }
+    # Annual history (from 10-K filings) for companies that report
+    # flow items only annually rather than quarterly
+    history_annual = {
+        "revenue": _extract_annual_history_for_tag(facts, rev_tag),
+        "op_income": _extract_annual_history_for_tag(facts, opi_tag),
+        "da": _extract_annual_history_for_tag(facts, da_tag),
+        "ocf": _extract_annual_history_for_tag(facts, ocf_tag),
+        "capex": _extract_annual_history_for_tag(facts, capex_tag),
+        "interest_expense": _extract_annual_history_for_tag(facts, intex_tag),
+    }
     balance_history = {
         "cash": _extract_balance_history_for_tag(facts, cash_tag),
         "lt_debt": _extract_balance_history_for_tag(facts, lt_tag),
@@ -638,6 +686,7 @@ def _extract_metrics(facts, filer_type):
             "lt_debt": lt_tag, "st_debt": st_tag, "interest_expense": intex_tag,
         },
         "_history": history,
+        "_history_annual": history_annual,
         "_balance_history": balance_history,
     }
 
