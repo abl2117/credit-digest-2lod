@@ -6,7 +6,7 @@ on:
     # Running 5 minutes off the top of the hour avoids GitHub Actions cron
     # congestion that delays scheduled runs by 5-30 min during high-load hours.
     # Mon-Thu = cheap mode (uses claude_cache.json from last Friday)
-    # Friday = full mode (refreshes Claude Batches A+B + saves cache)
+    # Friday = full mode (refreshes Claude Batches A+B + saves cache + runs audit)
     - cron: '55 11 * * 1-5'
   workflow_dispatch:
     inputs:
@@ -27,7 +27,7 @@ permissions:
 jobs:
   generate:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -49,10 +49,28 @@ jobs:
           RUN_MODE: ${{ github.event.inputs.run_mode || 'auto' }}
         run: python generate.py
 
+      - name: Run backtest audit (Fridays or full-mode manual)
+        # Audits SEC EDGAR-derived financials against independent extraction path
+        # to validate data quality. Runs when:
+        #   - Day-of-week is Friday (scheduled cron) — financials change weekly
+        #   - OR manual trigger with run_mode=full — explicit audit request
+        # Skips Mon-Thu cheap runs (financials don't change between full refreshes).
+        # Failures here don't block the dashboard commit (continue-on-error).
+        continue-on-error: true
+        run: |
+          DOW=$(date -u +%u)
+          RUN_MODE_INPUT="${{ github.event.inputs.run_mode }}"
+          if [ "$DOW" = "5" ] || [ "$RUN_MODE_INPUT" = "full" ]; then
+            echo "Audit conditions met (day-of-week=$DOW, run_mode=$RUN_MODE_INPUT); running backtest audit..."
+            python backtest_audit.py || echo "Audit completed with non-fatal warnings."
+          else
+            echo "Audit skipped (day-of-week=$DOW, run_mode=$RUN_MODE_INPUT). Audit runs Fridays or with full mode."
+          fi
+
       - name: Commit updated files
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add index.html runs.json macro_cache.json data_center_cache.json financials_cache.json claude_cache.json 2>/dev/null || true
+          git add index.html runs.json macro_cache.json data_center_cache.json financials_cache.json claude_cache.json backtest_results.json 2>/dev/null || true
           git diff --cached --quiet || git commit -m "Daily credit digest update"
           git push
