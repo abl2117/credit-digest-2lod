@@ -3154,7 +3154,7 @@ footer li strong{color:#ffaaaa}
       <span class="pill severity-high-pill" id="highCount" title="High: 3 flagged OR (2 flagged AND ≥ 3 watch)">HIGH {high_count}</span>
       <span class="pill severity-critical-pill" id="critCount" title="Critical: ≥ 4 flagged OR (≥ 3 flagged AND ≥ 2 watch)">CRITICAL {crit_count}</span>
     </div>
-    <div class="last-refresh">Updated: {datetime_str} &nbsp;&bull;&nbsp; Mode: <span style="font-weight:700;color:{'#4ec38a' if run_mode == 'full' else '#7090a8'}">{run_mode.upper()}</span></div>
+    <div class="last-refresh">Updated: {datetime_str} &nbsp;&bull;&nbsp; Refresh: <span style="font-weight:700;color:{'#4ec38a' if run_mode == 'full' else '#a0afbf'}" title="{'WEEKLY: Friday full refresh with all ratings and news from web search.' if run_mode == 'full' else 'DAILY: Monday-Thursday refresh of market data and macro. Ratings and news cached from last weekly refresh; targeted news refresh for amber/red names.'}">{('WEEKLY' if run_mode == 'full' else 'DAILY')}</span></div>
   </div>
 </header>
 {macro_html}
@@ -3276,13 +3276,13 @@ footer li strong{color:#ffaaaa}
   <h2>Refresh Schedule</h2>
   <p>The dashboard runs automatically Monday through Friday at 7:55 AM ET (set 5 minutes off the hour to avoid GitHub Actions cron congestion). Two refresh modes balance data freshness with API cost:</p>
   <table class="methodology-table">
-    <tr><th>Mode</th><th>When</th><th>What Refreshes</th><th>What's Cached</th></tr>
-    <tr><td><strong>Full</strong></td><td>Friday morning, or any day if cache is &gt; 10 days stale, or manually triggered</td><td>All Claude data (Batches A+B + second-pass), all market data, all SEC EDGAR, all macro</td><td>Writes claude_cache.json for the week</td></tr>
-    <tr><td><strong>Cheap</strong></td><td>Monday through Thursday</td><td>Market data (yfinance), macro (FRED), data center construction, plus targeted Claude news refresh ONLY for amber/red names</td><td>Reuses Claude ratings + news from last Friday for green names</td></tr>
+    <tr><th>Refresh</th><th>When</th><th>What Refreshes</th><th>What's Cached</th></tr>
+    <tr><td><strong>WEEKLY</strong></td><td>Friday morning, or any day if cache is &gt; 10 days stale, or manually triggered</td><td>All Claude data (Batches A+B + second-pass), all market data, all SEC EDGAR, all macro</td><td>Writes claude_cache.json for the week</td></tr>
+    <tr><td><strong>DAILY</strong></td><td>Monday through Thursday</td><td>Market data (yfinance), macro (FRED), data center construction, plus targeted Claude news refresh ONLY for amber/red names</td><td>Reuses Claude ratings + news from last Friday for green names</td></tr>
   </table>
-  <p><strong>Why this design</strong>: ratings change quarterly at most, news changes daily for stressed names but rarely for stable green names. Refreshing everything daily wastes API budget. The cheap mode keeps the dashboard fresh on metrics that matter daily (stock prices, macro, news for at-risk names) while preserving cache for stable items. Cost: roughly $60-80/month sustained, vs $150+ daily-full equivalent.</p>
-  <p><strong>Manual trigger</strong>: any time, via the GitHub Actions tab. Defaults to auto mode (full on Friday, cheap otherwise), with the option to force full or cheap mode. Manual triggers in full mode cost ~$5-7 per run; cheap mode triggers cost ~$1.50.</p>
-  <p><strong>Override files</strong> (<code>ratings_override.json</code> and <code>news_override.json</code>) are applied on every run regardless of mode, so manually entered data appears immediately. These files allow manual injection of credit-relevant news or rating actions when automated sources miss something material.</p>
+  <p><strong>Why this design</strong>: ratings change quarterly at most, news changes daily for stressed names but rarely for stable green names. Refreshing everything daily wastes API budget. The daily refresh keeps the dashboard fresh on metrics that matter daily (stock prices, macro, news for at-risk names) while preserving cache for stable items. Cost: roughly $60-80/month sustained, vs $150+ daily-weekly equivalent.</p>
+  <p><strong>Manual trigger</strong>: any time, via the GitHub Actions tab. Defaults to auto mode (weekly on Friday, daily otherwise), with the option to force weekly or daily refresh. Manual weekly refreshes cost ~$5-7; daily refreshes cost ~$1.50.</p>
+  <p><strong>Override files</strong> (<code>ratings_override.json</code> and <code>news_override.json</code>) are applied on every run regardless of refresh mode, so manually entered data appears immediately. These files allow manual injection of credit-relevant news or rating actions when automated sources miss something material.</p>
 
   <h2>Quick Reference</h2>
   <p>Status across every tab is driven by one source of truth: the 15-flag red flag framework. Each flag has explicit numerical thresholds. The combined count of FLAGGED + WATCH per name determines its tier.</p>
