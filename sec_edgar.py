@@ -77,6 +77,15 @@ TAG_CHAINS = {
     "capex": [
         "PaymentsToAcquirePropertyPlantAndEquipment",
         "PaymentsForCapitalImprovements",
+        "PaymentsToAcquirePropertyPlantAndEquipmentExcludingCapitalLeases",
+        "PaymentsForAcquisitionOfPropertyEquipmentAndInternalUseSoftware",
+        "PaymentsToAcquireProductiveAssets",
+        "PaymentsToAcquireProperty",
+        "PaymentsForPropertyPlantAndEquipment",
+        "PaymentsToAcquirePropertyAndEquipment",
+        "PaymentsForCapitalExpenditures",
+        "PaymentsToAcquireOtherProductiveAssets",
+        "CapitalExpenditures",
     ],
     "cash": [
         "CashAndCashEquivalentsAtCarryingValue",
