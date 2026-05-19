@@ -1273,6 +1273,24 @@ def status_cell_redesigned(status, severity=None):
     return f'<td><span class="status-badge {status}">{status.upper()}</span></td>'
 
 
+def status_label_cell(status, severity=None):
+    """
+    Plain status cell for Market Data, Financials, TMT, Red Flags tabs.
+    Returns a colored text cell (not a badge) consistent with severity tier.
+    Falls back to legacy status if no severity provided.
+    """
+    if severity == 'critical':
+        return '<td class="status severity-critical-text" style="color:#fff;background:#8B0000;font-weight:700;text-align:center">CRITICAL</td>'
+    elif severity == 'high':
+        return '<td class="status severity-high-text" style="color:#fff;background:#DC2626;font-weight:700;text-align:center">HIGH</td>'
+    elif severity == 'watch':
+        return f'<td class="status amber">AMBER</td>'
+    elif severity == 'monitor':
+        return f'<td class="status green">GREEN</td>'
+    # Legacy fallback
+    return f'<td class="status {status}">{status.upper()}</td>'
+
+
 def company_cell_redesigned(r):
     return (
         f'<td class="co-cell-stack">'
@@ -1365,10 +1383,10 @@ def build_redflag_rows(rows):
         elif watch_count >= 3: count_color = "#f0b429"
         else: count_color = "#4ec38a"
         rf_rows.append(
-            f'<tr data-status="{status}" data-company="{r.get("company","").lower()}" data-sector="{r.get("sector","")}">'
+            f'<tr data-status="{status}" data-severity="{r.get("severity","")}" data-company="{r.get("company","").lower()}" data-sector="{r.get("sector","")}">'
             f'<td class="rf-co">{r.get("company","")}</td>'
             f'<td><span class="sector-tag">{r.get("sector","")}</span></td>'
-            f'<td class="status {status}">{status.upper()}</td>'
+            + status_label_cell(status, r.get("severity"))
             + flag_cells
             + f'<td class="rf-summary" style="color:{count_color}"><strong>{flag_count}</strong>'
             + (f'<span class="rf-watch-suffix">+{watch_count}~</span>' if watch_count > 0 else '')
@@ -2299,9 +2317,9 @@ def _tmt_company_row(co_name, all_rows, sec_data):
     else:
         source_marker = '<span class="src-tag claude" title="Source: Claude web search">EST</span>'
     return (
-        f'<tr data-status="{status}" data-company="{co_name.lower()}" data-sector="{sector}">'
+        f'<tr data-status="{status}" data-severity="{row.get("severity","")}" data-company="{co_name.lower()}" data-sector="{sector}">'
         f'<td class="co-cell">{co_name} {source_marker}</td>'
-        f'<td class="status {status}">{status.upper()}</td>'
+        + status_label_cell(status, row.get("severity"))
         + money_cell(row.get('revenue_ltm'))
         + yoy_cell(row.get('revenue_yoy_pct'))
         + leverage_cell(row.get('nd_ebitda'))
@@ -2484,12 +2502,12 @@ def build_html(all_rows, macro, top3, datetime_str, commodities=None, fred_data=
         ev_str = f"{mc + td - cs:.1f}" if (mc is not None and td is not None and cs is not None) else "n/a"
 
         market_rows.append(
-            f'<tr data-status="{status}" data-company="{co.lower()}" data-sector="{r.get("sector","")}">'
+            f'<tr data-status="{status}" data-severity="{r.get("severity","")}" data-company="{co.lower()}" data-sector="{r.get("sector","")}">'
             f'<td class="co-cell">{co}</td>'
             f'<td><span class="sector-tag">{r.get("sector","")}</span></td>'
             + money_cell(r.get('mkt_cap'))
             + money_cell(ev_str)
-            + f'<td class="status {status}">{status.upper()}</td>'
+            + status_label_cell(status, r.get("severity"))
             + price_cell(r.get('price'))
             + stock_cell(r.get('stock_1d'))
             + stock_cell(r.get('stock_1m'))
@@ -2522,10 +2540,10 @@ def build_html(all_rows, macro, top3, datetime_str, commodities=None, fred_data=
         expand_arrow = '<span class="fin-expand-arrow">&#9656;</span>' if has_history else '<span class="fin-expand-arrow disabled">&middot;</span>'
 
         fin_summary_rows.append(
-            f'<tr class="fin-summary-row {"clickable" if has_history else ""}" data-status="{status}" data-company="{co.lower()}" data-co-slug="{co_slug}" data-sector="{r.get("sector","")}">'
+            f'<tr class="fin-summary-row {"clickable" if has_history else ""}" data-status="{status}" data-severity="{r.get("severity","")}" data-company="{co.lower()}" data-co-slug="{co_slug}" data-sector="{r.get("sector","")}">'
             f'<td class="co-cell fin-co-cell">{expand_arrow} {co} {source_marker}{warning_marker}</td>'
             f'<td><span class="sector-tag">{r.get("sector","")}</span></td>'
-            f'<td class="status {status}">{status.upper()}</td>'
+            + status_label_cell(status, r.get("severity"))
             + money_cell(r.get('revenue_ltm'))
             + yoy_cell(r.get('revenue_yoy_pct'))
             + leverage_cell(r.get('nd_ebitda'))
@@ -2541,7 +2559,7 @@ def build_html(all_rows, macro, top3, datetime_str, commodities=None, fred_data=
             sec_for_co = sec_data.get(co, {})
             detail_inner = fin_detail_html(co, sec_for_co)
             fin_detail_rows.append(
-                f'<tr class="fin-detail-row" data-co-slug="{co_slug}" data-status="{status}" data-company="{co.lower()}" data-sector="{r.get("sector","")}" style="display:none;">'
+                f'<tr class="fin-detail-row" data-co-slug="{co_slug}" data-status="{status}" data-severity="{r.get("severity","")}" data-company="{co.lower()}" data-sector="{r.get("sector","")}" style="display:none;">'
                 f'<td colspan="11">{detail_inner}</td></tr>'
             )
 
@@ -3138,15 +3156,15 @@ footer li strong{color:#ffaaaa}
   <h2>Manual Overrides</h2>
   <p>Two JSON files in the repo allow manual data injection when automated sources miss something material.</p>
   <p><strong>news_override.json</strong>: Per-company key development override. Use when a material credit event happens but Claude's web search didn't pick it up. Each entry has an optional expiry date for auto-cleanup.</p>
-  <pre style="background:#0d1520;padding:14px;border-radius:4px;font-size:11px;color:#a0c4e8;border-left:3px solid #5a8fa8;overflow-x:auto;">{
-  "Flex Ltd": {
+  <pre style="background:#0d1520;padding:14px;border-radius:4px;font-size:11px;color:#a0c4e8;border-left:3px solid #5a8fa8;overflow-x:auto;">{{
+  "Flex Ltd": {{
     "key_dev": "Announced spin-off of data center EMS business; S&amp;P affirmed BBB- May 6 2026.",
     "expires": "2026-07-06"
-  },
-  "Boeing": {
+  }},
+  "Boeing": {{
     "key_dev": "FAA approved 737 MAX production rate increase to 38/month."
-  }
-}</pre>
+  }}
+}}</pre>
   <p>To add: open <code>news_override.json</code> in the repo, click the pencil icon, add an entry, commit. Next workflow run picks it up. Expired entries auto-fall-off after their expires date.</p>
   <p><strong>ratings_override.json</strong>: Per-company rating override. Use when Moody's, S&amp;P, or Fitch update a rating between full runs. Same format with rating fields instead of key_dev.</p>
 
