@@ -2176,8 +2176,33 @@ def _hyperscaler_rpo_history(sec_data):
 
 
 def _build_rpo_chart_html(sec_data, chart_id="rpoChart"):
-    """Build the Hyperscaler RPO stacked bar chart section. Only renders when
-    at least one hyperscaler has data."""
+    """Hyperscaler RPO chart - TEMPORARILY STUBBED.
+
+    Reason: SEC XBRL stores RPO with multiple time-horizon dimensions (within 12mo,
+    beyond 12mo, total). Current extraction doesn't filter by XBRL dimension axis,
+    leading to inflated totals when multiple records per period_end are summed.
+    Microsoft's true RPO is ~$300-380B vs displayed $1,653B (Q1 2026).
+
+    Honest disclosure to colleagues: data quality is being investigated rather
+    than show incorrect values that would undermine dashboard credibility.
+
+    Re-enable once XBRL dimension parsing is implemented (next session).
+    """
+    return f"""
+    <div style="background:#0d1117;border:1px solid #1e2a3a;border-radius:6px;padding:24px;margin:14px 28px;">
+      <div style="color:#e89c00;font-size:12px;letter-spacing:1.5px;font-weight:600;margin-bottom:8px;">HYPERSCALER REVENUE BACKLOG (RPO) — DATA QUALITY INVESTIGATION IN PROGRESS</div>
+      <div style="color:#7090a8;font-size:11px;line-height:1.6;">
+        The RPO chart is temporarily stubbed pending resolution of an XBRL aggregation issue.
+        Multiple time-horizon records per company per period are being summed instead of taking the reported total.
+        Estimated true RPO across MSFT + GOOGL + ORCL is approximately $600-700Bn; previous chart displayed materially higher values due to this issue.
+        Chart will return once SEC XBRL dimension filtering is implemented.
+      </div>
+    </div>
+    """
+
+
+def _build_rpo_chart_html_DISABLED(sec_data, chart_id="rpoChart"):
+    """Disabled until XBRL dimension parsing is added."""
     history, contributors = _hyperscaler_rpo_history(sec_data)
     if not history or not contributors:
         return ""
@@ -3109,23 +3134,49 @@ footer li strong{color:#ffaaaa}
   });
 
   document.querySelectorAll('.pane table').forEach(function(tbl){
-    if(tbl.closest('#pane-financials'))return;
+    var isFinTab = tbl.closest('#pane-financials');
     var ths=tbl.querySelectorAll('thead th');
     var sc=-1,sd=1;
-    ths.forEach(function(th,idx){th.addEventListener('click',function(){
-      var t=th.dataset.type||'text';
-      if(sc===idx)sd=-sd;else{sc=idx;sd=1;}
-      var tb=tbl.querySelector('tbody');
-      var rows=Array.from(tb.querySelectorAll('tr'));
-      rows.sort(function(a,b){
-        var av=a.cells[idx]?a.cells[idx].textContent.trim():'';
-        var bv=b.cells[idx]?b.cells[idx].textContent.trim():'';
-        if(t==='num'){av=parseFloat(av.replace(/[^0-9.\\-]/g,''))||0;bv=parseFloat(bv.replace(/[^0-9.\\-]/g,''))||0;return (av-bv)*sd;}
-        if(t==='date'){av=new Date(av).getTime()||0;bv=new Date(bv).getTime()||0;return (av-bv)*sd;}
-        return av.localeCompare(bv)*sd;
+    ths.forEach(function(th,idx){
+      th.style.cursor = 'pointer';
+      th.addEventListener('click',function(){
+        var t=th.dataset.type||'text';
+        if(sc===idx)sd=-sd;else{sc=idx;sd=1;}
+        var tb=tbl.querySelector('tbody');
+        if(isFinTab){
+          // Financials tab: rows come in pairs (summary + detail).
+          // Sort by summary rows, keep their detail row attached.
+          var pairs=[];
+          var summaryRows=Array.from(tb.querySelectorAll('tr.fin-summary-row'));
+          summaryRows.forEach(function(sumRow){
+            var slug=sumRow.dataset.coSlug;
+            var detRow=slug?tb.querySelector('.fin-detail-row[data-co-slug="'+slug+'"]'):null;
+            pairs.push({summary:sumRow,detail:detRow});
+          });
+          pairs.sort(function(a,b){
+            var av=a.summary.cells[idx]?a.summary.cells[idx].textContent.trim():'';
+            var bv=b.summary.cells[idx]?b.summary.cells[idx].textContent.trim():'';
+            if(t==='num'){av=parseFloat(av.replace(/[^0-9.\\-]/g,''))||0;bv=parseFloat(bv.replace(/[^0-9.\\-]/g,''))||0;return (av-bv)*sd;}
+            return av.localeCompare(bv)*sd;
+          });
+          tb.innerHTML='';
+          pairs.forEach(function(p){
+            tb.appendChild(p.summary);
+            if(p.detail)tb.appendChild(p.detail);
+          });
+        } else {
+          var rows=Array.from(tb.querySelectorAll('tr'));
+          rows.sort(function(a,b){
+            var av=a.cells[idx]?a.cells[idx].textContent.trim():'';
+            var bv=b.cells[idx]?b.cells[idx].textContent.trim():'';
+            if(t==='num'){av=parseFloat(av.replace(/[^0-9.\\-]/g,''))||0;bv=parseFloat(bv.replace(/[^0-9.\\-]/g,''))||0;return (av-bv)*sd;}
+            if(t==='date'){av=new Date(av).getTime()||0;bv=new Date(bv).getTime()||0;return (av-bv)*sd;}
+            return av.localeCompare(bv)*sd;
+          });
+          tb.innerHTML='';rows.forEach(function(r){tb.appendChild(r);});
+        }
       });
-      tb.innerHTML='';rows.forEach(function(r){tb.appendChild(r);});
-    });});
+    });
   });
 
   applyAll();
