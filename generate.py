@@ -1380,14 +1380,54 @@ def money_cell(v, decimals=1):
 
 
 # Red flag rendering
-def redflag_cell(state):
+# Source mapping per flag (which data source provides the inputs)
+FLAG_SOURCES = {
+    "leverage_high": "SEC EDGAR (XBRL)",
+    "leverage_climbing": "SEC EDGAR (XBRL)",
+    "coverage_thin": "SEC EDGAR (XBRL)",
+    "burning_cash": "SEC EDGAR (Cash Flow Statement)",
+    "wall_of_maturities": "SEC EDGAR (Capital Structure)",
+    "refi_higher_rates": "SEC EDGAR + macro rates",
+    "revenue_shrinking": "SEC EDGAR (XBRL)",
+    "margin_compression": "SEC EDGAR (XBRL)",
+    "stock_collapse": "yfinance (daily price history)",
+    "rating_pressure": "Claude web search (agency press releases)",
+    "bad_news": "Claude key_dev (keyword scan)",
+    "liquidity_squeeze": "SEC EDGAR (Balance Sheet)",
+    "going_concern": "SEC EDGAR + Claude",
+    "insider_selling": "SEC Form 4 filings",
+    "geographic_risk": "Claude geographic analysis",
+}
+
+
+def _build_flag_tooltip(fid, state, reason, flag_def):
+    """Build hover tooltip for a single flag cell with name, source, value, thresholds."""
+    name = flag_def.get("name", fid)
+    threshold = flag_def.get("threshold", "")
+    watch_threshold = flag_def.get("watch_threshold", "")
+    source = FLAG_SOURCES.get(fid, "Multi-source")
+    parts = [name, f"Source: {source}"]
+    if reason:
+        parts.append(f"Value: {reason}")
+    if threshold and watch_threshold:
+        parts.append(f"Threshold: FLAGGED {threshold}, WATCH {watch_threshold}")
+    elif threshold:
+        parts.append(f"Threshold: FLAGGED {threshold}")
+    tooltip = "\n".join(parts).replace('"', "'")
+    return tooltip
+
+
+def redflag_cell(state, tooltip=""):
+    """Render a flag cell with optional rich tooltip (name + source + value + threshold)."""
+    title_attr = f' title="{tooltip}"' if tooltip else f' title="{state}"'
+    style_attr = ' style="cursor:help"' if tooltip else ''
     if state == "FLAGGED":
-        return '<td class="rf-cell"><span class="rf-pill rf-flagged" title="FLAGGED">&#9888;</span></td>'
+        return f'<td class="rf-cell"><span class="rf-pill rf-flagged"{title_attr}{style_attr}>&#9888;</span></td>'
     if state == "WATCH":
-        return '<td class="rf-cell"><span class="rf-pill rf-watch" title="WATCH">~</span></td>'
+        return f'<td class="rf-cell"><span class="rf-pill rf-watch"{title_attr}{style_attr}>~</span></td>'
     if state == "CLEAR":
-        return '<td class="rf-cell"><span class="rf-pill rf-clear" title="CLEAR">&#10003;</span></td>'
-    return '<td class="rf-cell"><span class="rf-pill rf-na" title="N/A">&mdash;</span></td>'
+        return f'<td class="rf-cell"><span class="rf-pill rf-clear"{title_attr}{style_attr}>&#10003;</span></td>'
+    return f'<td class="rf-cell"><span class="rf-pill rf-na"{title_attr}{style_attr}>&mdash;</span></td>'
 
 
 def build_redflag_rows(rows):
@@ -1396,8 +1436,10 @@ def build_redflag_rows(rows):
     try:
         from red_flags import FLAG_DEFINITIONS
         flag_ids = [f["id"] for f in FLAG_DEFINITIONS]
+        flag_defs_by_id = {f["id"]: f for f in FLAG_DEFINITIONS}
     except ImportError:
         flag_ids = []
+        flag_defs_by_id = {}
     sorted_rows = sorted(
         [r for r in rows if r.get("_flags")],
         key=lambda r: (-(r.get("_flag_count") or 0), -(r.get("_watch_count") or 0), r.get("company", "").lower())
@@ -1413,9 +1455,9 @@ def build_redflag_rows(rows):
             result = flags.get(fid, {})
             state = result.get("state", "N/A")
             reason = result.get("reason", "")
-            cell = redflag_cell(state)
-            cell = cell.replace(f'title="{state}"', f'title="{fid}: {reason}"', 1)
-            flag_cells += cell
+            flag_def = flag_defs_by_id.get(fid, {"id": fid, "name": fid})
+            tooltip = _build_flag_tooltip(fid, state, reason, flag_def)
+            flag_cells += redflag_cell(state, tooltip)
         if flag_count >= 3: count_color = "#ff6b6b"
         elif flag_count >= 1: count_color = "#f0b429"
         elif watch_count >= 3: count_color = "#f0b429"
@@ -3180,8 +3222,8 @@ footer li strong{color:#ffaaaa}
   <div class="rf-legend-item"><span class="rf-pill rf-flagged">&#9888;</span> Flagged (threshold breached)</div>
   <div class="rf-legend-item"><span class="rf-pill rf-watch">~</span> Watch (approaching threshold)</div>
   <div class="rf-legend-item"><span class="rf-pill rf-clear">&#10003;</span> Clear</div>
-  <div class="rf-legend-item"><span class="rf-pill rf-na">&mdash;</span> N/A (insufficient data)</div>
-  <div class="rf-legend-note">Hover any cell for the trigger reason. See Methodology tab for full flag definitions.</div>
+  <div class="rf-legend-item"><span class="rf-pill rf-na">&mdash;</span> N/A (data unavailable)</div>
+  <div class="rf-legend-note"><strong>Hover any flag cell</strong> to see flag name, data source (SEC EDGAR / yfinance / Claude), the specific value that fired, and both flagged and watch thresholds. See Methodology tab for full flag definitions.</div>
 </div>
 <table class="rf-table">
 <thead><tr>
@@ -3575,8 +3617,13 @@ def main():
             "duration_seconds": int((run_end - run_start).total_seconds()),
             "data_sources": {
                 "anthropic_claude": {
-                    "model": "claude-sonnet-4-6", "calls": 2,
-                    "batches_succeeded": (1 if data_a else 0) + (1 if data_b else 0),
+                    "model": "claude-sonnet-4-6",
+                    "calls": (2 if run_mode == "full" else 1),
+                    "run_mode": run_mode,
+                    "batches_succeeded": (
+                        ((1 if (locals().get("data_a")) else 0) + (1 if (locals().get("data_b")) else 0))
+                        if run_mode == "full" else "n/a (cheap mode, cache reused)"
+                    ),
                 },
                 "sec_edgar": {
                     "from_cache": sec_metadata.get("from_cache", False),
