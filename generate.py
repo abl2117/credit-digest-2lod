@@ -2131,30 +2131,32 @@ def _hyperscaler_capex_history(sec_data):
     """
     Build LTM (trailing 12-month) CapEx history for MSFT, GOOGL, AMZN, ORCL.
 
-    Each bar is one calendar quarter end, but the value at that quarter is
-    the sum of the FOUR most recent quarterly CapEx observations ending at or
-    before that quarter. This neutralizes the staggered-fiscal-year effect
-    (Microsoft June year-end, Oracle May year-end, Alphabet and Amazon December
-    calendar year-end) that distorts pure quarterly stacked bars.
+    Each bar is anchored to a calendar quarter end (March 31, June 30,
+    September 30, December 31) regardless of any company's fiscal calendar.
+    At each anchor, each company contributes the sum of its 4 most recent
+    quarterly CapEx observations whose period_end falls within the 12 months
+    preceding the anchor. A company is included in a bar if it has 4 quarters
+    in the window; otherwise it shows as None for that bar.
 
-    Rolling-12-month windows produce a smoothed picture of the annual capital
-    commitment cycle across hyperscalers. Trade-off: short-cycle pauses or
-    spikes get averaged out. For raw cadence the previous quarterly version
-    sits in version control as commit history.
+    The window is generous (4 quarters can land anywhere within 13 months of
+    the anchor) to accommodate fiscal-year offsets. MSFT June-end and ORCL
+    May-end report at different calendar months than calendar-year filers
+    GOOGL and AMZN, but their respective 4-quarter LTM totals are all valid
+    annual CapEx measures and can be summed.
 
-    Returns (rows, contributors) where rows is a list of period dicts oldest
-    first. Each row has period_label (e.g. "LTM Q1 '26"), period_end (raw date),
-    one entry per company (Microsoft, Alphabet, Amazon, Oracle) and a total.
+    Returns (rows, contributors) oldest first. Each row has period_label
+    (e.g. "LTM Q1 '26"), period_end, per-company values, and a total.
     """
+    from datetime import timedelta
     hyperscalers = ["Microsoft", "Alphabet", "Amazon", "Oracle"]
     if not sec_data:
         return [], []
 
-    # Collect raw quarterly capex per company, keyed by ORIGINAL (non-rounded)
-    # period_end. Rounding here would conflate two different quarters that
-    # rounded to the same calendar quarter end and break the LTM rolling sum.
+    # Collect raw quarterly capex per company, newest-first.
     capex_quarters = {}  # co -> list of (period_end_date, value_dollars), newest first
     contributors_present = []
+    earliest_date = None
+    latest_date = None
     for co in hyperscalers:
         sec = (sec_data or {}).get(co, {})
         if not sec:
@@ -2173,9 +2175,13 @@ def _hyperscaler_capex_history(sec_data):
             except (ValueError, TypeError):
                 continue
             per_co.append((pd_date, abs(val)))
+            if earliest_date is None or pd_date < earliest_date:
+                earliest_date = pd_date
+            if latest_date is None or pd_date > latest_date:
+                latest_date = pd_date
         if not per_co:
             continue
-        # Deduplicate by period_end (keep first occurrence) and sort newest first
+        # Deduplicate by period_end and sort newest first
         seen = set()
         deduped = []
         per_co.sort(key=lambda x: x[0], reverse=True)
@@ -2187,51 +2193,71 @@ def _hyperscaler_capex_history(sec_data):
         if co not in contributors_present:
             contributors_present.append(co)
 
-    if not capex_quarters:
+    if not capex_quarters or earliest_date is None or latest_date is None:
         return [], []
 
-    # Build the set of calendar quarter-end anchors that span the data. Use
-    # rounded period_ends as anchors so each company contributes its CapEx
-    # at the calendar quarter closest to its actual reported quarter.
-    anchor_dates = set()
-    for co, observations in capex_quarters.items():
-        for pd_date, _ in observations:
-            anchor_str = _round_to_calendar_quarter(pd_date.strftime("%Y-%m-%d"))
-            try:
-                anchor_dates.add(datetime.strptime(anchor_str, "%Y-%m-%d").date())
-            except (ValueError, TypeError):
-                pass
+    # Generate regular calendar quarter anchors covering the data range.
+    # An anchor at calendar quarter Q includes a company's CapEx for that
+    # quarter only if the company has reported its quarter ending on-or-
+    # before the anchor. So anchors should not extend past the LATEST
+    # reported quarter across all hyperscalers.
+    def _calendar_quarter_ends_in_range(start, end):
+        # Returns list of date objects representing each calendar quarter end
+        # in [start, end], oldest first.
+        from datetime import date as _date
+        qe_months = [3, 6, 9, 12]
+        qe_days = {3: 31, 6: 30, 9: 30, 12: 31}
+        result = []
+        year = start.year
+        # Start by stepping back to the earliest quarter end at-or-before `start`
+        while year <= end.year + 1:
+            for m in qe_months:
+                qe = _date(year, m, qe_days[m])
+                if qe < start:
+                    continue
+                if qe > end:
+                    return result
+                result.append(qe)
+            year += 1
+        return result
 
-    if not anchor_dates:
+    # First anchor: roughly 3 years before the latest reported quarter, so we
+    # have at least 4 quarters of context for the earliest bar.
+    anchor_start = latest_date.replace(year=latest_date.year - 3) if latest_date.year >= 2003 else earliest_date
+    all_anchors = _calendar_quarter_ends_in_range(anchor_start, latest_date)
+
+    # Filter to the last 12 anchors
+    if len(all_anchors) > 12:
+        all_anchors = all_anchors[-12:]
+
+    if not all_anchors:
         return [], []
 
-    # Keep the most recent 12 anchors. LTM bars are smoother than quarterly
-    # so a 3-year window (12 anchors) gives the trajectory without crowding.
-    sorted_anchors = sorted(anchor_dates, reverse=True)[:12]
-    sorted_anchors.reverse()  # oldest first for chart
-
-    # For each anchor, compute LTM per company: sum of up to 4 most recent
-    # quarterly observations whose period_end is at-or-before the anchor and
-    # within 380 days (gives one quarter of slack for fiscal-period drift).
     rows = []
-    for anchor in sorted_anchors:
+    for anchor in all_anchors:
         q = (anchor.month - 1) // 3 + 1
         label = f"LTM Q{q} '{str(anchor.year)[2:]}"
         row = {"period_label": label, "period_end": anchor.strftime("%Y-%m-%d")}
         period_total = 0.0
         period_has_data = False
+
+        # Window: quarters reported within 400 days BEFORE the anchor.
+        # 400 days gives 35 days of slack past 365, enough to capture 4
+        # quarters that may straddle the anchor boundary by a few weeks
+        # due to fiscal calendar offsets.
+        window_start = anchor - timedelta(days=400)
+
         for co in hyperscalers:
             observations = capex_quarters.get(co, [])
             if not observations:
                 row[co] = None
                 continue
-            # Take 4 most recent quarters at-or-before anchor, within 380 days
             window_quarters = []
-            for pd_date, val in observations:  # already newest first
+            for pd_date, val in observations:
                 if pd_date > anchor:
                     continue
-                if (anchor - pd_date).days > 380:
-                    continue
+                if pd_date < window_start:
+                    break  # observations are newest-first, can stop
                 window_quarters.append(val)
                 if len(window_quarters) >= 4:
                     break
@@ -2242,13 +2268,15 @@ def _hyperscaler_capex_history(sec_data):
                 period_total += val_bn
                 period_has_data = True
             else:
-                # Partial-window: not enough quarters for honest LTM. Skip name
-                # rather than show a partial-LTM that misleads.
+                # Not enough quarters in window: company is missing from this
+                # bar. This can happen for early bars when company data starts
+                # mid-window, or for the latest bar if a company hasn't yet
+                # reported its quarter ending at the anchor.
                 row[co] = None
         row["total"] = round(period_total, 1) if period_has_data else None
         rows.append(row)
 
-    # Drop leading anchors where no name has 4 quarters (very early periods)
+    # Drop leading anchors where no name has 4 quarters
     while rows and rows[0]["total"] is None:
         rows.pop(0)
 
