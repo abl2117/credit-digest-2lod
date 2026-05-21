@@ -82,6 +82,7 @@ if os.path.exists('news_override.json'):
         print(f"WARNING: news_override.json failed to parse: {e}")
 
 WATCHLIST = {
+    # ===== EXISTING 81 NAMES (preserved) =====
     "AT&T":                    {"ticker": "T",     "filer_type": "10-K", "sector": "Telecom"},
     "Verizon":                 {"ticker": "VZ",    "filer_type": "10-K", "sector": "Telecom"},
     "Comcast":                 {"ticker": "CMCSA", "filer_type": "10-K", "sector": "Telecom"},
@@ -163,6 +164,165 @@ WATCHLIST = {
     "CDW":                     {"ticker": "CDW",   "filer_type": "10-K", "sector": "Distribution"},
     "Amrize":                  {"ticker": "AMRZ",  "filer_type": "10-K", "sector": "Materials"},
     "CEMEX":                   {"ticker": "CX",    "filer_type": "20-F", "sector": "Materials"},
+
+    # ===== EXPANSION (105 new names, May 21, 2026) =====
+
+    # AGRIBUSINESS
+    "Archer-Daniels-Midland":  {"ticker": "ADM",   "filer_type": "10-K", "sector": "Agribusiness"},
+    "Bunge":                   {"ticker": "BG",    "filer_type": "10-K", "sector": "Agribusiness"},
+    "Ingredion":               {"ticker": "INGR",  "filer_type": "10-K", "sector": "Agribusiness"},
+
+    # PERSONAL CARE
+    "Colgate-Palmolive":       {"ticker": "CL",    "filer_type": "10-K", "sector": "Personal Care"},
+    "Kenvue":                  {"ticker": "KVUE",  "filer_type": "10-K", "sector": "Personal Care"},
+    "Coty":                    {"ticker": "COTY",  "filer_type": "10-K", "sector": "Personal Care"},
+
+    # UTILITIES (additions)
+    "AES":                     {"ticker": "AES",   "filer_type": "10-K", "sector": "Utilities"},
+    "Dominion Energy":         {"ticker": "D",     "filer_type": "10-K", "sector": "Utilities"},
+    "Edison International":    {"ticker": "EIX",   "filer_type": "10-K", "sector": "Utilities"},
+    "Constellation Energy":    {"ticker": "CEG",   "filer_type": "10-K", "sector": "Utilities"},
+    "Southern Company":        {"ticker": "SO",    "filer_type": "10-K", "sector": "Utilities"},
+    "PPL Corporation":         {"ticker": "PPL",   "filer_type": "10-K", "sector": "Utilities"},
+    "NRG Energy":              {"ticker": "NRG",   "filer_type": "10-K", "sector": "Utilities"},
+    "NextEra Energy Partners": {"ticker": "NEP",   "filer_type": "10-K", "sector": "Utilities"},
+    "RWE":                     {"ticker": "RWEOY", "filer_type": None,   "sector": "Utilities"},
+    "Uniper":                  {"ticker": "UNPRF", "filer_type": None,   "sector": "Utilities"},
+    "Engie":                   {"ticker": "ENGIY", "filer_type": None,   "sector": "Utilities"},
+    "Enel":                    {"ticker": "ENLAY", "filer_type": None,   "sector": "Utilities"},
+
+    # RENEWABLES
+    "Clearway Energy Group":   {"ticker": "CWEN",  "filer_type": "10-K", "sector": "Renewables"},
+    "Brookfield Renewable Partners": {"ticker": "BEP", "filer_type": "20-F", "sector": "Renewables"},
+    "Fluence Energy":          {"ticker": "FLNC",  "filer_type": "10-K", "sector": "Renewables"},
+
+    # MIDSTREAM
+    "Cheniere Energy":         {"ticker": "LNG",   "filer_type": "10-K", "sector": "Midstream"},
+    "Enbridge":                {"ticker": "ENB",   "filer_type": "40-F", "sector": "Midstream"},
+
+    # OILFIELD SERVICES & ENERGY (additions)
+    "Halliburton":             {"ticker": "HAL",   "filer_type": "10-K", "sector": "Oilfield Services"},
+    "SLB":                     {"ticker": "SLB",   "filer_type": "10-K", "sector": "Oilfield Services"},
+    "Baker Hughes":            {"ticker": "BKR",   "filer_type": "10-K", "sector": "Oilfield Services"},
+    "TechnipFMC":              {"ticker": "FTI",   "filer_type": "10-K", "sector": "Oilfield Services"},
+    "Phillips 66":             {"ticker": "PSX",   "filer_type": "10-K", "sector": "Refining"},
+    "Woodside Energy":         {"ticker": "WDS",   "filer_type": None,   "sector": "Energy"},
+    "Equinor":                 {"ticker": "EQNR",  "filer_type": "20-F", "sector": "Energy"},
+    "Shell":                   {"ticker": "SHEL",  "filer_type": "20-F", "sector": "Energy"},
+    "TotalEnergies":           {"ticker": "TTE",   "filer_type": "20-F", "sector": "Energy"},
+
+    # CHEMICALS
+    "Dow":                     {"ticker": "DOW",   "filer_type": "10-K", "sector": "Chemicals"},
+    "LyondellBasell":          {"ticker": "LYB",   "filer_type": "10-K", "sector": "Chemicals"},
+    "Olin Corporation":        {"ticker": "OLN",   "filer_type": "10-K", "sector": "Chemicals"},
+    "Albemarle":               {"ticker": "ALB",   "filer_type": "10-K", "sector": "Chemicals"},
+    "Linde":                   {"ticker": "LIN",   "filer_type": "10-K", "sector": "Chemicals"},
+    "FMC Corporation":         {"ticker": "FMC",   "filer_type": "10-K", "sector": "Chemicals"},
+    "Ecolab":                  {"ticker": "ECL",   "filer_type": "10-K", "sector": "Chemicals"},
+    "Nutrien":                 {"ticker": "NTR",   "filer_type": None,   "sector": "Chemicals"},
+    "PPG Industries":          {"ticker": "PPG",   "filer_type": "10-K", "sector": "Chemicals"},
+    "Braskem":                 {"ticker": "BAK",   "filer_type": "20-F", "sector": "Chemicals"},
+    "Brenntag":                {"ticker": "BNTGY", "filer_type": None,   "sector": "Chemicals"},
+
+    # PHARMA
+    "AbbVie":                  {"ticker": "ABBV",  "filer_type": "10-K", "sector": "Pharma"},
+    "Eli Lilly":               {"ticker": "LLY",   "filer_type": "10-K", "sector": "Pharma"},
+    "Johnson & Johnson":       {"ticker": "JNJ",   "filer_type": "10-K", "sector": "Pharma"},
+    "Merck & Co":              {"ticker": "MRK",   "filer_type": "10-K", "sector": "Pharma"},
+    "Pfizer":                  {"ticker": "PFE",   "filer_type": "10-K", "sector": "Pharma"},
+    "AstraZeneca":             {"ticker": "AZN",   "filer_type": "20-F", "sector": "Pharma"},
+    "GSK":                     {"ticker": "GSK",   "filer_type": "20-F", "sector": "Pharma"},
+    "Roche Holding":           {"ticker": "RHHBY", "filer_type": None,   "sector": "Pharma"},
+    "Bayer":                   {"ticker": "BAYRY", "filer_type": None,   "sector": "Pharma"},
+
+    # HEALTHCARE DISTRIBUTION
+    "Cardinal Health":         {"ticker": "CAH",   "filer_type": "10-K", "sector": "Healthcare Distribution"},
+    "Cencora":                 {"ticker": "COR",   "filer_type": "10-K", "sector": "Healthcare Distribution"},
+    "McKesson":                {"ticker": "MCK",   "filer_type": "10-K", "sector": "Healthcare Distribution"},
+
+    # ASSET MANAGERS
+    "Blackstone":              {"ticker": "BX",    "filer_type": "10-K", "sector": "Asset Managers"},
+    "KKR":                     {"ticker": "KKR",   "filer_type": "10-K", "sector": "Asset Managers"},
+    "Apollo Global Management":{"ticker": "APO",   "filer_type": "10-K", "sector": "Asset Managers"},
+    "Brookfield Infrastructure Partners": {"ticker": "BIP", "filer_type": "20-F", "sector": "Asset Managers"},
+
+    # REITs
+    "Realty Income":           {"ticker": "O",     "filer_type": "10-K", "sector": "REITs"},
+    "Simon Property Group":    {"ticker": "SPG",   "filer_type": "10-K", "sector": "REITs"},
+
+    # MINING
+    "Barrick Gold":            {"ticker": "GOLD",  "filer_type": "40-F", "sector": "Mining"},
+    "Newmont":                 {"ticker": "NEM",   "filer_type": "10-K", "sector": "Mining"},
+    "Teck Resources":          {"ticker": "TECK",  "filer_type": "40-F", "sector": "Mining"},
+
+    # TRUCKS / HEAVY EQUIPMENT
+    "Daimler Truck":           {"ticker": "DTRUY", "filer_type": None,   "sector": "Trucks"},
+    "PACCAR":                  {"ticker": "PCAR",  "filer_type": "10-K", "sector": "Trucks"},
+    "Cummins":                 {"ticker": "CMI",   "filer_type": "10-K", "sector": "Trucks"},
+    "Wabtec":                  {"ticker": "WAB",   "filer_type": "10-K", "sector": "Rail"},
+    "CNH Industrial":          {"ticker": "CNH",   "filer_type": "10-K", "sector": "Heavy Equipment"},
+
+    # AUTOS (international additions)
+    "BMW":                     {"ticker": "BMWYY", "filer_type": None,   "sector": "Auto"},
+    "Volkswagen":              {"ticker": "VWAGY", "filer_type": None,   "sector": "Auto"},
+    "Mercedes-Benz":           {"ticker": "MBGYY", "filer_type": None,   "sector": "Auto"},
+    "Hyundai":                 {"ticker": "HYMTF", "filer_type": None,   "sector": "Auto"},
+
+    # FOOD PROCESSING
+    "JBS":                     {"ticker": "JBS",   "filer_type": None,   "sector": "Food Processing"},
+    "Pilgrim's Pride":         {"ticker": "PPC",   "filer_type": "10-K", "sector": "Food Processing"},
+    "Kraft Heinz":             {"ticker": "KHC",   "filer_type": "10-K", "sector": "Food Processing"},
+    "Grupo Bimbo":             {"ticker": "BMBOY", "filer_type": None,   "sector": "Food Processing"},
+    "Alicorp":                 {"ticker": "ALCRY", "filer_type": None,   "sector": "Food Processing"},
+
+    # BEVERAGE
+    "Coca-Cola Consolidated":  {"ticker": "COKE",  "filer_type": "10-K", "sector": "Beverage"},
+
+    # AIRLINES
+    "Turkish Airlines":        {"ticker": "TKHVY", "filer_type": None,   "sector": "Airlines"},
+
+    # MEDIA
+    "Lagardère":               {"ticker": "LGDDF", "filer_type": None,   "sector": "Media"},
+
+    # LUXURY
+    "LVMH":                    {"ticker": "LVMUY", "filer_type": None,   "sector": "Luxury"},
+    "EssilorLuxottica":        {"ticker": "ESLOY", "filer_type": None,   "sector": "Luxury"},
+
+    # POWER EQUIPMENT
+    "Generac Holdings":        {"ticker": "GNRC",  "filer_type": "10-K", "sector": "Power Equipment"},
+    "Siemens Energy":          {"ticker": "SMNEY", "filer_type": None,   "sector": "Power Equipment"},
+    "Siemens":                 {"ticker": "SIEGY", "filer_type": None,   "sector": "Industrials"},
+
+    # BUILDING MATERIALS
+    "Holcim":                  {"ticker": "HCMLY", "filer_type": None,   "sector": "Building Materials"},
+    "Saint-Gobain":            {"ticker": "CODYY", "filer_type": None,   "sector": "Building Materials"},
+    "NVR":                     {"ticker": "NVR",   "filer_type": "10-K", "sector": "Homebuilders"},
+
+    # INDUSTRIALS (additions)
+    "3M":                      {"ticker": "MMM",   "filer_type": "10-K", "sector": "Industrials"},
+    "Parker Hannifin":         {"ticker": "PH",    "filer_type": "10-K", "sector": "Industrials"},
+    "Pentair":                 {"ticker": "PNR",   "filer_type": "10-K", "sector": "Industrials"},
+    "Air Lease Corporation":   {"ticker": "AL",    "filer_type": "10-K", "sector": "Aircraft Leasing"},
+    "Gerdau":                  {"ticker": "GGB",   "filer_type": "20-F", "sector": "Steel"},
+    "Michelin":                {"ticker": "MGDDY", "filer_type": None,   "sector": "Auto Parts"},
+
+    # TECH (additions)
+    "Broadcom":                {"ticker": "AVGO",  "filer_type": "10-K", "sector": "Semiconductors"},
+
+    # RETAIL (additions)
+    "Costco Wholesale":        {"ticker": "COST",  "filer_type": "10-K", "sector": "Retail"},
+    "Home Depot":              {"ticker": "HD",    "filer_type": "10-K", "sector": "Retail"},
+    "O'Reilly Automotive":     {"ticker": "ORLY",  "filer_type": "10-K", "sector": "Retail"},
+    "WH Smith":                {"ticker": "WHTPF", "filer_type": None,   "sector": "Retail"},
+    "Seven & i Holdings":      {"ticker": "SVNDY", "filer_type": None,   "sector": "Retail"},
+
+    # SERVICES
+    "Sodexo":                  {"ticker": "SDXAY", "filer_type": None,   "sector": "Services"},
+    "Rentokil Initial":        {"ticker": "RTO",   "filer_type": "20-F", "sector": "Services"},
+    "Brink's":                 {"ticker": "BCO",   "filer_type": "10-K", "sector": "Services"},
+
+    # RESTAURANTS
+    "Krispy Kreme":            {"ticker": "DNUT",  "filer_type": "10-K", "sector": "Restaurants"},
 }
 
 TMT_SUBSECTIONS = [
@@ -506,21 +666,92 @@ def fetch_commodities_fx():
     return result
 
 
-PROMPT_A = f"""Today is {datetime_str}. You are generating structured data for a morning credit intelligence dashboard for publicly listed US and global corporates.
+BATCH_A_NAMES = ["AT&T", "Verizon", "Comcast", "Disney", "Warner Bros. Discovery", "Netflix",
+    "Amazon", "Alphabet", "Microsoft", "Oracle", "Salesforce", "IBM",
+    "Apple", "Nutanix", "Broadcom",
+    "HP Inc", "HPE", "Dell", "Nextracker",
+    "Sanmina", "Flex Ltd", "Jabil",
+    "Arrow Electronics", "Avnet", "TD Synnex", "Ingram Micro", "CDW",
+    "Kyndryl", "Cognizant",
+    "Equinix", "Digital Realty", "American Tower",
+    "PayPal", "Corpay", "Mastercard", "Visa", "Lagardère"]
 
-Watchlist - BATCH A (44 names):
-Telecom: AT&T, Verizon, Comcast
-Media: Disney, Warner Bros. Discovery, Netflix
-Tech: Amazon, Alphabet, Microsoft, Oracle, Salesforce, IBM, Apple
-Software: Nutanix
-Hardware: HP Inc, HPE, Dell, Nextracker
-EMS: Sanmina, Flex Ltd, Jabil
-Distribution: Arrow Electronics, Avnet, TD Synnex, Ingram Micro, CDW
-IT Services: Kyndryl, Cognizant
-Datacenter: Equinix, Digital Realty
-Towers: American Tower
-Payments: PayPal, Corpay, Mastercard, Visa
-Travel: Booking Holdings, Uber, Delta, Carnival, Royal Caribbean, Norwegian Cruise Line
+BATCH_B_NAMES = ["Booking Holdings", "Uber", "Delta", "Carnival", "Royal Caribbean",
+    "Norwegian Cruise Line", "Turkish Airlines",
+    "General Motors", "Tesla", "Ford", "Toyota", "Nissan",
+    "BMW", "Volkswagen", "Mercedes-Benz", "Hyundai",
+    "Boeing", "GE Aerospace",
+    "Daimler Truck", "PACCAR", "Cummins", "Wabtec", "CNH Industrial",
+    "Walmart", "AutoZone", "Genuine Parts", "Costco Wholesale", "Home Depot",
+    "O'Reilly Automotive", "WH Smith", "Seven & i Holdings",
+    "Coca-Cola", "Coca-Cola Consolidated", "Anheuser-Busch InBev",
+    "Philip Morris", "Altria", "Imperial Brands", "Universal Corporation"]
+
+BATCH_C_NAMES = ["Nike", "Kimberly-Clark", "Whirlpool", "Mondelez",
+    "Ball Corp", "Crown Holdings", "International Paper",
+    "Colgate-Palmolive", "Kenvue", "Coty",
+    "Archer-Daniels-Midland", "Bunge", "Ingredion",
+    "JBS", "Pilgrim's Pride", "Kraft Heinz", "Grupo Bimbo", "Alicorp",
+    "Krispy Kreme",
+    "LVMH", "EssilorLuxottica",
+    "AbbVie", "Eli Lilly", "Johnson & Johnson", "Merck & Co", "Pfizer",
+    "AstraZeneca", "GSK", "Roche Holding", "Bayer",
+    "Cardinal Health", "Cencora", "McKesson",
+    "Sodexo", "Rentokil Initial", "Brink's",
+    "Realty Income"]
+
+BATCH_D_NAMES = ["Chevron", "BP", "Exxon", "Phillips 66",
+    "Woodside Energy", "Equinor", "Shell", "TotalEnergies",
+    "Halliburton", "SLB", "Baker Hughes", "TechnipFMC",
+    "Cheniere Energy", "Enbridge",
+    "NextEra Energy", "NextEra Energy Partners",
+    "Duke Energy", "Sempra Energy",
+    "AES", "Dominion Energy", "Edison International",
+    "Constellation Energy", "Southern Company", "PPL Corporation",
+    "NRG Energy",
+    "RWE", "Uniper", "Engie", "Enel",
+    "Clearway Energy Group", "Brookfield Renewable Partners", "Fluence Energy",
+    "Amrize", "CEMEX", "Holcim", "Saint-Gobain", "NVR"]
+
+BATCH_E_NAMES = ["Caterpillar", "Deere", "Danaher", "GE Vernova", "Honeywell",
+    "Otis", "Air Products", "Corteva", "DuPont",
+    "3M", "Parker Hannifin", "Pentair", "Air Lease Corporation",
+    "Gerdau", "Michelin",
+    "Generac Holdings", "Siemens Energy", "Siemens",
+    "Dow", "LyondellBasell", "Olin Corporation", "Albemarle",
+    "Linde", "FMC Corporation", "Ecolab", "Nutrien", "PPG Industries",
+    "Braskem", "Brenntag",
+    "Barrick Gold", "Newmont", "Teck Resources",
+    "Blackstone", "KKR", "Apollo Global Management",
+    "Brookfield Infrastructure Partners",
+    "Simon Property Group"]
+
+
+def _build_batch_prompt(batch_id, batch_label, batch_names, include_macro=False, include_top3=False):
+    """Build a Claude prompt for one batch of the watchlist.
+    Macro and top3 sections only appear in the final batch (E)."""
+    names_str = "\n".join(f"- {co}" for co in batch_names)
+    macro_section = ""
+    macro_output = ""
+    top3_section = ""
+    top3_output = ""
+    if include_macro:
+        macro_section = """
+
+MACRO INDICATORS (FALLBACK ONLY - HY OAS and IG OAS pulled from FRED, NOT from this prompt):
+DO NOT search for HY OAS or IG OAS. Always return "n/a" for those fields. Source only the items below:
+- VIX index level (cboe.com or yahoo.com/finance)
+- S&P 500 level and 1-day percentage change"""
+        macro_output = '"macro": {"hy_oas": "n/a", "ig_oas": "n/a", "treasury_10y": "n/a", "treasury_2y": "n/a", "vix": "18.2", "sp500": "5234", "sp500_1d": "+0.8"}, '
+    if include_top3:
+        top3_section = """
+- top3: 3 names from across ALL 5 batches most requiring attention today."""
+        top3_output = ', "top3": [{"name": "Company A", "note": "Short reason"}]'
+
+    return f"""Today is {datetime_str}. You are generating structured data for a morning credit intelligence dashboard for publicly listed US and global corporates.
+
+Watchlist - BATCH {batch_id} ({len(batch_names)} names): {batch_label}
+{names_str}
 
 For each company gather the data below using these source priorities:
 
@@ -554,26 +785,21 @@ CRITICAL ACCURACY REQUIREMENTS:
 - Distinguish issuer/corporate family rating from issue-specific (bond-level) ratings - use the ISSUER rating
 - For Moody's: use issuer rating or Corporate Family Rating (CFR), NOT senior unsecured if different
 - Do NOT confuse outlook with rating - outlook is Stable/Positive/Negative/RUR, separate from the letter grade
+- For foreign filers (non-US listed companies), use the parent entity rating, not subsidiary ratings
 - A rating action includes: upgrade, downgrade, affirmation, outlook change, or watch placement
-- For each rating, the date should reflect the most recent rating action (including outlook revisions or affirmations), not the date of original rating assignment
+- For each rating, the date should reflect the most recent rating action
 
 KEY DEVELOPMENT (key_dev field) - CRITICAL FOR CREDIT SURVEILLANCE:
 For each name, search for any of these MATERIAL CREDIT EVENTS in the last 60 days:
 1. Rating actions: upgrades, downgrades, outlook changes, ratings affirmed with comments
-2. Capital structure: spin-off announcements, M&A (acquisitions or divestitures), debt issuance, refinancing, dividend changes, share buyback authorizations
+2. Capital structure: spin-off announcements, M&A, debt issuance, refinancing, dividend changes, buyback authorizations
 3. Financial events: covenant amendments, covenant breaches, defaults, missed payments
-4. Strategic events: management changes (CEO/CFO), restructuring, major contract wins or losses, strategic reviews, going private discussions
+4. Strategic events: management changes, restructuring, contract wins/losses, strategic reviews
 5. Earnings: significant beats, misses, guidance changes, withdrawn guidance
-6. Legal/Regulatory: SEC investigations, material litigation, regulatory penalties, going concern warnings
-7. Operational: major customer wins or losses, supply chain disruptions, plant closures
+6. Legal/Regulatory: SEC investigations, material litigation, regulatory penalties
+7. Operational: major customer wins/losses, supply chain disruptions, plant closures
 
-Apply this rule regardless of green/amber/red status. A name can be GREEN-rated and still have material credit-relevant news (e.g., a BBB- name announcing a spin-off and acquisition is still material).
-
-Search queries to use for each name:
-- "[Company name] spin-off OR acquisition OR divestiture 2026"
-- "[Company name] credit rating action 2026"
-- "[Company name] 8-K SEC filing material event"
-- "[Company name] debt issuance OR refinancing 2026"
+Apply this rule regardless of green/amber/red status. A name can be GREEN-rated and still have material credit-relevant news.{macro_section}
 
 Use web search to source values. For well-known public companies, use your best available knowledge if a specific value is not directly returned by search. Only return "n/a" if the value is genuinely unknowable.
 
@@ -593,10 +819,10 @@ Start at 0 and add points as follows:
 
 OUTPUT FORMAT: Your ENTIRE response must be ONLY a single JSON object. Start with {{ as the very first character. End with }} as the very last character. ABSOLUTELY NO preamble, explanation, acknowledgment, markdown formatting, or code fences. NO text like "Here is" or "I will provide". The response must be directly parseable by json.loads().
 
-{{"rows": [{{"company": "Company Name", "sector": "Sector", "status": "red|amber|green", "mkt_cap": "12.5", "nd_ebitda": "2.4", "ebitda_margin": "18.5", "fcf_ltm": "1.8", "cash": "5.2", "total_debt": "15.0", "earnings": "Jul 23", "stock_1d": "+1.2", "stock_1m": "+1.2", "stock_ytd": "+1.2", "week52_high": "185.50", "week52_low": "112.30", "moodys_rating": "Baa2", "moodys_outlook": "Stable", "moodys_date": "2025-10-15", "sp_rating": "BBB", "sp_outlook": "Stable", "sp_date": "2025-09-22", "fitch_rating": "BBB", "fitch_outlook": "Stable", "fitch_date": "2025-08-10", "concern_score": 35, "key_dev": "No material news.", "action": "Monitor"}}]}}
+{{{macro_output}"rows": [{{"company": "Company Name", "sector": "Sector", "status": "red|amber|green", "mkt_cap": "12.5", "nd_ebitda": "2.4", "ebitda_margin": "18.5", "fcf_ltm": "1.8", "cash": "5.2", "total_debt": "15.0", "earnings": "Jul 23", "stock_1d": "+1.2", "stock_1m": "+1.2", "stock_ytd": "+1.2", "week52_high": "185.50", "week52_low": "112.30", "moodys_rating": "Baa2", "moodys_outlook": "Stable", "moodys_date": "2025-10-15", "sp_rating": "BBB", "sp_outlook": "Stable", "sp_date": "2025-09-22", "fitch_rating": "BBB", "fitch_outlook": "Stable", "fitch_date": "2025-08-10", "concern_score": 35, "key_dev": "No material news.", "action": "Monitor"}}]{top3_output}}}
 
 Rules:
-- All 44 names must appear in rows.
+- All {len(batch_names)} names must appear in rows.
 - All dollar figures in $Bn. Round to one decimal.
 - Net Debt/EBITDA: number only, no "x".
 - EBITDA Margin: number only, no % sign.
@@ -606,105 +832,16 @@ Rules:
 - Ratings: agency-native format (Moody's: Aaa/Aa1/.../C; S&P and Fitch: AAA/AA+/.../D). "n/a" if not rated.
 - Outlook: Stable, Positive, Negative, RUR, or n/a.
 - Rating date: YYYY-MM-DD format, date of most recent action.
-- action: use one of "Monitor" (green), "Watch" (amber), "Review" (red, manageable), "Escalate" (red, urgent). Pick based on severity, not just status.
-- key_dev: 1-2 sentences, under 200 characters. Cite the EVENT (e.g., "Announced spin-off of data center EMS business and acquisition of Electrical Power Products; S&P affirmed BBB-/Stable May 6 2026."). If a name truly has NO material news in the last 60 days, return exactly "No material news.". Do not default to "No material news." just because status is green - check for material credit events first.
+- action: use one of "Monitor" (green), "Watch" (amber), "Review" (red, manageable), "Escalate" (red, urgent).
+- key_dev: 1-2 sentences, under 200 characters. Cite the EVENT. If a name truly has NO material news in the last 60 days, return exactly "No material news.".{top3_section}
 - Public information only."""
 
-PROMPT_B = f"""Today is {datetime_str}. You are generating structured data for a morning credit intelligence dashboard for publicly listed US and global corporates.
 
-Watchlist - BATCH B (38 names):
-Auto: General Motors, Tesla, Ford, Toyota, Nissan
-Aerospace: Boeing, GE Aerospace
-Retail: Walmart, AutoZone, Genuine Parts
-Beverage: Coca-Cola, Anheuser-Busch InBev
-Tobacco: Philip Morris, Altria, Imperial Brands, Universal Corporation
-Consumer: Nike, Kimberly-Clark, Whirlpool, Mondelez
-Packaging: Ball Corp, Crown Holdings, International Paper
-Energy: Chevron, BP, Exxon
-Utilities: NextEra Energy, Duke Energy, Sempra Energy
-Materials: Amrize, CEMEX
-Industrials: Caterpillar, Deere, Danaher, GE Vernova, Honeywell, Otis, Air Products, Corteva, DuPont
-
-For each company gather the data below using these source priorities:
-
-FINANCIAL METRICS (Market Cap, Net Debt/EBITDA, EBITDA Margin, FCF LTM, Cash, Total Debt):
-DO NOT search for financial data. Return "n/a" for these fields. They are pulled from SEC EDGAR programmatically after your response and your estimates are not used. Skip these completely to save search budget.
-
-STOCK DATA (1-day, 1-month, YTD percentage changes, 52-week high, 52-week low):
-DO NOT search for stock prices. Return "n/a" for these fields. They are pulled from yfinance programmatically after your response and your estimates are not used. Skip these completely to save search budget.
-
-NEXT EARNINGS DATE:
-Source from earningswhispers.com, yahoo.com/finance, or the company's IR page.
-
-NEWS (last 24 to 48 hours):
-Source from reuters.com, bloomberg.com, wsj.com, ft.com, agency press releases, or sec.gov 8-K filings.
-
-CREDIT RATINGS - CRITICAL ACCURACY RULES:
-For each agency (Moody's, S&P, Fitch) for EACH company, you MUST perform multiple targeted searches.
-
-Source priority (use in this order):
-1. Agency press releases (moodys.com, spglobal.com, fitchratings.com)
-2. Reuters, Bloomberg, Investing.com, Yahoo Finance rating action articles
-3. Company 10-K, prospectus, or IR page disclosures
-
-MACRO INDICATORS (FALLBACK ONLY - HY OAS and IG OAS pulled from FRED, NOT from this prompt):
-DO NOT search for HY OAS or IG OAS. Always return "n/a" for those fields. Source only the items below:
-- VIX index level (cboe.com or yahoo.com/finance)
-- S&P 500 level and 1-day percentage change
-
-Use web search to source values. For well-known public companies, use your best available knowledge if a specific value is not directly returned by search. Only return "n/a" if the value is genuinely unknowable.
-
-KEY DEVELOPMENT (key_dev field) - CRITICAL FOR CREDIT SURVEILLANCE:
-For each name, search for any of these MATERIAL CREDIT EVENTS in the last 60 days:
-1. Rating actions: upgrades, downgrades, outlook changes, ratings affirmed with comments
-2. Capital structure: spin-off announcements, M&A (acquisitions or divestitures), debt issuance, refinancing, dividend changes, share buyback authorizations
-3. Financial events: covenant amendments, covenant breaches, defaults, missed payments
-4. Strategic events: management changes (CEO/CFO), restructuring, major contract wins or losses, strategic reviews, going private discussions
-5. Earnings: significant beats, misses, guidance changes, withdrawn guidance
-6. Legal/Regulatory: SEC investigations, material litigation, regulatory penalties, going concern warnings
-7. Operational: major customer wins or losses, supply chain disruptions, plant closures
-
-Apply this rule regardless of green/amber/red status. A name can be GREEN-rated and still have material credit-relevant news.
-
-Search queries to use for each name:
-- "[Company name] spin-off OR acquisition OR divestiture 2026"
-- "[Company name] credit rating action 2026"
-- "[Company name] 8-K SEC filing material event"
-
-CONCERN SCORE - compute for every row as an integer 0-100:
-Start at 0 and add points as follows:
-- +25 if status is red
-- +10 if status is amber
-- +15 if nd_ebitda > 5.0
-- +10 if stock_ytd starts with "-" and absolute value > 20
-- +10 if stock_1m starts with "-" and absolute value > 10
-- +10 if next earnings date is within 14 calendar days of today
-- +10 if key_dev mentions downgrade, default, covenant breach, or restructuring
-- +10 if fcf_ltm is negative
-- +10 if ebitda_margin < 10
-- +10 if any rating outlook is Negative or RUR (across Moody's, S&P, Fitch)
-- Cap the total at 100.
-
-OUTPUT FORMAT: Your ENTIRE response must be ONLY a single JSON object. Start with {{ as the very first character. End with }} as the very last character. ABSOLUTELY NO preamble, explanation, acknowledgment, markdown formatting, or code fences. NO text like "Here is" or "I will provide". The response must be directly parseable by json.loads().
-
-{{"macro": {{"hy_oas": "n/a", "ig_oas": "n/a", "treasury_10y": "n/a", "treasury_2y": "n/a", "vix": "18.2", "sp500": "5234", "sp500_1d": "+0.8"}}, "rows": [{{"company": "Company Name", "sector": "Sector", "status": "red|amber|green", "mkt_cap": "12.5", "nd_ebitda": "2.4", "ebitda_margin": "18.5", "fcf_ltm": "1.8", "cash": "5.2", "total_debt": "15.0", "earnings": "Jul 23", "stock_1d": "+1.2", "stock_1m": "+1.2", "stock_ytd": "+1.2", "week52_high": "185.50", "week52_low": "112.30", "moodys_rating": "Baa2", "moodys_outlook": "Stable", "moodys_date": "2025-10-15", "sp_rating": "BBB", "sp_outlook": "Stable", "sp_date": "2025-09-22", "fitch_rating": "BBB", "fitch_outlook": "Stable", "fitch_date": "2025-08-10", "concern_score": 35, "key_dev": "No material news.", "action": "Monitor"}}], "top3": [{{"name": "Company A", "note": "Short reason"}}]}}
-
-Rules:
-- All 38 names must appear in rows.
-- All dollar figures in $Bn. Round to one decimal.
-- Net Debt/EBITDA: number only, no "x".
-- EBITDA Margin: number only, no % sign.
-- Stock percentages: string with + or - prefix, no % symbol.
-- week52_high and week52_low: USD price, no $ sign, two decimals.
-- concern_score: integer 0-100.
-- Ratings: agency-native format. "n/a" if not rated.
-- Outlook: Stable, Positive, Negative, RUR, or n/a.
-- Rating date: YYYY-MM-DD format.
-- action: use one of "Monitor" (green), "Watch" (amber), "Review" (red, manageable), "Escalate" (red, urgent). Pick based on severity, not just status.
-- key_dev: 1-2 sentences, under 200 characters. Cite the EVENT. If a name truly has NO material news in the last 60 days, return exactly "No material news.". Do not default to "No material news." just because status is green.
-- top3: 3 names from across BOTH batches most requiring attention today.
-- macro values: hy_oas and ig_oas always "n/a" (FRED takes over). treasury yields and vix one decimal. sp500 integer string no comma. sp500_1d with + or - prefix.
-- Public information only."""
+PROMPT_A = _build_batch_prompt("A", "Tech, Media, Telecom, Datacenter, Software, Payments", BATCH_A_NAMES)
+PROMPT_B = _build_batch_prompt("B", "Travel, Auto, Aerospace, Trucks, Retail, Beverage, Tobacco", BATCH_B_NAMES)
+PROMPT_C = _build_batch_prompt("C", "Consumer, Packaging, Food, Personal Care, Pharma, Healthcare", BATCH_C_NAMES)
+PROMPT_D = _build_batch_prompt("D", "Energy, Utilities, Midstream, Renewables, Materials", BATCH_D_NAMES)
+PROMPT_E = _build_batch_prompt("E", "Industrials, Chemicals, Mining, Asset Managers, REITs", BATCH_E_NAMES, include_macro=True, include_top3=True)
 
 
 def call_claude(prompt, batch_name):
@@ -3553,21 +3690,35 @@ def main():
     run_mode = determine_run_mode()
 
     if run_mode == "full":
-        # FULL MODE: Refresh Claude Batches A+B from scratch
+        # FULL MODE: Refresh Claude Batches A through E from scratch
         raw_a = call_claude(PROMPT_A, "Batch A")
         raw_b = call_claude(PROMPT_B, "Batch B")
+        raw_c = call_claude(PROMPT_C, "Batch C")
+        raw_d = call_claude(PROMPT_D, "Batch D")
+        raw_e = call_claude(PROMPT_E, "Batch E")
 
         data_a, err_a = parse_json(raw_a, "Batch A")
         data_b, err_b = parse_json(raw_b, "Batch B")
+        data_c, err_c = parse_json(raw_c, "Batch C")
+        data_d, err_d = parse_json(raw_d, "Batch D")
+        data_e, err_e = parse_json(raw_e, "Batch E")
 
         if err_a: print(f"WARNING: {err_a}")
         if err_b: print(f"WARNING: {err_b}")
+        if err_c: print(f"WARNING: {err_c}")
+        if err_d: print(f"WARNING: {err_d}")
+        if err_e: print(f"WARNING: {err_e}")
 
         rows_a = data_a.get('rows', []) if data_a else []
         rows_b = data_b.get('rows', []) if data_b else []
-        all_rows = rows_a + rows_b
-        macro = (data_b or {}).get('macro', {}) or (data_a or {}).get('macro', {})
-        top3 = (data_b or {}).get('top3', []) or (data_a or {}).get('top3', [])
+        rows_c = data_c.get('rows', []) if data_c else []
+        rows_d = data_d.get('rows', []) if data_d else []
+        rows_e = data_e.get('rows', []) if data_e else []
+        all_rows = rows_a + rows_b + rows_c + rows_d + rows_e
+        # Macro and top3 come from Batch E (the final batch carries these payloads)
+        macro = (data_e or {}).get('macro', {}) or {}
+        top3 = (data_e or {}).get('top3', []) or []
+        print(f"Full mode batch totals: A={len(rows_a)} B={len(rows_b)} C={len(rows_c)} D={len(rows_d)} E={len(rows_e)} | Total={len(all_rows)}")
     else:
         # CHEAP MODE: Load cached Claude output from last full run
         cached_rows, cached_macro, cached_top3, last_refresh = load_claude_cache()
@@ -3577,15 +3728,27 @@ def main():
             run_mode = "full"
             raw_a = call_claude(PROMPT_A, "Batch A")
             raw_b = call_claude(PROMPT_B, "Batch B")
+            raw_c = call_claude(PROMPT_C, "Batch C")
+            raw_d = call_claude(PROMPT_D, "Batch D")
+            raw_e = call_claude(PROMPT_E, "Batch E")
             data_a, err_a = parse_json(raw_a, "Batch A")
             data_b, err_b = parse_json(raw_b, "Batch B")
+            data_c, err_c = parse_json(raw_c, "Batch C")
+            data_d, err_d = parse_json(raw_d, "Batch D")
+            data_e, err_e = parse_json(raw_e, "Batch E")
             if err_a: print(f"WARNING: {err_a}")
             if err_b: print(f"WARNING: {err_b}")
+            if err_c: print(f"WARNING: {err_c}")
+            if err_d: print(f"WARNING: {err_d}")
+            if err_e: print(f"WARNING: {err_e}")
             rows_a = data_a.get('rows', []) if data_a else []
             rows_b = data_b.get('rows', []) if data_b else []
-            all_rows = rows_a + rows_b
-            macro = (data_b or {}).get('macro', {}) or (data_a or {}).get('macro', {})
-            top3 = (data_b or {}).get('top3', []) or (data_a or {}).get('top3', [])
+            rows_c = data_c.get('rows', []) if data_c else []
+            rows_d = data_d.get('rows', []) if data_d else []
+            rows_e = data_e.get('rows', []) if data_e else []
+            all_rows = rows_a + rows_b + rows_c + rows_d + rows_e
+            macro = (data_e or {}).get('macro', {}) or {}
+            top3 = (data_e or {}).get('top3', []) or []
         else:
             all_rows = cached_rows
             macro = cached_macro
@@ -3704,10 +3867,14 @@ def main():
             "data_sources": {
                 "anthropic_claude": {
                     "model": "claude-sonnet-4-6",
-                    "calls": (2 if run_mode == "full" else 1),
+                    "calls": (5 if run_mode == "full" else 1),
                     "run_mode": run_mode,
                     "batches_succeeded": (
-                        ((1 if (locals().get("data_a")) else 0) + (1 if (locals().get("data_b")) else 0))
+                        ((1 if (locals().get("data_a")) else 0) +
+                         (1 if (locals().get("data_b")) else 0) +
+                         (1 if (locals().get("data_c")) else 0) +
+                         (1 if (locals().get("data_d")) else 0) +
+                         (1 if (locals().get("data_e")) else 0))
                         if run_mode == "full" else "n/a (cheap mode, cache reused)"
                     ),
                 },
