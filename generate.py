@@ -46,6 +46,13 @@ except ImportError:
     CENSUS_AVAILABLE = False
     print("WARNING: census_construction module not found; Data Center construction chart will be empty.")
 
+try:
+    import sector_snapshot
+    SECTOR_SNAPSHOT_AVAILABLE = True
+except ImportError:
+    SECTOR_SNAPSHOT_AVAILABLE = False
+    print("WARNING: sector_snapshot module not found; Sector Snapshot panel will not render.")
+
 et = pytz.timezone('America/New_York')
 now = datetime.now(et)
 datetime_str = now.strftime('%B %d, %Y at %I:%M %p ET')
@@ -2752,6 +2759,16 @@ def build_html(all_rows, macro, top3, datetime_str, commodities=None, fred_data=
     fred_data = fred_data or {}
     sec_data = sec_data or {}
     census_data = census_data or {}
+
+    # Build sector snapshot panel (inserted at top of Overview pane).
+    if SECTOR_SNAPSHOT_AVAILABLE and all_rows:
+        try:
+            snapshot_html = sector_snapshot.build_sector_snapshot(all_rows)
+        except Exception as e:
+            print(f"WARNING: sector_snapshot.build_sector_snapshot failed: {e}")
+            snapshot_html = ""
+    else:
+        snapshot_html = ""
     overview_rows, market_rows, fin_summary_rows, fin_detail_rows = [], [], [], []
     # Four-tier counters (severity-based)
     crit_count = high_count = watch_count = mon_count = 0
@@ -3387,6 +3404,7 @@ footer li strong{color:#ffaaaa}
 </div>
 
 <div class="pane active" id="pane-overview">
+{snapshot_html}
 <table class="overview-table">
 <colgroup>
 <col style="width:14%"><col style="width:7%"><col style="width:9%"><col style="width:14%"><col style="width:11%"><col style="width:36%"><col style="width:9%">
