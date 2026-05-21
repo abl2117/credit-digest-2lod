@@ -2129,27 +2129,31 @@ def _round_to_calendar_quarter(period_end_str):
 
 def _hyperscaler_capex_history(sec_data):
     """
-    Build quarterly CapEx history for MSFT, GOOGL, AMZN, ORCL.
+    Build LTM (trailing 12-month) CapEx history for MSFT, GOOGL, AMZN, ORCL.
 
-    Quarterly view: each bar is one calendar quarter, with the 4 hyperscalers
-    stacked. Each company's capex for that quarter is added to the stack based
-    on its reported period_end. Different fiscal calendars are fine - we synchronize
-    on the calendar period_end date, not on fiscal year.
+    Each bar is one calendar quarter end, but the value at that quarter is
+    the sum of the FOUR most recent quarterly CapEx observations ending at or
+    before that quarter. This neutralizes the staggered-fiscal-year effect
+    (Microsoft June year-end, Oracle May year-end, Alphabet and Amazon December
+    calendar year-end) that distorts pure quarterly stacked bars.
+
+    Rolling-12-month windows produce a smoothed picture of the annual capital
+    commitment cycle across hyperscalers. Trade-off: short-cycle pauses or
+    spikes get averaged out. For raw cadence the previous quarterly version
+    sits in version control as commit history.
 
     Returns (rows, contributors) where rows is a list of period dicts oldest
-    first. Each row has period_label (e.g. "Q1 25"), period_end (raw date),
+    first. Each row has period_label (e.g. "LTM Q1 '26"), period_end (raw date),
     one entry per company (Microsoft, Alphabet, Amazon, Oracle) and a total.
     """
     hyperscalers = ["Microsoft", "Alphabet", "Amazon", "Oracle"]
     if not sec_data:
         return [], []
 
-    # Collect quarterly capex by calendar-quarter-end across all 4 names.
-    # Companies with non-calendar fiscal years (Oracle: Feb/May/Aug/Nov; MSFT
-    # historical periods: also non-calendar) get rounded to the nearest
-    # calendar quarter end so they stack cleanly on the chart.
-    capex_by_period_co = {}  # (rounded_period_end, co) -> value in dollars
-    all_periods = set()
+    # Collect raw quarterly capex per company, keyed by ORIGINAL (non-rounded)
+    # period_end. Rounding here would conflate two different quarters that
+    # rounded to the same calendar quarter end and break the LTM rolling sum.
+    capex_quarters = {}  # co -> list of (period_end_date, value_dollars), newest first
     contributors_present = []
     for co in hyperscalers:
         sec = (sec_data or {}).get(co, {})
@@ -2158,48 +2162,95 @@ def _hyperscaler_capex_history(sec_data):
         capex_hist = (sec.get("_history", {}) or {}).get("capex", []) or []
         if not capex_hist:
             continue
-        company_has_data = False
+        per_co = []
         for entry in capex_hist:
             pd = entry.get("period_end")
             val = entry.get("value")
-            if pd and val is not None:
-                # Round to calendar quarter for cross-company alignment
-                pd_aligned = _round_to_calendar_quarter(pd)
-                capex_by_period_co[(pd_aligned, co)] = abs(val)
-                all_periods.add(pd_aligned)
-                company_has_data = True
-        if company_has_data and co not in contributors_present:
+            if not pd or val is None:
+                continue
+            try:
+                pd_date = datetime.strptime(pd, "%Y-%m-%d").date()
+            except (ValueError, TypeError):
+                continue
+            per_co.append((pd_date, abs(val)))
+        if not per_co:
+            continue
+        # Deduplicate by period_end (keep first occurrence) and sort newest first
+        seen = set()
+        deduped = []
+        per_co.sort(key=lambda x: x[0], reverse=True)
+        for pd_date, val in per_co:
+            if pd_date not in seen:
+                seen.add(pd_date)
+                deduped.append((pd_date, val))
+        capex_quarters[co] = deduped
+        if co not in contributors_present:
             contributors_present.append(co)
 
-    if not all_periods:
+    if not capex_quarters:
         return [], []
 
-    # Keep the most recent 16 quarters across all names
-    sorted_periods = sorted(all_periods, reverse=True)[:16]
-    sorted_periods.reverse()  # oldest first for chart
+    # Build the set of calendar quarter-end anchors that span the data. Use
+    # rounded period_ends as anchors so each company contributes its CapEx
+    # at the calendar quarter closest to its actual reported quarter.
+    anchor_dates = set()
+    for co, observations in capex_quarters.items():
+        for pd_date, _ in observations:
+            anchor_str = _round_to_calendar_quarter(pd_date.strftime("%Y-%m-%d"))
+            try:
+                anchor_dates.add(datetime.strptime(anchor_str, "%Y-%m-%d").date())
+            except (ValueError, TypeError):
+                pass
 
+    if not anchor_dates:
+        return [], []
+
+    # Keep the most recent 12 anchors. LTM bars are smoother than quarterly
+    # so a 3-year window (12 anchors) gives the trajectory without crowding.
+    sorted_anchors = sorted(anchor_dates, reverse=True)[:12]
+    sorted_anchors.reverse()  # oldest first for chart
+
+    # For each anchor, compute LTM per company: sum of up to 4 most recent
+    # quarterly observations whose period_end is at-or-before the anchor and
+    # within 380 days (gives one quarter of slack for fiscal-period drift).
     rows = []
-    for period in sorted_periods:
-        try:
-            dt = datetime.strptime(period, "%Y-%m-%d").date()
-            q = (dt.month - 1) // 3 + 1
-            label = f"Q{q} '{str(dt.year)[2:]}"
-        except (ValueError, TypeError):
-            label = period
-        row = {"period_label": label, "period_end": period}
+    for anchor in sorted_anchors:
+        q = (anchor.month - 1) // 3 + 1
+        label = f"LTM Q{q} '{str(anchor.year)[2:]}"
+        row = {"period_label": label, "period_end": anchor.strftime("%Y-%m-%d")}
         period_total = 0.0
         period_has_data = False
         for co in hyperscalers:
-            val = capex_by_period_co.get((period, co))
-            if val is not None:
-                val_bn = val / 1e9
+            observations = capex_quarters.get(co, [])
+            if not observations:
+                row[co] = None
+                continue
+            # Take 4 most recent quarters at-or-before anchor, within 380 days
+            window_quarters = []
+            for pd_date, val in observations:  # already newest first
+                if pd_date > anchor:
+                    continue
+                if (anchor - pd_date).days > 380:
+                    continue
+                window_quarters.append(val)
+                if len(window_quarters) >= 4:
+                    break
+            if len(window_quarters) == 4:
+                ltm_val = sum(window_quarters)
+                val_bn = ltm_val / 1e9
                 row[co] = round(val_bn, 1)
                 period_total += val_bn
                 period_has_data = True
             else:
+                # Partial-window: not enough quarters for honest LTM. Skip name
+                # rather than show a partial-LTM that misleads.
                 row[co] = None
         row["total"] = round(period_total, 1) if period_has_data else None
         rows.append(row)
+
+    # Drop leading anchors where no name has 4 quarters (very early periods)
+    while rows and rows[0]["total"] is None:
+        rows.pop(0)
 
     return rows, contributors_present
 
@@ -2250,11 +2301,11 @@ def _build_hyperscaler_chart_html(sec_data, chart_id="hyperCapexChart"):
     <div class="hyper-chart-section">
       <div class="hyper-chart-header">
         <div>
-          <h3 class="tmt-section-title">Hyperscaler CapEx (Stacked, Quarterly)</h3>
-          <div class="tmt-section-subtitle">Quarterly CapEx for MSFT + GOOGL + AMZN + ORCL, last 16 quarters. Bars synchronize on calendar quarter end; companies with non-calendar fiscal years contribute at their actual reported period.</div>
+          <h3 class="tmt-section-title">Hyperscaler CapEx (Stacked, LTM)</h3>
+          <div class="tmt-section-subtitle">Trailing-12-month CapEx for MSFT + GOOGL + AMZN + ORCL, last 12 quarters. Each bar sums the 4 quarters ending at the labeled calendar quarter, neutralizing staggered fiscal-year effects (MSFT June, ORCL May, GOOGL/AMZN December).</div>
         </div>
         <div class="hyper-chart-callout">
-          <div class="hyper-chart-callout-label">Latest quarter total</div>
+          <div class="hyper-chart-callout-label">Latest LTM total</div>
           <div class="hyper-chart-callout-value">${callout_total:,.1f}Bn</div>
           {callout_yoy_html}
         </div>
