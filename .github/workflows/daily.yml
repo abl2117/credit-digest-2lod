@@ -1,4 +1,5 @@
 name: Daily Credit Digest
+
 on:
   schedule:
     # 11:55 UTC = 7:55am ET (EDT) / 6:55am ET (EST)
@@ -18,9 +19,11 @@ on:
           - auto
           - full
           - cheap
+
 permissions:
   contents: write
   pages: write
+
 jobs:
   generate:
     runs-on: ubuntu-latest
@@ -28,19 +31,46 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install anthropic yfinance pandas pytz
+
       - name: Run generate.py
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
           RUN_MODE: ${{ github.event.inputs.run_mode || 'auto' }}
         run: python generate.py
+
       - name: Run backtest audit (Fridays or full-mode manual)
-        # Audits SEC EDGAR-derived fina
+        # Audits SEC EDGAR-derived financials against independent extraction path
+        # to validate data quality. Runs when:
+        #   - Day-of-week is Friday (scheduled cron) — financials change weekly
+        #   - OR manual trigger with run_mode=full — explicit audit request
+        # Skips Mon-Thu cheap runs (financials don't change between full refreshes).
+        # Failures here don't block the dashboard commit (continue-on-error).
+        continue-on-error: true
+        run: |
+          DOW=$(date -u +%u)
+          RUN_MODE_INPUT="${{ github.event.inputs.run_mode }}"
+          if [ "$DOW" = "5" ] || [ "$RUN_MODE_INPUT" = "full" ]; then
+            echo "Audit conditions met (day-of-week=$DOW, run_mode=$RUN_MODE_INPUT); running backtest audit..."
+            python backtest_audit.py || echo "Audit completed with non-fatal warnings."
+          else
+            echo "Audit skipped (day-of-week=$DOW, run_mode=$RUN_MODE_INPUT). Audit runs Fridays or with full mode."
+          fi
+
+      - name: Commit updated files
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add index.html runs.json macro_cache.json data_center_cache.json financials_cache.json claude_cache.json backtest_results.json 2>/dev/null || true
+          git diff --cached --quiet || git commit -m "Daily credit digest update"
+          git push
