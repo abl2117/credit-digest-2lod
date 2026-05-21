@@ -1,6 +1,9 @@
 name: Daily Credit Digest
 on:
   schedule:
+    # 11:55 UTC = 7:55am ET (EDT) / 6:55am ET (EST)
+    # Mon-Thu = cheap mode (cache reuse)
+    # Friday = full mode (refresh + backtest audit)
     - cron: '55 11 * * 1-5'
   workflow_dispatch:
     inputs:
@@ -37,28 +40,33 @@ jobs:
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
           RUN_MODE: ${{ github.event.inputs.run_mode || 'auto' }}
         run: python generate.py
+      - name: Run backtest audit (Fridays or full-mode manual)
+        # Runs Fridays scheduled, or when manual trigger forces full mode.
+        # continue-on-error so audit failures don't block the dashboard commit.
+        continue-on-error: true
+        run: |
+          DOW=$(date -u +%u)
+          RUN_MODE_INPUT="${{ github.event.inputs.run_mode }}"
+          if [ "$DOW" = "5" ] || [ "$RUN_MODE_INPUT" = "full" ]; then
+            echo "Audit conditions met (day-of-week=$DOW, run_mode=$RUN_MODE_INPUT); running backtest audit..."
+            python backtest_audit.py || echo "Audit completed with non-fatal warnings."
+          else
+            echo "Audit skipped (day-of-week=$DOW, run_mode=$RUN_MODE_INPUT). Audit runs Fridays or with full mode."
+          fi
       - name: Commit updated files
+        # Per-file add loop. Previous version with a single `git add` line and
+        # `2>/dev/null || true` was silently swallowing errors, leading to
+        # spurious empty commits when one of the listed files didn't exist.
+        # This version adds each file only if present and prints the result.
         run: |
           set +e
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          echo "===== git status BEFORE add ====="
-          git status --short
-          echo "===== checking if .gitignore lists any of our files ====="
-          if [ -f .gitignore ]; then cat .gitignore; else echo "no .gitignore"; fi
-          echo "===== adding files individually (errors visible) ====="
           for f in index.html runs.json macro_cache.json data_center_cache.json financials_cache.json claude_cache.json backtest_results.json; do
             if [ -f "$f" ]; then
               git add "$f"
-              echo "Added: $f (exit=$?)"
-            else
-              echo "Skipped (file not present): $f"
             fi
           done
-          echo "===== git status AFTER add ====="
-          git status --short
-          echo "===== staged diff stat ====="
-          git diff --cached --stat
           if git diff --cached --quiet; then
             echo "Nothing staged — skipping commit."
           else
