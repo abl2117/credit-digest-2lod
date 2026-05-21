@@ -348,14 +348,21 @@ def _rating_color_text(rating):
 
 
 def _format_severity_sublabel(sev):
+    """Build the inline severity counts under each sector name.
+
+    Uses spelled-out labels (Critical, High, Amber, Monitor) instead of
+    single-letter abbreviations so the row reads cleanly without requiring
+    a legend. Skips zero-count tiers except Monitor (always shown so a
+    sector with zero stressed names still has a visible total).
+    """
     parts = []
     if sev['critical'] > 0:
-        parts.append(f'<span style="color:#ff5a5a">{sev["critical"]}C</span>')
+        parts.append(f'<span style="color:#ff5a5a">{sev["critical"]} Critical</span>')
     if sev['high'] > 0:
-        parts.append(f'<span style="color:#ff8a3d">{sev["high"]}H</span>')
+        parts.append(f'<span style="color:#ff8a3d">{sev["high"]} High</span>')
     if sev['watch'] > 0:
-        parts.append(f'<span style="color:#f0b429">{sev["watch"]}A</span>')
-    parts.append(f'<span style="color:#4ec38a">{sev["monitor"]}M</span>')
+        parts.append(f'<span style="color:#f0b429">{sev["watch"]} Amber</span>')
+    parts.append(f'<span style="color:#4ec38a">{sev["monitor"]} Monitor</span>')
     return ' &middot; '.join(parts)
 
 
@@ -499,9 +506,9 @@ def build_sector_snapshot(all_rows, top_n=14):
     actions_summary_html = _render_actions_summary(sectors_sorted)
     rows_html = ''.join(_render_sector_row(s) for s in top_sectors)
 
-    more_note = ''
+    more_note_meta = ''
     if len(sectors_sorted) > top_n:
-        more_note = f'SHOWING TOP {top_n} OF {len(sectors_sorted)} SECTORS BY STRESS &middot; '
+        more_note_meta = f'Showing top {top_n} of {len(sectors_sorted)} sectors. {len(sectors_sorted) - top_n} additional sectors are tracked in the underlying data and visible on the Overview tab.'
 
     return f'''
     <style>{_SNAPSHOT_CSS}</style>
@@ -556,7 +563,11 @@ def build_sector_snapshot(all_rows, top_n=14):
       </table>
 
       <div class="snap-footer">
-        <span>{more_note}HOVER ANY BAR SEGMENT FOR DETAIL &middot; ACTIONS 90D = NAMES WITH ANY AGENCY ACTION IN LAST 90 DAYS</span>
+        <div class="snap-footer-row"><strong>Sort order:</strong> sectors with HY exposure first, then sectors with BBB concentration. Top 14 shown; the table prioritizes structural credit-quality stress.</div>
+        <div class="snap-footer-row"><strong>Severity (under each sector name):</strong> count of names in each tier &mdash; <span style="color:#ff5a5a">Critical</span>, <span style="color:#ff8a3d">High</span>, <span style="color:#f0b429">Amber</span>, <span style="color:#4ec38a">Monitor</span>. Zero-count tiers are hidden. See Methodology tab for tier thresholds.</div>
+        <div class="snap-footer-row"><strong>Actions 90d:</strong> count of names with any rating action (Moody&apos;s, S&amp;P, or Fitch) in the last 90 days. Direction is not yet tracked.</div>
+        <div class="snap-footer-row"><strong>Hover</strong> any bar segment for name count and percentage. <strong>Click</strong> a sector row to filter the Overview tab to that sector.</div>
+        <div class="snap-footer-row snap-footer-meta">{more_note_meta}</div>
       </div>
     </div>
     '''
@@ -599,5 +610,8 @@ _SNAPSHOT_CSS = """
 .snap-lr-name { color: #e6edf3; font-size: 12px; font-weight: 500; }
 .snap-lr-rating { font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 11px; font-weight: 600; margin-left: 5px; }
 .snap-lr-flags { font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 9px; margin-top: 3px; letter-spacing: 0.3px; }
-.snap-footer { padding: 11px 18px; border-top: 1px solid #1e2a3a; font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 9px; color: #4a6080; letter-spacing: 0.5px; }
+.snap-footer { padding: 14px 18px; border-top: 1px solid #1e2a3a; font-family: 'IBM Plex Sans', system-ui, -apple-system, sans-serif; font-size: 11px; color: #7090a8; line-height: 1.55; }
+.snap-footer-row { padding: 4px 0; }
+.snap-footer-row strong { color: #a0c4e8; font-weight: 600; }
+.snap-footer-meta { font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 9px; color: #4a6080; letter-spacing: 0.5px; padding-top: 8px; margin-top: 4px; border-top: 1px solid #1a2230; text-transform: uppercase; }
 """
