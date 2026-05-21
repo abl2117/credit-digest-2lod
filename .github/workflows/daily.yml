@@ -37,35 +37,32 @@ jobs:
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
           RUN_MODE: ${{ github.event.inputs.run_mode || 'auto' }}
         run: python generate.py
-      - name: Diagnose
-        run: |
-          set +e
-          echo "===== pwd ====="
-          pwd
-          echo "===== ls -la index.html ====="
-          ls -la index.html
-          echo "===== stub match count ====="
-          grep -c "DATA QUALITY INVESTIGATION" index.html
-          echo "===== git status --short ====="
-          git status --short
-          echo "===== git diff HEAD --stat -- index.html ====="
-          git diff HEAD --stat -- index.html
-          echo "===== git rev-parse HEAD ====="
-          git rev-parse HEAD
-          echo "===== first 5 lines of HEAD's index.html ====="
-          git show HEAD:index.html | head -5
-          echo "===== first 5 lines of current index.html ====="
-          head -5 index.html
-          echo "===== MD5 of current index.html ====="
-          md5sum index.html
-          echo "===== MD5 of HEAD's index.html ====="
-          git show HEAD:index.html | md5sum
-          echo "===== done ====="
-          exit 0
       - name: Commit updated files
         run: |
+          set +e
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add index.html runs.json macro_cache.json data_center_cache.json financials_cache.json claude_cache.json backtest_results.json 2>/dev/null || true
-          git diff --cached --quiet || git commit -m "Daily credit digest update"
-          git push
+          echo "===== git status BEFORE add ====="
+          git status --short
+          echo "===== checking if .gitignore lists any of our files ====="
+          if [ -f .gitignore ]; then cat .gitignore; else echo "no .gitignore"; fi
+          echo "===== adding files individually (errors visible) ====="
+          for f in index.html runs.json macro_cache.json data_center_cache.json financials_cache.json claude_cache.json backtest_results.json; do
+            if [ -f "$f" ]; then
+              git add "$f"
+              echo "Added: $f (exit=$?)"
+            else
+              echo "Skipped (file not present): $f"
+            fi
+          done
+          echo "===== git status AFTER add ====="
+          git status --short
+          echo "===== staged diff stat ====="
+          git diff --cached --stat
+          if git diff --cached --quiet; then
+            echo "Nothing staged — skipping commit."
+          else
+            git commit -m "Daily credit digest update"
+            git push
+          fi
+          exit 0
