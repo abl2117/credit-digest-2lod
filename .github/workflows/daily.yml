@@ -37,22 +37,31 @@ jobs:
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
           RUN_MODE: ${{ github.event.inputs.run_mode || 'auto' }}
         run: python generate.py
-      - name: Diagnose file locations
+      - name: Diagnose
         run: |
-          echo "Current working directory:"
+          set +e
+          echo "===== pwd ====="
           pwd
-          echo "Workspace path:"
-          echo "$GITHUB_WORKSPACE"
-          echo "All index.html files on this runner:"
-          find / -name index.html 2>/dev/null
-          echo "Stub match in current dir index.html:"
-          grep -c "DATA QUALITY INVESTIGATION" index.html || echo "0"
-          echo "Stub match in workspace index.html:"
-          grep -c "DATA QUALITY INVESTIGATION" "$GITHUB_WORKSPACE/index.html" || echo "0"
-          echo "Git status from current dir:"
+          echo "===== ls -la index.html ====="
+          ls -la index.html
+          echo "===== stub match count ====="
+          grep -c "DATA QUALITY INVESTIGATION" index.html
+          echo "===== git status --short ====="
           git status --short
-          echo "Git status from workspace:"
-          cd "$GITHUB_WORKSPACE" && git status --short
+          echo "===== git diff HEAD --stat -- index.html ====="
+          git diff HEAD --stat -- index.html
+          echo "===== git rev-parse HEAD ====="
+          git rev-parse HEAD
+          echo "===== first 5 lines of HEAD's index.html ====="
+          git show HEAD:index.html | head -5
+          echo "===== first 5 lines of current index.html ====="
+          head -5 index.html
+          echo "===== MD5 of current index.html ====="
+          md5sum index.html
+          echo "===== MD5 of HEAD's index.html ====="
+          git show HEAD:index.html | md5sum
+          echo "===== done ====="
+          exit 0
       - name: Commit updated files
         run: |
           git config user.name "github-actions[bot]"
