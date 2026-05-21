@@ -992,6 +992,81 @@ def apply_overrides(rows):
     return rows
 
 
+def _normalize_company_names(rows, watchlist):
+    """Map Claude-returned company names back to WATCHLIST canonical keys.
+
+    Claude often expands canonical names in its JSON output ("Delta" ->
+    "Delta Air Lines", "Carnival" -> "Carnival Corporation", "Ford" ->
+    "Ford Motor"). The downstream pipeline matches rows to data sources
+    (SEC EDGAR overrides, yfinance market data, yfinance balance-sheet
+    fallback, ratings overrides) by EXACT company name. A name mismatch
+    silently drops the row from those data sources and leaves it as n/a.
+
+    Strategy (conservative to avoid false positives):
+    1. Exact match - already canonical, no change.
+    2. Case-insensitive exact match.
+    3. Whole-word prefix match: WATCHLIST key is a prefix of the Claude
+       name, followed by space/comma/hyphen. Disambiguate via longest
+       matching key (so "Coca-Cola Consolidated, Inc." correctly matches
+       "Coca-Cola Consolidated", not "Coca-Cola").
+
+    Leaves the Claude name unchanged when no match is found. Logs any
+    unmatched rows so the user can update WATCHLIST if needed.
+    """
+    wl_keys = list(watchlist.keys())
+    wl_lower_to_key = {k.lower(): k for k in wl_keys}
+
+    renamed = 0
+    unmatched = []
+    rename_log = []
+    for r in rows:
+        claude_name = (r.get('company') or '').strip()
+        if not claude_name:
+            continue
+
+        # 1. Exact match
+        if claude_name in watchlist:
+            continue
+
+        # 2. Case-insensitive exact match
+        cn_lower = claude_name.lower()
+        if cn_lower in wl_lower_to_key:
+            wl_key = wl_lower_to_key[cn_lower]
+            r['company'] = wl_key
+            rename_log.append(f"{claude_name} -> {wl_key}")
+            renamed += 1
+            continue
+
+        # 3. Whole-word prefix match (longest WATCHLIST key wins)
+        best = None
+        best_len = 0
+        for wl_key in wl_keys:
+            wl_lower = wl_key.lower()
+            if (cn_lower.startswith(wl_lower + ' ')
+                or cn_lower.startswith(wl_lower + ',')
+                or cn_lower.startswith(wl_lower + '-')):
+                if len(wl_lower) > best_len:
+                    best = wl_key
+                    best_len = len(wl_lower)
+        if best:
+            r['company'] = best
+            rename_log.append(f"{claude_name} -> {best}")
+            renamed += 1
+        else:
+            unmatched.append(claude_name)
+
+    if renamed:
+        print(f"Normalized {renamed} Claude-returned names to WATCHLIST canonical keys.")
+        for entry in rename_log[:15]:
+            print(f"  {entry}")
+        if len(rename_log) > 15:
+            print(f"  ... and {len(rename_log) - 15} more")
+    if unmatched:
+        print(f"WARNING: {len(unmatched)} rows had names not matching WATCHLIST. First 10: {unmatched[:10]}")
+
+    return rows
+
+
 # =============================================================================
 # Smart Caching Architecture
 # =============================================================================
@@ -3185,6 +3260,7 @@ footer li strong{color:#ffaaaa}
 (function(){
   var panes={
     overview:document.getElementById('pane-overview'),
+    sectors:document.getElementById('pane-sectors'),
     market:document.getElementById('pane-market'),
     financials:document.getElementById('pane-financials'),
     tmt:document.getElementById('pane-tmt'),
@@ -3365,6 +3441,7 @@ footer li strong{color:#ffaaaa}
 {macro_html}
 <div class="tabs">
   <button class="tab active" data-tab="overview">Overview</button>
+  <button class="tab" data-tab="sectors">Sectors</button>
   <button class="tab" data-tab="market">Market Data</button>
   <button class="tab" data-tab="financials">Financials</button>
   <button class="tab" data-tab="tmt">TMT</button>
@@ -3404,7 +3481,6 @@ footer li strong{color:#ffaaaa}
 </div>
 
 <div class="pane active" id="pane-overview">
-{snapshot_html}
 <table class="overview-table">
 <colgroup>
 <col style="width:14%"><col style="width:7%"><col style="width:9%"><col style="width:14%"><col style="width:11%"><col style="width:36%"><col style="width:9%">
@@ -3417,6 +3493,8 @@ footer li strong{color:#ffaaaa}
 <tbody>{"".join(overview_rows)}</tbody>
 </table>
 </div>
+
+<div class="pane" id="pane-sectors">{snapshot_html}</div>
 
 <div class="pane" id="pane-market">
 <table>
@@ -3776,6 +3854,10 @@ def main():
             print(f"Cheap mode: reusing {len(all_rows)} rows from cache; skipping Batches A+B (saved ~$3-5)")
 
     all_rows = apply_overrides(all_rows)
+
+    # Normalize Claude-expanded company names back to WATCHLIST keys so SEC EDGAR,
+    # yfinance, and override matches don't silently fail on name mismatches.
+    all_rows = _normalize_company_names(all_rows, WATCHLIST)
 
     sec_metadata = {"from_cache": False, "names_succeeded": 0, "names_attempted": 0}
     sec_warnings = []
