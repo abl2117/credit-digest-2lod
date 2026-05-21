@@ -37,23 +37,22 @@ jobs:
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
           RUN_MODE: ${{ github.event.inputs.run_mode || 'auto' }}
         run: python generate.py
-      - name: Diagnose generated index.html
+      - name: Diagnose file locations
         run: |
-          echo "Byte size of index.html:"
-          wc -c index.html
-          echo "Stub match count:"
-          grep -c "DATA QUALITY INVESTIGATION" index.html || echo "0 matches"
-      - name: Run backtest audit
-        continue-on-error: true
-        run: |
-          DOW=$(date -u +%u)
-          RUN_MODE_INPUT="${{ github.event.inputs.run_mode }}"
-          if [ "$DOW" = "5" ] || [ "$RUN_MODE_INPUT" = "full" ]; then
-            echo "Audit conditions met; running backtest audit..."
-            python backtest_audit.py || echo "Audit completed with non-fatal warnings."
-          else
-            echo "Audit skipped."
-          fi
+          echo "Current working directory:"
+          pwd
+          echo "Workspace path:"
+          echo "$GITHUB_WORKSPACE"
+          echo "All index.html files on this runner:"
+          find / -name index.html 2>/dev/null
+          echo "Stub match in current dir index.html:"
+          grep -c "DATA QUALITY INVESTIGATION" index.html || echo "0"
+          echo "Stub match in workspace index.html:"
+          grep -c "DATA QUALITY INVESTIGATION" "$GITHUB_WORKSPACE/index.html" || echo "0"
+          echo "Git status from current dir:"
+          git status --short
+          echo "Git status from workspace:"
+          cd "$GITHUB_WORKSPACE" && git status --short
       - name: Commit updated files
         run: |
           git config user.name "github-actions[bot]"
