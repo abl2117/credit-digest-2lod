@@ -192,7 +192,6 @@ WATCHLIST = {
     "Southern Company":        {"ticker": "SO",    "filer_type": "10-K", "sector": "Utilities"},
     "PPL Corporation":         {"ticker": "PPL",   "filer_type": "10-K", "sector": "Utilities"},
     "NRG Energy":              {"ticker": "NRG",   "filer_type": "10-K", "sector": "Utilities"},
-    "NextEra Energy Partners": {"ticker": "NEP",   "filer_type": "10-K", "sector": "Utilities"},
     "RWE":                     {"ticker": "RWEOY", "filer_type": None,   "sector": "Utilities"},
     "Uniper":                  {"ticker": "UNPRF", "filer_type": None,   "sector": "Utilities"},
     "Engie":                   {"ticker": "ENGIY", "filer_type": None,   "sector": "Utilities"},
@@ -562,24 +561,86 @@ def compute_status_from_data(rows):
     return rows
 
 
+def _fetch_fx_rates_to_usd(currencies):
+    """Fetch FX rates (currency -> USD) using yfinance.
+
+    yfinance pair convention: "EURUSD=X" means EUR-to-USD multiplier (e.g. 1.08).
+    To convert 100 EUR to USD: 100 * 1.08 = 108 USD.
+    Special cases: USD itself returns 1.0. GBp (London pence sterling) is the
+    most common gotcha - it's pence, so the rate is GBPUSD/100.
+
+    Returns dict {currency_code: rate_to_usd}. Currencies that fail to fetch
+    are omitted from the dict; caller should handle missing keys.
+    """
+    if not YFINANCE_AVAILABLE:
+        return {}
+    rates = {"USD": 1.0}
+    needed = [c for c in set(currencies) if c and c.upper() != "USD"]
+    if not needed:
+        return rates
+    pairs = {}
+    for c in needed:
+        c_upper = c.upper()
+        if c_upper == "GBP":
+            # London pence sterling sometimes appears as GBp/GBX. Handle below.
+            pairs[c_upper] = "GBPUSD=X"
+        else:
+            pairs[c_upper] = f"{c_upper}USD=X"
+    pair_tickers = list(pairs.values())
+    print(f"  FX: fetching rates for {needed} via yfinance pairs {pair_tickers}")
+    try:
+        hist = yf.download(" ".join(pair_tickers), period="5d", interval="1d",
+                           group_by="ticker", auto_adjust=True,
+                           progress=False, threads=True)
+    except Exception as e:
+        print(f"  FX: batch fetch failed: {e}")
+        return rates
+    for currency, pair_ticker in pairs.items():
+        try:
+            if len(pair_tickers) == 1:
+                df = hist.dropna()
+            elif pair_ticker in hist.columns.get_level_values(0):
+                df = hist[pair_ticker].dropna()
+            else:
+                df = hist.dropna()
+            if df.empty or "Close" not in df.columns:
+                continue
+            rate = float(df["Close"].iloc[-1])
+            if rate > 0:
+                rates[currency] = rate
+        except Exception as e:
+            print(f"  FX: {currency} ({pair_ticker}) lookup error: {str(e)[:80]}")
+    # GBp is pence, hundredth of a pound. Derive from GBP if available.
+    if "GBP" in rates:
+        rates["GBP"] = rates["GBP"]
+        rates["GBp"] = rates["GBP"] / 100.0
+        rates["GBX"] = rates["GBP"] / 100.0
+    return rates
+
+
 def fetch_yfinance_balance_sheet_fallback(rows, sec_data, watchlist):
     """
     For names where SEC EDGAR returned no total_debt, fetch fallback values
     from yfinance's .info dictionary (totalDebt, totalCash). yfinance covers
     foreign filers and non-SEC filers that SEC EDGAR cannot.
 
+    Foreign currency handling: yfinance reports foreign filers in their
+    local currency (Toyota in JPY, BMW in EUR, Roche in CHF, etc.). To avoid
+    FX mismatches against USD market cap, we convert local-currency values
+    to USD using current spot rates from yfinance FX pairs.
+
     Limitations:
     - yfinance values are point-in-time from latest available filing (annual for
       foreign filers, quarterly for US filers). Mixing with SEC LTM data is fine
       for EV computation but not appropriate for trend metrics.
-    - Values reported in company's local currency. For US tickers this is USD;
-      for foreign ADRs and OTC tickers yfinance usually converts to USD but
-      check the financialCurrency field.
+    - FX conversion uses current spot rates, not period-end rates. For balance
+      sheet items this is a reasonable approximation; for credit analysis the
+      difference is rarely material.
     - Less authoritative than SEC EDGAR. We tag these rows with a separate source
       label so the UI can show the user the data is from yfinance, not SEC.
 
     Returns the updated rows. Modifies rows in place with new total_debt, cash,
-    net_debt, and a _financials_source = "yfinance" marker.
+    net_debt, and a _financials_source = "yfinance" or "yfinance-fx" marker.
     """
     if not YFINANCE_AVAILABLE:
         return rows
@@ -596,37 +657,67 @@ def fetch_yfinance_balance_sheet_fallback(rows, sec_data, watchlist):
         print("yfinance balance sheet fallback: no candidates needed.")
         return rows
     print(f"yfinance balance sheet fallback: pulling Total Debt and Cash for {len(candidates)} names...")
-    succeeded = 0
+
+    # First pass: fetch info for each candidate, note which currencies we need
+    info_by_co = {}
+    currencies_needed = set()
     for co, ticker, row in candidates:
         try:
             info = yf.Ticker(ticker).info or {}
+            info_by_co[co] = (ticker, info, row)
+            currency = (info.get('financialCurrency') or 'USD').upper()
+            if currency != 'USD':
+                currencies_needed.add(currency)
+        except Exception as e:
+            print(f"  {co} ({ticker}): info fetch error: {str(e)[:100]}")
+
+    # Fetch FX rates for all needed currencies in one batched call
+    fx_rates = {"USD": 1.0}
+    if currencies_needed:
+        fx_rates = _fetch_fx_rates_to_usd(list(currencies_needed))
+        successful_rates = {k: v for k, v in fx_rates.items() if k != "USD"}
+        if successful_rates:
+            print(f"  FX rates obtained: {', '.join(f'{k}={v:.4f}' for k, v in sorted(successful_rates.items()))}")
+
+    # Second pass: apply values with FX conversion
+    succeeded = 0
+    fx_converted = 0
+    for co, (ticker, info, row) in info_by_co.items():
+        try:
             total_debt = info.get('totalDebt')
             total_cash = info.get('totalCash')
-            currency = info.get('financialCurrency', 'USD')
-            # Only accept USD-denominated values to avoid FX mismatches against
-            # USD market cap. Non-USD tickers (most foreign filers) get skipped.
-            if currency and currency.upper() != 'USD':
-                print(f"  {co} ({ticker}): yfinance reports in {currency}, skipping to avoid FX mismatch")
+            currency = (info.get('financialCurrency') or 'USD').upper()
+            fx = fx_rates.get(currency)
+            if fx is None:
+                print(f"  {co} ({ticker}): {currency} FX rate unavailable, skipping")
                 continue
-            if total_debt is not None:
-                row['total_debt'] = f"{total_debt / 1e9:.1f}"
-                # Also fill cash if SEC didn't have it
-                if str(row.get('cash', '')).strip().lower() in ('', 'n/a', 'none') and total_cash is not None:
-                    row['cash'] = f"{total_cash / 1e9:.1f}"
-                # Compute net debt
-                if total_cash is not None:
-                    row['net_debt'] = f"{(total_debt - total_cash) / 1e9:.1f}"
-                row['_financials_source'] = 'yfinance'
-                # Clear the "Total debt not found" warning since we now have it
-                warnings_list = row.get('_fin_warnings', [])
-                row['_fin_warnings'] = [w for w in warnings_list if 'Total debt' not in w]
-                succeeded += 1
-                print(f"  {co} ({ticker}): Total Debt ${total_debt/1e9:.1f}B, Cash ${(total_cash or 0)/1e9:.1f}B")
-            else:
+            if total_debt is None:
                 print(f"  {co} ({ticker}): no totalDebt in yfinance info")
+                continue
+            # Convert to USD
+            total_debt_usd = total_debt * fx
+            total_cash_usd = total_cash * fx if total_cash is not None else None
+            row['total_debt'] = f"{total_debt_usd / 1e9:.1f}"
+            if str(row.get('cash', '')).strip().lower() in ('', 'n/a', 'none') and total_cash_usd is not None:
+                row['cash'] = f"{total_cash_usd / 1e9:.1f}"
+            if total_cash_usd is not None:
+                row['net_debt'] = f"{(total_debt_usd - total_cash_usd) / 1e9:.1f}"
+            if currency == 'USD':
+                row['_financials_source'] = 'yfinance'
+                source_label = 'USD'
+            else:
+                row['_financials_source'] = 'yfinance-fx'
+                source_label = f'{currency} @ {fx:.4f}'
+                fx_converted += 1
+            warnings_list = row.get('_fin_warnings', [])
+            row['_fin_warnings'] = [w for w in warnings_list if 'Total debt' not in w]
+            succeeded += 1
+            cash_str = f"${total_cash_usd/1e9:.1f}B" if total_cash_usd is not None else "n/a"
+            print(f"  {co} ({ticker}): Total Debt ${total_debt_usd/1e9:.1f}B, Cash {cash_str} [{source_label}]")
         except Exception as e:
             print(f"  {co} ({ticker}): yfinance fallback error: {str(e)[:100]}")
-    print(f"yfinance fallback: filled Total Debt for {succeeded}/{len(candidates)} names.")
+    print(f"yfinance fallback: filled Total Debt for {succeeded}/{len(candidates)} names "
+          f"({fx_converted} via FX conversion).")
     return rows
 
 
@@ -711,7 +802,7 @@ BATCH_D_NAMES = ["Chevron", "BP", "Exxon", "Phillips 66",
     "Woodside Energy", "Equinor", "Shell", "TotalEnergies",
     "Halliburton", "SLB", "Baker Hughes", "TechnipFMC",
     "Cheniere Energy", "Enbridge",
-    "NextEra Energy", "NextEra Energy Partners",
+    "NextEra Energy",
     "Duke Energy", "Sempra Energy",
     "AES", "Dominion Energy", "Edison International",
     "Constellation Energy", "Southern Company", "PPL Corporation",
