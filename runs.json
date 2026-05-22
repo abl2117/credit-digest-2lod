@@ -3096,6 +3096,141 @@
         "html_bytes": 1948380
       },
       "logged_at": "2026-05-21T22:41:18.245227+00:00"
+    },
+    {
+      "run_id": "2026-05-22-0911",
+      "run_started": "2026-05-22T13:11:56.580415+00:00",
+      "run_completed": "2026-05-22T13:28:59.120276+00:00",
+      "duration_seconds": 1022,
+      "data_sources": {
+        "anthropic_claude": {
+          "model": "claude-sonnet-4-6",
+          "calls": 5,
+          "run_mode": "full",
+          "batches_succeeded": 5
+        },
+        "sec_edgar": {
+          "from_cache": false,
+          "names_attempted": 185,
+          "names_succeeded": 153,
+          "names_failed": [
+            "Air Lease Corporation (no CIK for AL)"
+          ],
+          "names_no_sec_filer": [
+            "Nissan",
+            "Imperial Brands",
+            "RWE",
+            "Uniper",
+            "Engie",
+            "Enel",
+            "Woodside Energy",
+            "Nutrien",
+            "Brenntag",
+            "Roche Holding",
+            "Bayer",
+            "Daimler Truck",
+            "BMW",
+            "Volkswagen",
+            "Mercedes-Benz",
+            "Hyundai",
+            "JBS",
+            "Grupo Bimbo",
+            "Alicorp",
+            "Turkish Airlines",
+            "Lagard\u00e8re",
+            "LVMH",
+            "EssilorLuxottica",
+            "Siemens Energy",
+            "Siemens",
+            "Holcim",
+            "Saint-Gobain",
+            "Michelin",
+            "WH Smith",
+            "Seven & i Holdings",
+            "Sodexo"
+          ],
+          "total_warnings": 86
+        },
+        "yfinance": {
+          "market_data_companies": 181,
+          "commodities_indices": 6
+        },
+        "fred": {
+          "from_cache": true,
+          "series_attempted": 19,
+          "series_succeeded": 19,
+          "series_failed": [],
+          "warnings": []
+        },
+        "census": {
+          "from_cache": false,
+          "rows_returned": 145,
+          "warnings": []
+        }
+      },
+      "overrides_applied": {
+        "ratings_override": 4
+      },
+      "validation_warnings": [
+        "Oracle: Total debt not found in SEC tags",
+        "Oracle: Period end 2025-05-31 is 356 days old (stale)",
+        "Nextracker: Total debt not found in SEC tags",
+        "General Motors: Total debt not found in SEC tags",
+        "Ford: Total debt not found in SEC tags",
+        "Ford: Period end 2024-12-31 is 507 days old (stale)",
+        "Toyota: Revenue LTM not found in SEC tags",
+        "Toyota: EBITDA could not be constructed (missing op_income or D&A)",
+        "Toyota: Cash not found in SEC tags",
+        "Toyota: Total debt not found in SEC tags",
+        "Anheuser-Busch InBev: Revenue LTM not found in SEC tags",
+        "Anheuser-Busch InBev: EBITDA could not be constructed (missing op_income or D&A)",
+        "Anheuser-Busch InBev: Cash not found in SEC tags",
+        "Anheuser-Busch InBev: Total debt not found in SEC tags",
+        "BP: Revenue LTM not found in SEC tags",
+        "BP: EBITDA could not be constructed (missing op_income or D&A)",
+        "BP: Cash not found in SEC tags",
+        "BP: Total debt not found in SEC tags",
+        "Air Products: Total debt not found in SEC tags",
+        "Nutanix: Total debt not found in SEC tags",
+        "CEMEX: Revenue LTM not found in SEC tags",
+        "CEMEX: EBITDA could not be constructed (missing op_income or D&A)",
+        "CEMEX: Cash not found in SEC tags",
+        "CEMEX: Total debt not found in SEC tags",
+        "Bunge: Revenue YoY = 56.9% (unusual; verify)",
+        "Kenvue: Total debt not found in SEC tags",
+        "AES: Total debt not found in SEC tags",
+        "Brookfield Renewable Partners: Revenue LTM not found in SEC tags",
+        "Brookfield Renewable Partners: EBITDA could not be constructed (missing op_income or D&A)",
+        "Brookfield Renewable Partners: Cash not found in SEC tags",
+        "Brookfield Renewable Partners: Total debt not found in SEC tags",
+        "Fluence Energy: Total debt not found in SEC tags",
+        "Enbridge: Revenue LTM not found in SEC tags",
+        "Enbridge: EBITDA could not be constructed (missing op_income or D&A)",
+        "Enbridge: Cash not found in SEC tags",
+        "Enbridge: Total debt not found in SEC tags",
+        "Phillips 66: EBITDA could not be constructed (missing op_income or D&A)",
+        "Equinor: Revenue LTM not found in SEC tags",
+        "Equinor: EBITDA could not be constructed (missing op_income or D&A)",
+        "Equinor: Cash not found in SEC tags",
+        "Equinor: Total debt not found in SEC tags",
+        "Shell: Revenue LTM not found in SEC tags",
+        "Shell: EBITDA could not be constructed (missing op_income or D&A)",
+        "Shell: Cash not found in SEC tags",
+        "Shell: Total debt not found in SEC tags",
+        "TotalEnergies: Revenue LTM not found in SEC tags",
+        "TotalEnergies: EBITDA could not be constructed (missing op_income or D&A)",
+        "TotalEnergies: Cash not found in SEC tags",
+        "TotalEnergies: Total debt not found in SEC tags",
+        "Braskem: Revenue LTM not found in SEC tags"
+      ],
+      "output": {
+        "total_rows": 185,
+        "red_count": 14,
+        "amber_count": 67,
+        "green_count": 104,
+        "html_bytes": 2221703
+      },
+      "logged_at": "2026-05-22T13:28:59.120427+00:00"
     }
   ]
 }
