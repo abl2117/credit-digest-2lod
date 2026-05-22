@@ -3949,8 +3949,105 @@ Rules:
     return all_rows
 
 
+def _preflight_watchlist_drift_check(watchlist):
+    """Log prominent warnings if the watchlist has drifted from cached datasets.
+
+    Three checks at startup:
+      1. SEC EDGAR cache coverage: names in WATCHLIST that have no entry in
+         financials_cache.json. These will go through fresh SEC fetch.
+      2. Claude cache coverage: names in WATCHLIST that have no row in
+         claude_cache.json. These will need full-mode refresh; cheap mode would
+         leave them with no ratings/news.
+      3. Cache-only names: entries in either cache that are NOT in WATCHLIST
+         anymore. These will not be cleaned up but won't appear in output.
+
+    Output goes to stdout (which GitHub Actions captures in the run log) with
+    a banner that stands out visually. No exceptions raised; this is pure
+    diagnostic logging so a misconfigured cache does not silently degrade
+    the dashboard the way it did during the 81 -> 186 watchlist expansion.
+    """
+    wl_names = set(watchlist.keys())
+    wl_size = len(wl_names)
+
+    # Check SEC EDGAR cache
+    sec_cache_path = "financials_cache.json"
+    sec_cache_names = set()
+    if os.path.exists(sec_cache_path):
+        try:
+            with open(sec_cache_path, "r", encoding="utf-8") as f:
+                sec_cache = json.load(f)
+            sec_cache_names = {k for k in sec_cache if not k.startswith("_")}
+        except Exception as e:
+            print(f"PREFLIGHT: could not read {sec_cache_path}: {e}")
+
+    # Check Claude cache
+    claude_cache_path = "claude_cache.json"
+    claude_cache_names = set()
+    if os.path.exists(claude_cache_path):
+        try:
+            with open(claude_cache_path, "r", encoding="utf-8") as f:
+                claude_cache_data = json.load(f)
+            claude_cache_names = {
+                r.get("company", "") for r in claude_cache_data.get("rows", [])
+                if r.get("company")
+            }
+        except Exception as e:
+            print(f"PREFLIGHT: could not read {claude_cache_path}: {e}")
+
+    sec_missing = sorted(wl_names - sec_cache_names) if sec_cache_names else []
+    sec_orphans = sorted(sec_cache_names - wl_names) if sec_cache_names else []
+    claude_missing = sorted(wl_names - claude_cache_names) if claude_cache_names else []
+    claude_orphans = sorted(claude_cache_names - wl_names) if claude_cache_names else []
+
+    print("")
+    print("=" * 72)
+    print(f"PREFLIGHT: WATCHLIST DRIFT CHECK")
+    print(f"  WATCHLIST: {wl_size} names")
+    print(f"  SEC EDGAR cache: {len(sec_cache_names)} names "
+          f"({len(sec_missing)} missing, {len(sec_orphans)} orphan)")
+    print(f"  Claude cache:    {len(claude_cache_names)} names "
+          f"({len(claude_missing)} missing, {len(claude_orphans)} orphan)")
+
+    if sec_missing:
+        coverage = (wl_size - len(sec_missing)) / wl_size * 100
+        if coverage < 95:
+            print(f"  >> WARNING: SEC EDGAR cache coverage is {coverage:.0f}%. "
+                  f"A full-mode SEC EDGAR refresh will fetch fresh data for missing names.")
+        print(f"     Missing from SEC cache (first 10): {sec_missing[:10]}"
+              f"{'...' if len(sec_missing) > 10 else ''}")
+
+    if claude_missing:
+        coverage = (wl_size - len(claude_missing)) / wl_size * 100
+        if coverage < 95:
+            print(f"  >> WARNING: Claude cache coverage is {coverage:.0f}%. "
+                  f"Cheap-mode runs would leave these names without ratings/news. "
+                  f"Recommend full-mode run.")
+        print(f"     Missing from Claude cache (first 10): {claude_missing[:10]}"
+              f"{'...' if len(claude_missing) > 10 else ''}")
+
+    if sec_orphans:
+        print(f"  >> NOTE: {len(sec_orphans)} names in SEC cache no longer in WATCHLIST "
+              f"(removed from watchlist; safe to ignore): {sec_orphans[:5]}"
+              f"{'...' if len(sec_orphans) > 5 else ''}")
+
+    if claude_orphans:
+        print(f"  >> NOTE: {len(claude_orphans)} names in Claude cache no longer in WATCHLIST: "
+              f"{claude_orphans[:5]}{'...' if len(claude_orphans) > 5 else ''}")
+
+    if not sec_missing and not claude_missing and not sec_orphans and not claude_orphans:
+        print(f"  All caches are aligned with the current WATCHLIST.")
+    print("=" * 72)
+    print("")
+
+
 def main():
     run_start = datetime.now(pytz.utc)
+
+    # Pre-flight: watchlist drift check. Compares current WATCHLIST against the
+    # existing SEC EDGAR cache. Surfaces silent coverage gaps loudly in the
+    # workflow log so a watchlist expansion never again ships without
+    # corresponding cache refresh.
+    _preflight_watchlist_drift_check(WATCHLIST)
 
     # Decide run mode (full vs cheap) based on day-of-week and cache freshness
     run_mode = determine_run_mode()
