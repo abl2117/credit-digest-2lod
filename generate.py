@@ -2859,6 +2859,8 @@ def _tmt_company_row(co_name, all_rows, sec_data):
         source_marker = f'<span class="src-tag sec" title="Source: SEC EDGAR {form_label} as of {period_label}">SEC</span>'
     elif fin_source == 'yfinance':
         source_marker = '<span class="src-tag yf" title="Source: yfinance balance sheet (Total Debt fallback for non-SEC filer or unusual tag structure)">YF</span>'
+    elif fin_source == 'yfinance-fx':
+        source_marker = '<span class="src-tag yf" title="Source: yfinance balance sheet, FX-converted to USD from local currency">YF/FX</span>'
     else:
         source_marker = '<span class="src-tag claude" title="Source: Claude web search">EST</span>'
     return (
@@ -3085,6 +3087,9 @@ def build_html(all_rows, macro, top3, datetime_str, commodities=None, fred_data=
             has_history = bool(sec_data.get(co))
         elif fin_source == 'yfinance':
             source_marker = '<span class="src-tag yf" title="Source: yfinance balance sheet (Total Debt fallback for non-SEC filer or unusual tag structure). Less authoritative than SEC EDGAR. Historical detail unavailable.">YF</span>'
+            has_history = False
+        elif fin_source == 'yfinance-fx':
+            source_marker = '<span class="src-tag yf" title="Source: yfinance balance sheet, FX-converted to USD from local currency at current spot rate. Used for foreign filers (non-SEC). Less authoritative than SEC EDGAR. Historical detail unavailable.">YF/FX</span>'
             has_history = False
         else:
             source_marker = '<span class="src-tag claude" title="Source: Claude web search (less reliable than SEC EDGAR)">EST</span>'
