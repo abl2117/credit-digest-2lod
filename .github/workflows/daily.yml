@@ -42,8 +42,15 @@ jobs:
         run: python generate.py
       - name: Run backtest audit (Fridays or full-mode manual)
         # Runs Fridays scheduled, or when manual trigger forces full mode.
-        # continue-on-error so audit failures don't block the dashboard commit.
+        # continue-on-error so audit failures do not block the dashboard commit.
+        # ANTHROPIC_API_KEY is passed because backtest_audit.py imports WATCHLIST
+        # from generate.py, which initializes the anthropic client at import time.
+        # The audit itself does not call Claude, but the import side-effect needs
+        # the env var to be present.
         continue-on-error: true
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
         run: |
           DOW=$(date -u +%u)
           RUN_MODE_INPUT="${{ github.event.inputs.run_mode }}"
