@@ -787,7 +787,21 @@ def _save_cache(cache_path, data):
         print(f"WARNING: failed to write cache: {e}")
 
 
-def _cache_is_fresh(cache):
+def _cache_is_fresh(cache, watchlist=None):
+    """Decide whether the cache can be reused.
+
+    Three conditions must all be true for the cache to be considered fresh:
+    1. Cache age < CACHE_TTL_DAYS (6 days)
+    2. Success rate of cached entries >= 50% (rejects caches from broken runs)
+    3. Cache covers >= 90% of current watchlist names (rejects caches built
+       against an older, smaller watchlist - which would cause new names to
+       silently fall through with no SEC data on every cheap-mode run)
+
+    The watchlist-coverage check is the critical one when the watchlist expands.
+    Without it, expanding from 81 to 186 names would leave the new 105 names
+    permanently uncovered until the 6-day TTL expired, since neither cron mode
+    nor weekly full runs trigger a refresh based on watchlist changes alone.
+    """
     if not cache:
         return False
     last = cache.get("_last_full_refresh")
@@ -811,6 +825,19 @@ def _cache_is_fresh(cache):
         print(f"SEC EDGAR: cache exists but success rate is {success_rate:.0%} "
               f"({len(real_entries)}/{total_entries}) treating as stale.")
         return False
+
+    # Watchlist coverage check
+    if watchlist:
+        cached_names = {k for k in cache if not k.startswith("_")}
+        missing = [name for name in watchlist if name not in cached_names]
+        coverage_pct = (len(watchlist) - len(missing)) / len(watchlist) * 100 if watchlist else 100
+        if coverage_pct < 90:
+            print(f"SEC EDGAR: cache covers {coverage_pct:.0f}% of watchlist "
+                  f"({len(watchlist) - len(missing)}/{len(watchlist)} names); "
+                  f"treating as stale. Missing: {missing[:10]}"
+                  f"{'...' if len(missing) > 10 else ''}")
+            return False
+
     return True
 
 
@@ -830,7 +857,7 @@ def fetch_financials(watchlist, cache_path="financials_cache.json", force_refres
     }
 
     cache = _load_cache(cache_path)
-    if cache and _cache_is_fresh(cache) and not force_refresh:
+    if cache and _cache_is_fresh(cache, watchlist) and not force_refresh:
         print(f"SEC EDGAR: cache is fresh ({cache.get('_last_full_refresh')}); using cached data.")
         metadata["from_cache"] = True
         out = {k: v for k, v in cache.items() if not k.startswith("_")}
