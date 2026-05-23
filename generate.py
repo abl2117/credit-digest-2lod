@@ -3017,6 +3017,18 @@ def build_html(all_rows, macro, top3, datetime_str, commodities=None, fred_data=
     else:
         snapshot_html = ""
     overview_rows, market_rows, fin_summary_rows, fin_detail_rows = [], [], [], []
+
+    # Compute tab counts for the badge UI in the tab nav.
+    _tab_count_names = len(all_rows)
+    _tab_count_sectors = len({(r.get("sector") or "Unknown") for r in all_rows})
+    _tab_count_redflag_names = sum(1 for r in all_rows if int(r.get("_flag_count", 0) or 0) >= 1)
+    # Highest severity tier among flagged-tab names. Drives the badge accent color.
+    _tab_redflag_max_severity = "high" if any(
+        (r.get("severity") or "").lower() in ("critical", "high")
+        for r in all_rows
+    ) else ""
+    if any((r.get("severity") or "").lower() == "critical" for r in all_rows):
+        _tab_redflag_max_severity = "critical"
     # Four-tier counters (severity-based)
     crit_count = high_count = watch_count = mon_count = 0
     # Legacy 3-tier counters (status-based) for backwards compatibility
@@ -3228,6 +3240,8 @@ header{background:linear-gradient(135deg,#6b0000 0%,#8B0000 60%,#a00000 100%);co
 .status-legend .legend-desc{color:#a0afbf;flex:1;line-height:1.5;font-size:11px}
 .status-legend .status-badge{min-width:80px;text-align:center;font-size:11px;padding:4px 8px}
 .status-legend .legend-footnote{margin-top:10px;font-size:10px;color:#5a7287;font-style:italic;padding-top:8px;border-top:1px solid #16202b}
+.live-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#3dd683;margin-right:6px;vertical-align:middle;box-shadow:0 0 0 0 rgba(61,214,131,.7);animation:livepulse 2s infinite}
+@keyframes livepulse{0%{box-shadow:0 0 0 0 rgba(61,214,131,.7)}70%{box-shadow:0 0 0 6px rgba(61,214,131,0)}100%{box-shadow:0 0 0 0 rgba(61,214,131,0)}}
 .last-refresh{font-size:10px;margin-top:6px;opacity:.7;font-family:"IBM Plex Mono",monospace}
 .macro-strip{background:#0d1520;border-bottom:1px solid #1e3a5f;padding:10px 28px;display:flex;gap:0;flex-wrap:wrap;align-items:center}
 .macro-item{padding:4px 20px;border-right:1px solid #1e3a5f;display:flex;flex-direction:column;align-items:center;gap:2px}
@@ -3241,6 +3255,10 @@ header{background:linear-gradient(135deg,#6b0000 0%,#8B0000 60%,#a00000 100%);co
 .tab{padding:11px 18px;font-family:"IBM Plex Mono",monospace;font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:#4a6080;cursor:pointer;border:none;border-bottom:2px solid transparent;background:none;transition:all .15s}
 .tab:hover{color:#a0b4c8}
 .tab.active{color:#fff;border-bottom-color:#8B0000;background:#0a0e14}
+.tab-badge{display:inline-block;background:rgba(160,180,200,.12);color:#a0b4c8;font-size:9px;font-weight:700;padding:1px 6px;border-radius:8px;margin-left:6px;vertical-align:middle;font-family:"IBM Plex Mono",monospace;min-width:18px;text-align:center}
+.tab.active .tab-badge{background:rgba(255,255,255,.15);color:#fff}
+.tab-badge.critical{background:rgba(255,59,59,.18);color:#ff5757}
+.tab-badge.high{background:rgba(255,125,41,.18);color:#ff7d29}
 .controls{padding:12px 28px;background:#0d1117;border-bottom:1px solid #1e2a3a;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .controls button{padding:6px 14px;border:1px solid #1e2a3a;background:#0d1520;color:#a0b4c8;cursor:pointer;font-weight:600;border-radius:3px;font-size:11px;letter-spacing:.5px;text-transform:uppercase;font-family:"IBM Plex Mono",monospace;transition:all .15s}
 .controls button:hover{background:#1e2a3a;color:#e6edf3}
@@ -3257,10 +3275,10 @@ tbody tr:hover{background:#0d1520}
 .status{font-weight:700;font-size:11px;letter-spacing:.5px;font-family:"IBM Plex Mono",monospace}
 .status.red{color:#ff6b6b}.status.amber{color:#f0b429}.status.green{color:#4ec38a}
 .sector-tag{background:#0d1520;border:1px solid #1e2a3a;color:#7090a8;font-size:10px;padding:2px 7px;border-radius:2px;letter-spacing:.5px;white-space:nowrap}
-.stock-up{color:#4ec38a;font-weight:700;font-family:"IBM Plex Mono",monospace}
-.stock-down{color:#ff6b6b;font-weight:700;font-family:"IBM Plex Mono",monospace}
+.stock-up{color:#3dd683;font-weight:700;font-family:"IBM Plex Mono",monospace}
+.stock-down{color:#ff5757;font-weight:700;font-family:"IBM Plex Mono",monospace}
 .stock-flat{color:#3a4a5a;font-family:"IBM Plex Mono",monospace}
-.lev-amber{color:#f0b429;font-weight:700;font-family:"IBM Plex Mono",monospace}
+.lev-amber{color:#f5b62c;font-weight:700;font-family:"IBM Plex Mono",monospace}
 .num-cell{text-align:right;font-variant-numeric:tabular-nums;font-family:"IBM Plex Mono",monospace;font-size:12px}
 .overview-table tbody td{padding:12px 14px;vertical-align:middle}
 .overview-table tbody td:not(:nth-child(1)):not(:nth-child(6)),
@@ -3275,14 +3293,14 @@ tbody tr:hover{background:#0d1520}
 .co-name{font-weight:600;font-size:13px;color:#e6edf3;line-height:1.2}
 .co-sector{font-family:"IBM Plex Mono",monospace;font-size:9px;color:#7090a8;margin-top:3px;letter-spacing:.5px}
 .status-badge{font-weight:700;font-size:13px;letter-spacing:1px;font-family:"IBM Plex Mono",monospace;padding:5px 12px;border-radius:3px;display:inline-block;text-align:center}
-.status-badge.red{color:#ff6b6b;background:rgba(255,107,107,.12)}
-.status-badge.amber{color:#f0b429;background:rgba(240,180,41,.12)}
-.status-badge.green{color:#4ec38a;background:rgba(78,195,138,.12)}
+.status-badge.red{color:#ff5757;background:rgba(255,87,87,.15)}
+.status-badge.amber{color:#f5b62c;background:rgba(245,182,44,.15)}
+.status-badge.green{color:#3dd683;background:rgba(61,214,131,.15)}
 /* Four-tier severity colors (severity drives visual distinction within red status) */
-.status-badge.severity-critical{color:#ff5a5a;background:rgba(255,90,90,.10);font-weight:700}
-.status-badge.severity-high{color:#ff8a3d;background:rgba(255,138,61,.10);font-weight:700}
-.status-badge.severity-watch{color:#f0b429;background:rgba(240,180,41,.12);border:1px solid rgba(240,180,41,.4)}
-.status-badge.severity-monitor{color:#4ec38a;background:rgba(78,195,138,.12);border:1px solid rgba(78,195,138,.4)}
+.status-badge.severity-critical{color:#ff3b3b;background:rgba(255,59,59,.14);font-weight:700}
+.status-badge.severity-high{color:#ff7d29;background:rgba(255,125,41,.14);font-weight:700}
+.status-badge.severity-watch{color:#f5b62c;background:rgba(245,182,44,.15);border:1px solid rgba(245,182,44,.45)}
+.status-badge.severity-monitor{color:#3dd683;background:rgba(61,214,131,.15);border:1px solid rgba(61,214,131,.45)}
 .severity-label{font-size:9px;letter-spacing:1.2px;opacity:.85;margin-top:2px;display:block}
 .concern-cell{padding:10px 12px;font-family:"IBM Plex Mono",monospace}
 .concern-num{font-weight:700;font-size:18px;line-height:1}
@@ -3610,17 +3628,17 @@ footer li strong{color:#ffaaaa}
       <span class="pill severity-high-pill" id="highCount" title="High: 3 flagged OR (2 flagged AND ≥ 3 watch)">HIGH {high_count}</span>
       <span class="pill severity-critical-pill" id="critCount" title="Critical: ≥ 4 flagged OR (≥ 3 flagged AND ≥ 2 watch)">CRITICAL {crit_count}</span>
     </div>
-    <div class="last-refresh">Updated: {datetime_str} &nbsp;&bull;&nbsp; Refresh: <span style="font-weight:700;color:{'#4ec38a' if run_mode == 'full' else '#a0afbf'}" title="{'WEEKLY: Friday full refresh with all ratings and news from web search.' if run_mode == 'full' else 'DAILY: Monday-Thursday refresh of market data and macro. Ratings and news cached from last weekly refresh; targeted news refresh for amber/red names.'}">{('WEEKLY' if run_mode == 'full' else 'DAILY')}</span></div>
+    <div class="last-refresh"><span class="live-dot" title="Dashboard refreshed automatically"></span>Updated: {datetime_str} &nbsp;&bull;&nbsp; Refresh: <span style="font-weight:700;color:{'#3dd683' if run_mode == 'full' else '#a0afbf'}" title="{'WEEKLY: Friday full refresh with all ratings and news from web search.' if run_mode == 'full' else 'DAILY: Monday-Thursday refresh of market data and macro. Ratings and news cached from last weekly refresh; targeted news refresh for amber/red names.'}">{('WEEKLY' if run_mode == 'full' else 'DAILY')}</span></div>
   </div>
 </header>
 {macro_html}
 <div class="tabs">
-  <button class="tab active" data-tab="overview">Overview</button>
-  <button class="tab" data-tab="sectors">Sectors</button>
+  <button class="tab active" data-tab="overview">Overview<span class="tab-badge">{_tab_count_names}</span></button>
+  <button class="tab" data-tab="sectors">Sectors<span class="tab-badge">{_tab_count_sectors}</span></button>
   <button class="tab" data-tab="market">Market Data</button>
   <button class="tab" data-tab="financials">Financials</button>
   <button class="tab" data-tab="tmt">TMT</button>
-  <button class="tab" data-tab="redflags">Red Flags</button>
+  <button class="tab" data-tab="redflags">Red Flags<span class="tab-badge {_tab_redflag_max_severity}">{_tab_count_redflag_names}</span></button>
   <button class="tab" data-tab="macro">Macro</button>
   <button class="tab" data-tab="methodology">Methodology</button>
 </div>
