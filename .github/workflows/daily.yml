@@ -1,10 +1,15 @@
 name: Daily Credit Digest
 on:
   schedule:
-    # 11:55 UTC = 7:55am ET (EDT) / 6:55am ET (EST)
-    # Mon-Thu = cheap mode (cache reuse)
-    # Friday = full mode (refresh + backtest audit)
-    - cron: '55 11 * * 1-5'
+    # Primary: 12:07 UTC = 8:07am ET (EDT) / 7:07am ET (EST).
+    # Off-the-hour minute reduces GitHub Actions cron contention vs :00/:30
+    # slots; primary runs typically dispatch within 5-15 minutes.
+    # Backup: 13:23 UTC = 9:23am ET (EDT) / 8:23am ET (EST). If the primary
+    # is delayed past 13:23 UTC, the backup fires and the workflow runs.
+    # Once one run completes, the other is a no-op (cheap mode reuses cache).
+    # Mon-Thu = cheap mode (cache reuse), Friday = full mode (refresh + audit).
+    - cron: '7 12 * * 1-5'
+    - cron: '23 13 * * 1-5'
   workflow_dispatch:
     inputs:
       run_mode:
