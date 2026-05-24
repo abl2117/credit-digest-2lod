@@ -480,12 +480,39 @@ def _history_units_for_tag(facts, tag, taxonomy="us-gaap"):
 
 
 def _extract_quarterly_history_for_tag(facts, tag, max_quarters=12):
+    """
+    Extract standalone quarterly facts from SEC XBRL, handling two distinct
+    reporter patterns observed across the watchlist:
+
+    Pattern 1 (standalone reporters, e.g. MSFT, AMZN):
+        File standalone 90-day Q1/Q2/Q3 entries. The fiscal year-end Q4 is
+        NOT filed as a standalone period; only the 365-day annual appears
+        in the 10-K. Strategy B reconstructs Q4 as annual minus the three
+        in-fiscal-year standalone quarters.
+
+    Pattern 2 (cumulative YTD reporters, e.g. GOOGL, ORCL for cash flow
+    items like CapEx, OCF, D&A):
+        File Q1 as a standalone 90-day entry, then Q2 only as a 180-day
+        YTD cumulative, Q3 only as a 270-day YTD cumulative, FY as 365-day
+        annual. Strategy C differences successive entries that share a
+        fiscal-year start date, yielding standalone Q2/Q3/Q4 values.
+
+    Direct standalones take precedence over derived values for the same
+    period_end. Period extraction is widened to capture 90d, 180d, 270d,
+    and 365d facts; the upstream 80-100 day filter previously discarded
+    the YTD/annual facts needed for derivation.
+    """
     units = _history_units_for_tag(facts, tag)
     if not units:
         return []
     today = datetime.now().date()
-    cutoff = today - timedelta(days=3 * 365)
-    raw = []
+    cutoff = today - timedelta(days=4 * 365)
+
+    # Collect all facts in the relevant duration ranges, deduped by
+    # (start, end) preferring the latest-filed entry. Deduping by end
+    # alone (as the legacy helper does) would collide annuals with their
+    # in-year standalones that share a period_end.
+    facts_by_period = {}
     for f in units:
         start, end = f.get("start"), f.get("end")
         if not start or not end:
@@ -496,18 +523,113 @@ def _extract_quarterly_history_for_tag(facts, tag, max_quarters=12):
             days = (ed - sd).days
         except Exception:
             continue
-        if not (80 <= days <= 100):
+        if ed < cutoff:
+            continue
+        if days < 80 or days > 380:
             continue
         fd = _filing_date(f)
         if fd and fd < cutoff:
             continue
-        if ed < cutoff:
+        key = (start, end)
+        existing = facts_by_period.get(key)
+        if existing is None:
+            facts_by_period[key] = f
             continue
-        raw.append(f)
-    deduped = _dedupe_by_end(raw)
+        ef = _filing_date(existing)
+        nf = _filing_date(f)
+        if nf and (not ef or nf > ef):
+            facts_by_period[key] = f
+
+    if not facts_by_period:
+        return []
+
+    # Bucket facts by duration class.
+    standalones = {}  # period_end -> {value, form, start}
+    annuals = {}      # period_end -> {value, form, start}
+    interims = []     # list of {start, end, value, form, days}
+    for (start, end), f in facts_by_period.items():
+        try:
+            sd = datetime.strptime(start, "%Y-%m-%d").date()
+            ed = datetime.strptime(end, "%Y-%m-%d").date()
+            days = (ed - sd).days
+        except Exception:
+            continue
+        val = f.get("val", 0)
+        form = f.get("form", "10-Q")
+        if 80 <= days <= 100:
+            standalones[end] = {"value": val, "form": form, "start": start}
+        elif 350 <= days <= 380:
+            annuals[end] = {"value": val, "form": form, "start": start}
+        elif (175 <= days <= 200) or (260 <= days <= 290):
+            interims.append({"start": start, "end": end, "value": val, "form": form, "days": days})
+
+    # Seed result with direct standalones.
+    result = {e: {"value": v["value"], "form": v["form"]} for e, v in standalones.items()}
+
+    # Strategy B: reconstruct missing Q4 from annual minus in-FY standalones.
+    for ann_end, ann in annuals.items():
+        if ann_end in result:
+            continue
+        try:
+            ann_start_dt = datetime.strptime(ann["start"], "%Y-%m-%d").date()
+            ann_end_dt = datetime.strptime(ann_end, "%Y-%m-%d").date()
+        except Exception:
+            continue
+        in_fy = []
+        for q_end, q in standalones.items():
+            try:
+                qs = datetime.strptime(q["start"], "%Y-%m-%d").date()
+                qe = datetime.strptime(q_end, "%Y-%m-%d").date()
+            except Exception:
+                continue
+            if qs >= ann_start_dt and qe <= ann_end_dt:
+                in_fy.append((qe, q["value"]))
+        in_fy.sort()
+        if len(in_fy) == 3:
+            q4_val = ann["value"] - sum(v for _, v in in_fy)
+            result[ann_end] = {"value": q4_val, "form": ann["form"]}
+
+    # Strategy C: difference cumulative chains sharing a fiscal-year start.
+    # YTD reporters file Q1 (90d) -> H1 (180d) -> 9M (270d) -> FY (365d).
+    # Successive differences yield standalone Q2/Q3/Q4 values.
+    series_by_start = {}
+    for q_end, q in standalones.items():
+        series_by_start.setdefault(q["start"], []).append(
+            {"end": q_end, "value": q["value"], "form": q["form"]})
+    for it in interims:
+        series_by_start.setdefault(it["start"], []).append(
+            {"end": it["end"], "value": it["value"], "form": it["form"]})
+    for ann_end, ann in annuals.items():
+        series_by_start.setdefault(ann["start"], []).append(
+            {"end": ann_end, "value": ann["value"], "form": ann["form"]})
+
+    for start, entries in series_by_start.items():
+        if len(entries) < 2:
+            continue
+        entries.sort(key=lambda x: x["end"])
+        try:
+            fy_start_dt = datetime.strptime(start, "%Y-%m-%d").date()
+        except Exception:
+            continue
+        prev_val = 0
+        prev_end_dt = fy_start_dt - timedelta(days=1)
+        for entry in entries:
+            try:
+                end_dt = datetime.strptime(entry["end"], "%Y-%m-%d").date()
+            except Exception:
+                continue
+            period_days = (end_dt - prev_end_dt).days
+            standalone_val = entry["value"] - prev_val
+            # Only accept derived periods that span a normal quarter and
+            # only when no direct standalone already covers that period_end.
+            if 80 <= period_days <= 100 and entry["end"] not in result:
+                result[entry["end"]] = {"value": standalone_val, "form": entry["form"]}
+            prev_val = entry["value"]
+            prev_end_dt = end_dt
+
     out = [
-        {"period_end": f.get("end"), "value": f.get("val"), "form": f.get("form", "10-Q")}
-        for f in deduped
+        {"period_end": e, "value": v["value"], "form": v["form"]}
+        for e, v in result.items()
     ]
     out.sort(key=lambda x: x["period_end"], reverse=True)
     return out[:max_quarters]
