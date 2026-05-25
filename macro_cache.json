@@ -134,7 +134,7 @@
     "_title": "Federal Funds Effective Rate",
     "_label": "Fed Funds Effective Rate",
     "_category": "rates",
-    "_fetched_at": "2026-05-23T22:04:05.213640+00:00"
+    "_fetched_at": "2026-05-25T18:13:38.136204+00:00"
   },
   "ust_3m": {
     "value": 3.68,
@@ -271,7 +271,7 @@
     "_title": "Market Yield on U.S. Treasury Securities at 3-Month Constant Maturity, Quoted on an Investment Basis",
     "_label": "3-Month Treasury Yield",
     "_category": "rates",
-    "_fetched_at": "2026-05-23T22:04:05.782348+00:00"
+    "_fetched_at": "2026-05-25T18:13:38.570367+00:00"
   },
   "ust_2y": {
     "value": 4.08,
@@ -408,7 +408,7 @@
     "_title": "Market Yield on U.S. Treasury Securities at 2-Year Constant Maturity, Quoted on an Investment Basis",
     "_label": "2-Year Treasury Yield",
     "_category": "rates",
-    "_fetched_at": "2026-05-23T22:04:06.354517+00:00"
+    "_fetched_at": "2026-05-25T18:13:39.153150+00:00"
   },
   "ust_10y": {
     "value": 4.57,
@@ -785,7 +785,7 @@
     "_title": "Market Yield on U.S. Treasury Securities at 10-Year Constant Maturity, Quoted on an Investment Basis",
     "_label": "10-Year Treasury Yield",
     "_category": "rates",
-    "_fetched_at": "2026-05-23T22:04:06.902022+00:00"
+    "_fetched_at": "2026-05-25T18:13:39.502957+00:00"
   },
   "ust_30y": {
     "value": 5.1,
@@ -922,7 +922,7 @@
     "_title": "Market Yield on U.S. Treasury Securities at 30-Year Constant Maturity, Quoted on an Investment Basis",
     "_label": "30-Year Treasury Yield",
     "_category": "rates",
-    "_fetched_at": "2026-05-23T22:04:07.357082+00:00"
+    "_fetched_at": "2026-05-25T18:13:40.300991+00:00"
   },
   "ust_10y_2y": {
     "value": 0.43,
@@ -1299,7 +1299,7 @@
     "_title": "10-Year Treasury Constant Maturity Minus 2-Year Treasury Constant Maturity",
     "_label": "10Y-2Y Treasury Spread",
     "_category": "rates",
-    "_fetched_at": "2026-05-23T22:04:07.843874+00:00"
+    "_fetched_at": "2026-05-25T18:13:40.948815+00:00"
   },
   "ig_oas": {
     "value": 0.75,
@@ -1676,7 +1676,7 @@
     "_title": "ICE BofA US Corporate Index Option-Adjusted Spread",
     "_label": "IG Corporate OAS Spread",
     "_category": "spreads",
-    "_fetched_at": "2026-05-23T22:04:08.324756+00:00"
+    "_fetched_at": "2026-05-25T18:13:41.651996+00:00"
   },
   "bbb_oas": {
     "value": 0.94,
@@ -2053,7 +2053,7 @@
     "_title": "ICE BofA BBB US Corporate Index Option-Adjusted Spread",
     "_label": "BBB Corporate OAS Spread",
     "_category": "spreads",
-    "_fetched_at": "2026-05-23T22:04:08.807749+00:00"
+    "_fetched_at": "2026-05-25T18:13:42.109862+00:00"
   },
   "hy_oas": {
     "value": 2.78,
@@ -2430,7 +2430,7 @@
     "_title": "ICE BofA US High Yield Index Option-Adjusted Spread",
     "_label": "High Yield OAS Spread",
     "_category": "spreads",
-    "_fetched_at": "2026-05-23T22:04:09.418190+00:00"
+    "_fetched_at": "2026-05-25T18:13:42.958548+00:00"
   },
   "ccc_oas": {
     "value": 9.39,
@@ -2807,7 +2807,7 @@
     "_title": "ICE BofA CCC & Lower US High Yield Index Option-Adjusted Spread",
     "_label": "CCC & Lower OAS Spread",
     "_category": "spreads",
-    "_fetched_at": "2026-05-23T22:04:10.026655+00:00"
+    "_fetched_at": "2026-05-25T18:13:43.863603+00:00"
   },
   "cpi_yoy": {
     "value": 3.8,
@@ -2920,7 +2920,7 @@
     "_title": "Consumer Price Index for All Urban Consumers: All Items in U.S. City Average",
     "_label": "CPI All Items",
     "_category": "inflation",
-    "_fetched_at": "2026-05-23T22:04:10.491509+00:00"
+    "_fetched_at": "2026-05-25T18:13:44.418426+00:00"
   },
   "core_cpi_yoy": {
     "value": 2.7,
@@ -3033,7 +3033,7 @@
     "_title": "Consumer Price Index for All Urban Consumers: All Items Less Food and Energy in U.S. City Average",
     "_label": "Core CPI",
     "_category": "inflation",
-    "_fetched_at": "2026-05-23T22:04:10.955304+00:00"
+    "_fetched_at": "2026-05-25T18:13:45.180923+00:00"
   },
   "pce_yoy": {
     "value": 3.5,
@@ -3146,7 +3146,7 @@
     "_title": "Personal Consumption Expenditures: Chain-type Price Index",
     "_label": "PCE Price Index",
     "_category": "inflation",
-    "_fetched_at": "2026-05-23T22:04:11.420702+00:00"
+    "_fetched_at": "2026-05-25T18:13:45.488869+00:00"
   },
   "unemployment": {
     "value": 4.3,
@@ -3259,7 +3259,7 @@
     "_title": "Unemployment Rate",
     "_label": "Unemployment Rate",
     "_category": "labor",
-    "_fetched_at": "2026-05-23T22:04:11.973003+00:00"
+    "_fetched_at": "2026-05-25T18:13:45.938540+00:00"
   },
   "jobless_claims": {
     "value": 209000.0,
@@ -3324,7 +3324,7 @@
     "_title": "Initial Claims",
     "_label": "Initial Jobless Claims",
     "_category": "labor",
-    "_fetched_at": "2026-05-23T22:04:12.388590+00:00"
+    "_fetched_at": "2026-05-25T18:13:46.298271+00:00"
   },
   "nonfarm_payrolls": {
     "value": 158736.0,
@@ -3389,7 +3389,7 @@
     "_title": "All Employees, Total Nonfarm",
     "_label": "Nonfarm Payrolls",
     "_category": "labor",
-    "_fetched_at": "2026-05-23T22:04:12.971024+00:00"
+    "_fetched_at": "2026-05-25T18:13:46.729740+00:00"
   },
   "ism_mfg": {
     "value": 12596.0,
@@ -3454,7 +3454,7 @@
     "_title": "All Employees, Manufacturing",
     "_label": "Manufacturing Employment",
     "_category": "activity",
-    "_fetched_at": "2026-05-23T22:04:13.779348+00:00"
+    "_fetched_at": "2026-05-25T18:13:47.189946+00:00"
   },
   "retail_sales": {
     "value": 656115.0,
@@ -3519,7 +3519,7 @@
     "_title": "Advance Retail Sales: Retail Trade",
     "_label": "Retail Sales ex-Food Services",
     "_category": "activity",
-    "_fetched_at": "2026-05-23T22:04:14.582666+00:00"
+    "_fetched_at": "2026-05-25T18:13:47.530138+00:00"
   },
   "industrial_production": {
     "value": 102.4963,
@@ -3584,8 +3584,8 @@
     "_title": "Industrial Production: Total Index",
     "_label": "Industrial Production",
     "_category": "activity",
-    "_fetched_at": "2026-05-23T22:04:16.575725+00:00"
+    "_fetched_at": "2026-05-25T18:13:47.853031+00:00"
   },
-  "_fetched_at": "2026-05-23T22:04:16.575749+00:00",
-  "_last_full_refresh": "2026-05-23"
+  "_fetched_at": "2026-05-25T18:13:47.853057+00:00",
+  "_last_full_refresh": "2026-05-25"
 }
