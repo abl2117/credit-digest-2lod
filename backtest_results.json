@@ -1,23 +1,23 @@
 {
-  "audit_completed_at": "2026-05-28T18:15:31.726899Z",
+  "audit_completed_at": "2026-05-29T20:59:59.949001Z",
   "total_comparisons": 811,
   "tier_breakdown": {
-    "PASS": 252,
-    "FAIL": 382,
-    "WARN": 151,
+    "PASS": 250,
+    "FAIL": 383,
+    "WARN": 152,
     "NO_DATA": 26
   },
   "per_metric_breakdown": {
     "revenue_ltm": {
-      "PASS": 90,
-      "WARN": 12,
+      "PASS": 89,
+      "WARN": 13,
       "FAIL": 35
     },
     "op_income_ltm": {
       "PASS": 61,
       "NO_DATA": 23,
-      "WARN": 30,
-      "FAIL": 21
+      "WARN": 31,
+      "FAIL": 20
     },
     "da_ltm": {
       "PASS": 23,
@@ -38,9 +38,9 @@
       "NO_DATA": 1
     },
     "cash": {
-      "PASS": 65,
-      "WARN": 40,
-      "FAIL": 31
+      "PASS": 64,
+      "WARN": 39,
+      "FAIL": 33
     }
   },
   "tolerance_tight_pct": 1.0,
@@ -1969,14 +1969,14 @@
       "cik": 1867072,
       "metric": "cash",
       "label": "Cash & Equivalents",
-      "audit_value": 1348000000,
-      "audit_value_bn": 1.348,
+      "audit_value": 2623000000,
+      "audit_value_bn": 2.623,
       "cache_value": 1300000000.0,
       "cache_value_bn": 1.3,
-      "variance_pct": 3.56,
-      "tier": "WARN",
+      "variance_pct": 50.44,
+      "tier": "FAIL",
       "tag_used": "CashAndCashEquivalentsAtCarryingValue",
-      "period_end": "2025-12-31"
+      "period_end": "2026-03-31"
     },
     {
       "company": "Cognizant",
@@ -3397,28 +3397,28 @@
       "cik": 104169,
       "metric": "revenue_ltm",
       "label": "Revenue (LTM)",
-      "audit_value": 692095000000,
-      "audit_value_bn": 692.095,
+      "audit_value": 700258000000,
+      "audit_value_bn": 700.258,
       "cache_value": 713200000000.0,
       "cache_value_bn": 713.2,
-      "variance_pct": -3.05,
+      "variance_pct": -1.85,
       "tier": "WARN",
       "tag_used": "Revenues",
-      "period_end": "2025-10-31"
+      "period_end": "2026-04-30"
     },
     {
       "company": "Walmart",
       "cik": 104169,
       "metric": "op_income_ltm",
       "label": "Operating Income (LTM)",
-      "audit_value": 27825000000,
-      "audit_value_bn": 27.825,
+      "audit_value": 28610000000,
+      "audit_value_bn": 28.61,
       "cache_value": 29800000000.0,
       "cache_value_bn": 29.8,
-      "variance_pct": -7.1,
-      "tier": "FAIL",
+      "variance_pct": -4.16,
+      "tier": "WARN",
       "tag_used": "OperatingIncomeLoss",
-      "period_end": "2025-10-31"
+      "period_end": "2026-04-30"
     },
     {
       "company": "Walmart",
@@ -3439,42 +3439,42 @@
       "cik": 104169,
       "metric": "ocf_ltm",
       "label": "Cash from Operations (LTM)",
-      "audit_value": 18542000000,
-      "audit_value_bn": 18.542,
+      "audit_value": 19809000000,
+      "audit_value_bn": 19.809,
       "cache_value": 41600000000.0,
       "cache_value_bn": 41.6,
-      "variance_pct": -124.36,
+      "variance_pct": -110.01,
       "tier": "FAIL",
       "tag_used": "NetCashProvidedByUsedInOperatingActivities",
-      "period_end": "2025-04-30"
+      "period_end": "2026-04-30"
     },
     {
       "company": "Walmart",
       "cik": 104169,
       "metric": "capex_ltm",
       "label": "CapEx (LTM)",
-      "audit_value": 18767000000,
-      "audit_value_bn": 18.767,
+      "audit_value": 21332000000,
+      "audit_value_bn": 21.332,
       "cache_value": 26600000000.0,
       "cache_value_bn": 26.6,
-      "variance_pct": -41.74,
+      "variance_pct": -24.7,
       "tier": "FAIL",
       "tag_used": "PaymentsToAcquirePropertyPlantAndEquipment",
-      "period_end": "2025-04-30"
+      "period_end": "2026-04-30"
     },
     {
       "company": "Walmart",
       "cik": 104169,
       "metric": "cash",
       "label": "Cash & Equivalents",
-      "audit_value": 10727000000,
-      "audit_value_bn": 10.727,
+      "audit_value": 10729000000,
+      "audit_value_bn": 10.729,
       "cache_value": 10700000000.0,
       "cache_value_bn": 10.7,
-      "variance_pct": 0.25,
+      "variance_pct": 0.27,
       "tier": "PASS",
       "tag_used": "CashAndCashEquivalentsAtCarryingValue",
-      "period_end": "2026-01-31"
+      "period_end": "2026-04-30"
     },
     {
       "company": "AutoZone",
@@ -5819,28 +5819,28 @@
       "cik": 1618732,
       "metric": "revenue_ltm",
       "label": "Revenue (LTM)",
-      "audit_value": 2687105000,
-      "audit_value_bn": 2.687,
+      "audit_value": 2735450000,
+      "audit_value_bn": 2.735,
       "cache_value": 2700000000.0,
       "cache_value_bn": 2.7,
-      "variance_pct": -0.48,
-      "tier": "PASS",
+      "variance_pct": 1.3,
+      "tier": "WARN",
       "tag_used": "RevenueFromContractWithCustomerExcludingAssessedTax",
-      "period_end": "2026-01-31"
+      "period_end": "2026-04-30"
     },
     {
       "company": "Nutanix",
       "cik": 1618732,
       "metric": "op_income_ltm",
       "label": "Operating Income (LTM)",
-      "audit_value": 247555000,
-      "audit_value_bn": 0.248,
+      "audit_value": 252626000,
+      "audit_value_bn": 0.253,
       "cache_value": 200000000.0,
       "cache_value_bn": 0.2,
-      "variance_pct": 19.21,
+      "variance_pct": 20.83,
       "tier": "FAIL",
       "tag_used": "OperatingIncomeLoss",
-      "period_end": "2026-01-31"
+      "period_end": "2026-04-30"
     },
     {
       "company": "Nutanix",
@@ -5889,14 +5889,14 @@
       "cik": 1618732,
       "metric": "cash",
       "label": "Cash & Equivalents",
-      "audit_value": 603402000,
-      "audit_value_bn": 0.603,
+      "audit_value": 718812000,
+      "audit_value_bn": 0.719,
       "cache_value": 600000000.0,
       "cache_value_bn": 0.6,
-      "variance_pct": 0.56,
-      "tier": "PASS",
+      "variance_pct": 16.53,
+      "tier": "FAIL",
       "tag_used": "CashAndCashEquivalentsAtCarryingValue",
-      "period_end": "2026-01-31"
+      "period_end": "2026-04-30"
     },
     {
       "company": "Mastercard",
