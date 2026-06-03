@@ -686,7 +686,7 @@
     "_cik": "0000732717",
     "_ticker": "T",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:11:32.572936+00:00",
+    "_fetched_at": "2026-06-03T22:14:12.949402+00:00",
     "_warnings": []
   },
   "Verizon": {
@@ -1365,7 +1365,7 @@
     "_cik": "0000732712",
     "_ticker": "VZ",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:11:33.123769+00:00",
+    "_fetched_at": "2026-06-03T22:14:13.728293+00:00",
     "_warnings": []
   },
   "Comcast": {
@@ -2039,7 +2039,7 @@
     "_cik": "0001166691",
     "_ticker": "CMCSA",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:11:33.594035+00:00",
+    "_fetched_at": "2026-06-03T22:14:14.389674+00:00",
     "_warnings": []
   },
   "Disney": {
@@ -2856,7 +2856,7 @@
     "_cik": "0001744489",
     "_ticker": "DIS",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:11:33.956423+00:00",
+    "_fetched_at": "2026-06-03T22:14:14.799619+00:00",
     "_warnings": []
   },
   "Warner Bros. Discovery": {
@@ -3546,7 +3546,7 @@
     "_cik": "0001437107",
     "_ticker": "WBD",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:11:34.423346+00:00",
+    "_fetched_at": "2026-06-03T22:14:15.437974+00:00",
     "_warnings": []
   },
   "Netflix": {
@@ -4225,7 +4225,7 @@
     "_cik": "0001065280",
     "_ticker": "NFLX",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:11:34.957788+00:00",
+    "_fetched_at": "2026-06-03T22:14:15.953238+00:00",
     "_warnings": []
   },
   "Amazon": {
@@ -4904,7 +4904,7 @@
     "_cik": "0001018724",
     "_ticker": "AMZN",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:11:35.570434+00:00",
+    "_fetched_at": "2026-06-03T22:14:16.503619+00:00",
     "_warnings": []
   },
   "Alphabet": {
@@ -5594,7 +5594,7 @@
     "_cik": "0001652044",
     "_ticker": "GOOGL",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:11:36.035287+00:00",
+    "_fetched_at": "2026-06-03T22:14:16.916204+00:00",
     "_warnings": []
   },
   "Microsoft": {
@@ -6309,7 +6309,7 @@
     "_cik": "0000789019",
     "_ticker": "MSFT",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:11:36.666165+00:00",
+    "_fetched_at": "2026-06-03T22:14:17.531538+00:00",
     "_warnings": []
   },
   "Oracle": {
@@ -6345,13 +6345,7 @@
       "interest_expense": "InterestExpense"
     },
     "_history": {
-      "revenue": [
-        {
-          "period_end": "2022-05-31",
-          "value": 42440000000,
-          "form": "10-K"
-        }
-      ],
+      "revenue": [],
       "op_income": [
         {
           "period_end": "2026-02-28",
@@ -6684,11 +6678,6 @@
           "period_end": "2022-05-31",
           "value": 42440000000,
           "form": "10-K"
-        },
-        {
-          "period_end": "2021-05-31",
-          "value": 40479000000,
-          "form": "10-K"
         }
       ],
       "op_income": [
@@ -6710,11 +6699,6 @@
         {
           "period_end": "2022-05-31",
           "value": 10926000000,
-          "form": "10-K"
-        },
-        {
-          "period_end": "2021-05-31",
-          "value": 15213000000,
           "form": "10-K"
         }
       ],
@@ -6738,11 +6722,6 @@
           "period_end": "2022-05-31",
           "value": 1972000000,
           "form": "10-K"
-        },
-        {
-          "period_end": "2021-05-31",
-          "value": 1537000000,
-          "form": "10-K"
         }
       ],
       "ocf": [
@@ -6764,11 +6743,6 @@
         {
           "period_end": "2022-05-31",
           "value": 9539000000,
-          "form": "10-K"
-        },
-        {
-          "period_end": "2021-05-31",
-          "value": 15887000000,
           "form": "10-K"
         }
       ],
@@ -6792,11 +6766,6 @@
           "period_end": "2022-05-31",
           "value": 4511000000,
           "form": "10-K"
-        },
-        {
-          "period_end": "2021-05-31",
-          "value": 2135000000,
-          "form": "10-K"
         }
       ],
       "interest_expense": [
@@ -6818,11 +6787,6 @@
         {
           "period_end": "2022-05-31",
           "value": 2755000000,
-          "form": "10-K"
-        },
-        {
-          "period_end": "2021-05-31",
-          "value": 2496000000,
           "form": "10-K"
         }
       ]
@@ -6883,11 +6847,6 @@
           "period_end": "2023-08-31",
           "value": 11613000000,
           "form": "10-Q"
-        },
-        {
-          "period_end": "2023-05-31",
-          "value": 9765000000,
-          "form": "10-K"
         }
       ],
       "lt_debt": [],
@@ -6946,11 +6905,6 @@
           "period_end": "2023-08-31",
           "value": 4499000000,
           "form": "10-Q"
-        },
-        {
-          "period_end": "2023-05-31",
-          "value": 4061000000,
-          "form": "10-K"
         }
       ],
       "revenue_backlog": [
@@ -7008,11 +6962,6 @@
           "period_end": "2023-08-31",
           "value": 64900000000,
           "form": "10-Q"
-        },
-        {
-          "period_end": "2023-05-31",
-          "value": 67900000000,
-          "form": "10-K"
         }
       ]
     },
@@ -7020,10 +6969,10 @@
     "_cik": "0001341439",
     "_ticker": "ORCL",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:11:37.090569+00:00",
+    "_fetched_at": "2026-06-03T22:14:18.068611+00:00",
     "_warnings": [
       "Total debt not found in SEC tags",
-      "Period end 2025-05-31 is 362 days old (stale)"
+      "Period end 2025-05-31 is 368 days old (stale)"
     ]
   },
   "Salesforce": {
@@ -7769,7 +7718,7 @@
     "_cik": "0001108524",
     "_ticker": "CRM",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:11:37.690645+00:00",
+    "_fetched_at": "2026-06-03T22:14:18.598602+00:00",
     "_warnings": []
   },
   "IBM": {
@@ -8596,7 +8545,7 @@
     "_cik": "0000051143",
     "_ticker": "IBM",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:11:38.196660+00:00",
+    "_fetched_at": "2026-06-03T22:14:19.263772+00:00",
     "_warnings": []
   },
   "HP Inc": {
@@ -9423,29 +9372,29 @@
     "_cik": "0000047217",
     "_ticker": "HPQ",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:11:38.758812+00:00",
+    "_fetched_at": "2026-06-03T22:14:19.868258+00:00",
     "_warnings": []
   },
   "HPE": {
-    "revenue_ltm": 33.9,
-    "op_income_ltm": 0.0,
+    "revenue_ltm": 36.7,
+    "op_income_ltm": 0.4,
     "da_ltm": 2.7,
     "ocf_ltm": 2.9,
     "capex_ltm": 2.3,
-    "ebitda_ltm": 2.8,
+    "ebitda_ltm": 3.1,
     "fcf_ltm": 0.6,
-    "cash": 4.8,
-    "lt_debt": 17.7,
-    "st_debt": 3.1,
-    "total_debt": 20.8,
-    "net_debt": 15.9,
-    "nd_ebitda": 5.7,
-    "ebitda_margin": 8.2,
-    "op_margin": 0.1,
-    "revenue_yoy_pct": 18.3,
+    "cash": 5.3,
+    "lt_debt": 18.2,
+    "st_debt": 2.2,
+    "total_debt": 20.5,
+    "net_debt": 15.2,
+    "nd_ebitda": 4.9,
+    "ebitda_margin": 8.4,
+    "op_margin": 1.0,
+    "revenue_yoy_pct": 24.5,
     "interest_expense_ltm": 1.1,
-    "interest_coverage": 2.5,
-    "_period_end": "2026-01-31",
+    "interest_coverage": 2.8,
+    "_period_end": "2026-04-30",
     "_filing_form": "10-Q",
     "_tags_used": {
       "revenue": "Revenues",
@@ -9460,6 +9409,11 @@
     },
     "_history": {
       "revenue": [
+        {
+          "period_end": "2026-04-30",
+          "value": 10678000000,
+          "form": "10-Q"
+        },
         {
           "period_end": "2026-01-31",
           "value": 9301000000,
@@ -9514,14 +9468,14 @@
           "period_end": "2023-07-31",
           "value": 7002000000,
           "form": "10-Q"
-        },
-        {
-          "period_end": "2023-04-30",
-          "value": 6973000000,
-          "form": "10-Q"
         }
       ],
       "op_income": [
+        {
+          "period_end": "2026-04-30",
+          "value": 747000000,
+          "form": "10-Q"
+        },
         {
           "period_end": "2026-01-31",
           "value": 470000000,
@@ -9576,14 +9530,14 @@
           "period_end": "2023-07-31",
           "value": 471000000,
           "form": "10-Q"
-        },
-        {
-          "period_end": "2023-04-30",
-          "value": 520000000,
-          "form": "10-Q"
         }
       ],
       "da": [
+        {
+          "period_end": "2026-04-30",
+          "value": 877000000,
+          "form": "10-Q"
+        },
         {
           "period_end": "2026-01-31",
           "value": 872000000,
@@ -9638,14 +9592,14 @@
           "period_end": "2023-07-31",
           "value": 654000000,
           "form": "10-Q"
-        },
-        {
-          "period_end": "2023-04-30",
-          "value": 651000000,
-          "form": "10-Q"
         }
       ],
       "ocf": [
+        {
+          "period_end": "2026-04-30",
+          "value": 1410000000,
+          "form": "10-Q"
+        },
         {
           "period_end": "2026-01-31",
           "value": 1178000000,
@@ -9700,14 +9654,14 @@
           "period_end": "2023-07-31",
           "value": 1525000000,
           "form": "10-Q"
-        },
-        {
-          "period_end": "2023-04-30",
-          "value": 889000000,
-          "form": "10-Q"
         }
       ],
       "capex": [
+        {
+          "period_end": "2026-04-30",
+          "value": 583000000,
+          "form": "10-Q"
+        },
         {
           "period_end": "2026-01-31",
           "value": 569000000,
@@ -9761,11 +9715,6 @@
         {
           "period_end": "2023-07-31",
           "value": 671000000,
-          "form": "10-Q"
-        },
-        {
-          "period_end": "2023-04-30",
-          "value": 688000000,
           "form": "10-Q"
         }
       ],
@@ -9938,6 +9887,11 @@
     "_balance_history": {
       "cash": [
         {
+          "period_end": "2026-04-30",
+          "value": 5292000000,
+          "form": "10-Q"
+        },
+        {
           "period_end": "2026-01-31",
           "value": 4841000000,
           "form": "10-Q"
@@ -9994,6 +9948,11 @@
         }
       ],
       "lt_debt": [
+        {
+          "period_end": "2026-04-30",
+          "value": 18237000000,
+          "form": "10-Q"
+        },
         {
           "period_end": "2026-01-31",
           "value": 17705000000,
@@ -10052,6 +10011,11 @@
       ],
       "st_debt": [
         {
+          "period_end": "2026-04-30",
+          "value": 2249000000,
+          "form": "10-Q"
+        },
+        {
           "period_end": "2026-01-31",
           "value": 3071000000,
           "form": "10-Q"
@@ -10109,6 +10073,11 @@
       ],
       "revenue_backlog": [
         {
+          "period_end": "2026-04-30",
+          "value": 10800000000,
+          "form": "10-Q"
+        },
+        {
           "period_end": "2026-01-31",
           "value": 10600000000,
           "form": "10-Q"
@@ -10159,7 +10128,7 @@
     "_cik": "0001645590",
     "_ticker": "HPE",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:11:39.256670+00:00",
+    "_fetched_at": "2026-06-03T22:14:20.372592+00:00",
     "_warnings": []
   },
   "Dell": {
@@ -10879,7 +10848,7 @@
     "_cik": "0001571996",
     "_ticker": "DELL",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:11:39.780093+00:00",
+    "_fetched_at": "2026-06-03T22:14:20.956326+00:00",
     "_warnings": []
   },
   "Nextracker": {
@@ -11497,7 +11466,7 @@
     "_cik": "0001852131",
     "_ticker": "NXT",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:11:40.065876+00:00",
+    "_fetched_at": "2026-06-03T22:14:21.266459+00:00",
     "_warnings": [
       "Total debt not found in SEC tags"
     ]
@@ -12178,7 +12147,7 @@
     "_cik": "0000897723",
     "_ticker": "SANM",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:11:40.593487+00:00",
+    "_fetched_at": "2026-06-03T22:14:21.860348+00:00",
     "_warnings": []
   },
   "Flex Ltd": {
@@ -12924,7 +12893,7 @@
     "_cik": "0000866374",
     "_ticker": "FLEX",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:11:40.998277+00:00",
+    "_fetched_at": "2026-06-03T22:14:22.444712+00:00",
     "_warnings": []
   },
   "Jabil": {
@@ -13466,11 +13435,6 @@
           "period_end": "2023-08-31",
           "value": 1804000000,
           "form": "10-K"
-        },
-        {
-          "period_end": "2023-05-31",
-          "value": 1480000000,
-          "form": "10-Q"
         }
       ],
       "lt_debt": [
@@ -13528,11 +13492,6 @@
           "period_end": "2023-08-31",
           "value": 2875000000,
           "form": "10-K"
-        },
-        {
-          "period_end": "2023-05-31",
-          "value": 2874000000,
-          "form": "10-Q"
         }
       ],
       "st_debt": [
@@ -13590,11 +13549,6 @@
           "period_end": "2023-08-31",
           "value": 0,
           "form": "10-K"
-        },
-        {
-          "period_end": "2023-05-31",
-          "value": 300000000,
-          "form": "10-Q"
         }
       ],
       "revenue_backlog": []
@@ -13603,7 +13557,7 @@
     "_cik": "0000898293",
     "_ticker": "JBL",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:11:41.432075+00:00",
+    "_fetched_at": "2026-06-03T22:14:22.960097+00:00",
     "_warnings": []
   },
   "Arrow Electronics": {
@@ -14277,7 +14231,7 @@
     "_cik": "0000007536",
     "_ticker": "ARW",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:11:42.088376+00:00",
+    "_fetched_at": "2026-06-03T22:14:23.436331+00:00",
     "_warnings": []
   },
   "TD Synnex": {
@@ -14819,11 +14773,6 @@
           "period_end": "2023-08-31",
           "value": 1250872000,
           "form": "10-Q"
-        },
-        {
-          "period_end": "2023-05-31",
-          "value": 852079000,
-          "form": "10-Q"
         }
       ],
       "lt_debt": [
@@ -14880,11 +14829,6 @@
         {
           "period_end": "2023-08-31",
           "value": 3139469000,
-          "form": "10-Q"
-        },
-        {
-          "period_end": "2023-05-31",
-          "value": 3805374000,
           "form": "10-Q"
         }
       ],
@@ -14943,11 +14887,6 @@
           "period_end": "2023-08-31",
           "value": 939713000,
           "form": "10-Q"
-        },
-        {
-          "period_end": "2023-05-31",
-          "value": 299738000,
-          "form": "10-Q"
         }
       ],
       "revenue_backlog": []
@@ -14956,7 +14895,7 @@
     "_cik": "0001177394",
     "_ticker": "SNX",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:11:42.682264+00:00",
+    "_fetched_at": "2026-06-03T22:14:24.090618+00:00",
     "_warnings": []
   },
   "Ingram Micro": {
@@ -15525,7 +15464,7 @@
     "_cik": "0001897762",
     "_ticker": "INGM",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:11:42.946295+00:00",
+    "_fetched_at": "2026-06-03T22:14:24.449693+00:00",
     "_warnings": []
   },
   "Kyndryl": {
@@ -15536,12 +15475,12 @@
     "capex_ltm": 0.6,
     "ebitda_ltm": 1.3,
     "fcf_ltm": 0.3,
-    "cash": 1.3,
-    "lt_debt": 2.9,
-    "st_debt": 0.8,
-    "total_debt": 3.7,
-    "net_debt": 2.4,
-    "nd_ebitda": 1.8,
+    "cash": 2.6,
+    "lt_debt": 3.9,
+    "st_debt": 1.8,
+    "total_debt": 5.7,
+    "net_debt": 3.1,
+    "nd_ebitda": 2.3,
     "ebitda_margin": 8.7,
     "op_margin": 3.6,
     "revenue_yoy_pct": -2.9,
@@ -15557,11 +15496,16 @@
       "capex": "PaymentsToAcquireProductiveAssets",
       "cash": "CashAndCashEquivalentsAtCarryingValue",
       "lt_debt": "LongTermDebtNoncurrent",
-      "st_debt": "ShortTermBorrowings",
+      "st_debt": "DebtCurrent",
       "interest_expense": "InterestExpense"
     },
     "_history": {
       "revenue": [
+        {
+          "period_end": "2026-03-31",
+          "value": 3769000000,
+          "form": "10-K"
+        },
         {
           "period_end": "2025-12-31",
           "value": 3859000000,
@@ -15580,7 +15524,7 @@
         {
           "period_end": "2025-03-31",
           "value": 3800000000,
-          "form": "10-K/A"
+          "form": "10-K"
         },
         {
           "period_end": "2024-12-31",
@@ -15600,7 +15544,7 @@
         {
           "period_end": "2024-03-31",
           "value": 3850000000,
-          "form": "10-K/A"
+          "form": "10-K"
         },
         {
           "period_end": "2023-12-31",
@@ -15616,14 +15560,14 @@
           "period_end": "2023-06-30",
           "value": 4193000000,
           "form": "10-Q"
-        },
-        {
-          "period_end": "2023-03-31",
-          "value": 4256000000,
-          "form": "10-K/A"
         }
       ],
       "op_income": [
+        {
+          "period_end": "2026-03-31",
+          "value": 133000000,
+          "form": "10-K"
+        },
         {
           "period_end": "2025-12-31",
           "value": 91000000,
@@ -15642,7 +15586,7 @@
         {
           "period_end": "2025-03-31",
           "value": 118000000,
-          "form": "10-K/A"
+          "form": "10-K"
         },
         {
           "period_end": "2024-12-31",
@@ -15662,7 +15606,7 @@
         {
           "period_end": "2024-03-31",
           "value": -3000000,
-          "form": "10-K/A"
+          "form": "10-K"
         },
         {
           "period_end": "2023-12-31",
@@ -15678,14 +15622,14 @@
           "period_end": "2023-06-30",
           "value": -109000000,
           "form": "10-Q"
-        },
-        {
-          "period_end": "2023-03-31",
-          "value": -289000000,
-          "form": "10-K/A"
         }
       ],
       "da": [
+        {
+          "period_end": "2026-03-31",
+          "value": 185000000,
+          "form": "10-K"
+        },
         {
           "period_end": "2025-12-31",
           "value": 193000000,
@@ -15704,7 +15648,7 @@
         {
           "period_end": "2025-03-31",
           "value": 188000000,
-          "form": "10-K/A"
+          "form": "10-K"
         },
         {
           "period_end": "2024-12-31",
@@ -15724,7 +15668,7 @@
         {
           "period_end": "2024-03-31",
           "value": 197000000,
-          "form": "10-K/A"
+          "form": "10-K"
         },
         {
           "period_end": "2023-12-31",
@@ -15740,14 +15684,14 @@
           "period_end": "2023-06-30",
           "value": 210000000,
           "form": "10-Q"
-        },
-        {
-          "period_end": "2023-03-31",
-          "value": 219000000,
-          "form": "10-K/A"
         }
       ],
       "ocf": [
+        {
+          "period_end": "2026-03-31",
+          "value": 498000000,
+          "form": "10-K"
+        },
         {
           "period_end": "2025-12-31",
           "value": 428000000,
@@ -15766,7 +15710,7 @@
         {
           "period_end": "2025-03-31",
           "value": 581000000,
-          "form": "10-K/A"
+          "form": "10-K"
         },
         {
           "period_end": "2024-12-31",
@@ -15786,7 +15730,7 @@
         {
           "period_end": "2024-03-31",
           "value": 145000000,
-          "form": "10-K/A"
+          "form": "10-K"
         },
         {
           "period_end": "2023-12-31",
@@ -15802,14 +15746,14 @@
           "period_end": "2023-06-30",
           "value": -173000000,
           "form": "10-Q"
-        },
-        {
-          "period_end": "2023-03-31",
-          "value": 12000000,
-          "form": "10-K/A"
         }
       ],
       "capex": [
+        {
+          "period_end": "2026-03-31",
+          "value": 116000000,
+          "form": "10-K"
+        },
         {
           "period_end": "2025-12-31",
           "value": 220000000,
@@ -15828,7 +15772,7 @@
         {
           "period_end": "2025-03-31",
           "value": 240000000,
-          "form": "10-K/A"
+          "form": "10-K"
         },
         {
           "period_end": "2024-12-31",
@@ -15848,7 +15792,7 @@
         {
           "period_end": "2024-03-31",
           "value": 202000000,
-          "form": "10-K/A"
+          "form": "10-K"
         },
         {
           "period_end": "2023-12-31",
@@ -15864,14 +15808,14 @@
           "period_end": "2023-06-30",
           "value": 100000000,
           "form": "10-Q"
-        },
-        {
-          "period_end": "2023-03-31",
-          "value": 154000000,
-          "form": "10-K/A"
         }
       ],
       "interest_expense": [
+        {
+          "period_end": "2026-03-31",
+          "value": 29000000,
+          "form": "10-K"
+        },
         {
           "period_end": "2025-12-31",
           "value": 21000000,
@@ -15890,7 +15834,7 @@
         {
           "period_end": "2025-03-31",
           "value": 23000000,
-          "form": "10-K/A"
+          "form": "10-K"
         },
         {
           "period_end": "2024-12-31",
@@ -15910,7 +15854,7 @@
         {
           "period_end": "2024-03-31",
           "value": 31000000,
-          "form": "10-K/A"
+          "form": "10-K"
         },
         {
           "period_end": "2023-12-31",
@@ -15926,25 +15870,25 @@
           "period_end": "2023-06-30",
           "value": 29000000,
           "form": "10-Q"
-        },
-        {
-          "period_end": "2023-03-31",
-          "value": 28000000,
-          "form": "10-K/A"
         }
       ]
     },
     "_history_annual": {
       "revenue": [
         {
+          "period_end": "2026-03-31",
+          "value": 15092000000,
+          "form": "10-K"
+        },
+        {
           "period_end": "2025-03-31",
           "value": 15057000000,
-          "form": "10-K/A"
+          "form": "10-K"
         },
         {
           "period_end": "2024-03-31",
           "value": 16052000000,
-          "form": "10-K/A"
+          "form": "10-K"
         },
         {
           "period_end": "2023-03-31",
@@ -15959,14 +15903,19 @@
       ],
       "op_income": [
         {
+          "period_end": "2026-03-31",
+          "value": 414000000,
+          "form": "10-K"
+        },
+        {
           "period_end": "2025-03-31",
           "value": 435000000,
-          "form": "10-K/A"
+          "form": "10-K"
         },
         {
           "period_end": "2024-03-31",
           "value": -168000000,
-          "form": "10-K/A"
+          "form": "10-K"
         },
         {
           "period_end": "2023-03-31",
@@ -15981,14 +15930,19 @@
       ],
       "da": [
         {
+          "period_end": "2026-03-31",
+          "value": 762000000,
+          "form": "10-K"
+        },
+        {
           "period_end": "2025-03-31",
           "value": 660000000,
-          "form": "10-K/A"
+          "form": "10-K"
         },
         {
           "period_end": "2024-03-31",
           "value": 834000000,
-          "form": "10-K/A"
+          "form": "10-K"
         },
         {
           "period_end": "2023-03-31",
@@ -16003,14 +15957,19 @@
       ],
       "ocf": [
         {
+          "period_end": "2026-03-31",
+          "value": 948000000,
+          "form": "10-K"
+        },
+        {
           "period_end": "2025-03-31",
           "value": 942000000,
-          "form": "10-K/A"
+          "form": "10-K"
         },
         {
           "period_end": "2024-03-31",
           "value": 454000000,
-          "form": "10-K/A"
+          "form": "10-K"
         },
         {
           "period_end": "2023-03-31",
@@ -16025,14 +15984,19 @@
       ],
       "capex": [
         {
+          "period_end": "2026-03-31",
+          "value": 608000000,
+          "form": "10-K"
+        },
+        {
           "period_end": "2025-03-31",
           "value": 605000000,
-          "form": "10-K/A"
+          "form": "10-K"
         },
         {
           "period_end": "2024-03-31",
           "value": 651000000,
-          "form": "10-K/A"
+          "form": "10-K"
         },
         {
           "period_end": "2023-03-31",
@@ -16047,14 +16011,19 @@
       ],
       "interest_expense": [
         {
+          "period_end": "2026-03-31",
+          "value": 89000000,
+          "form": "10-K"
+        },
+        {
           "period_end": "2025-03-31",
           "value": 100000000,
-          "form": "10-K/A"
+          "form": "10-K"
         },
         {
           "period_end": "2024-03-31",
           "value": 122000000,
-          "form": "10-K/A"
+          "form": "10-K"
         },
         {
           "period_end": "2023-03-31",
@@ -16070,6 +16039,11 @@
     },
     "_balance_history": {
       "cash": [
+        {
+          "period_end": "2026-03-31",
+          "value": 2623000000,
+          "form": "10-K"
+        },
         {
           "period_end": "2025-12-31",
           "value": 1348000000,
@@ -16088,7 +16062,7 @@
         {
           "period_end": "2025-03-31",
           "value": 1786000000,
-          "form": "10-K/A"
+          "form": "10-K"
         },
         {
           "period_end": "2024-12-31",
@@ -16128,6 +16102,11 @@
       ],
       "lt_debt": [
         {
+          "period_end": "2026-03-31",
+          "value": 3900000000,
+          "form": "10-K"
+        },
+        {
           "period_end": "2025-12-31",
           "value": 2900000000,
           "form": "10-Q"
@@ -16145,7 +16124,7 @@
         {
           "period_end": "2025-03-31",
           "value": 2900000000,
-          "form": "10-K/A"
+          "form": "10-K"
         },
         {
           "period_end": "2024-12-31",
@@ -16185,62 +16164,22 @@
       ],
       "st_debt": [
         {
-          "period_end": "2025-12-31",
-          "value": 805000000,
-          "form": "10-Q"
-        },
-        {
-          "period_end": "2025-09-30",
-          "value": 124000000,
-          "form": "10-Q"
-        },
-        {
-          "period_end": "2025-06-30",
-          "value": 128000000,
-          "form": "10-Q"
+          "period_end": "2026-03-31",
+          "value": 1800000000,
+          "form": "10-K"
         },
         {
           "period_end": "2025-03-31",
           "value": 129000000,
-          "form": "10-K/A"
-        },
-        {
-          "period_end": "2024-12-31",
-          "value": 129000000,
-          "form": "10-Q"
-        },
-        {
-          "period_end": "2024-09-30",
-          "value": 135000000,
-          "form": "10-Q"
-        },
-        {
-          "period_end": "2024-06-30",
-          "value": 130000000,
-          "form": "10-Q"
-        },
-        {
-          "period_end": "2024-03-31",
-          "value": 126000000,
-          "form": "10-K/A"
-        },
-        {
-          "period_end": "2023-12-31",
-          "value": 628000000,
-          "form": "10-Q"
-        },
-        {
-          "period_end": "2023-09-30",
-          "value": 121000000,
-          "form": "10-Q"
-        },
-        {
-          "period_end": "2023-06-30",
-          "value": 134000000,
-          "form": "10-Q"
+          "form": "10-K"
         }
       ],
       "revenue_backlog": [
+        {
+          "period_end": "2026-03-31",
+          "value": 32800000000,
+          "form": "10-K"
+        },
         {
           "period_end": "2025-12-31",
           "value": 33600000000,
@@ -16302,7 +16241,7 @@
     "_cik": "0001867072",
     "_ticker": "KD",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:11:43.294346+00:00",
+    "_fetched_at": "2026-06-03T22:14:24.851808+00:00",
     "_warnings": []
   },
   "Cognizant": {
@@ -17042,7 +16981,7 @@
     "_cik": "0001058290",
     "_ticker": "CTSH",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:11:43.729972+00:00",
+    "_fetched_at": "2026-06-03T22:14:25.359667+00:00",
     "_warnings": []
   },
   "Equinix": {
@@ -17732,7 +17671,7 @@
     "_cik": "0001101239",
     "_ticker": "EQIX",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:11:44.324635+00:00",
+    "_fetched_at": "2026-06-03T22:14:26.011655+00:00",
     "_warnings": []
   },
   "Digital Realty": {
@@ -18350,7 +18289,7 @@
     "_cik": "0001297996",
     "_ticker": "DLR",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:11:44.731453+00:00",
+    "_fetched_at": "2026-06-03T22:14:26.561669+00:00",
     "_warnings": []
   },
   "American Tower": {
@@ -19029,7 +18968,7 @@
     "_cik": "0001053507",
     "_ticker": "AMT",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:11:45.298887+00:00",
+    "_fetched_at": "2026-06-03T22:14:27.144661+00:00",
     "_warnings": []
   },
   "PayPal": {
@@ -19647,7 +19586,7 @@
     "_cik": "0001633917",
     "_ticker": "PYPL",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:11:45.714478+00:00",
+    "_fetched_at": "2026-06-03T22:14:27.588069+00:00",
     "_warnings": []
   },
   "Corpay": {
@@ -20301,7 +20240,7 @@
     "_cik": "0001175454",
     "_ticker": "CPAY",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:11:46.217151+00:00",
+    "_fetched_at": "2026-06-03T22:14:28.166959+00:00",
     "_warnings": []
   },
   "Booking Holdings": {
@@ -20980,7 +20919,7 @@
     "_cik": "0001075531",
     "_ticker": "BKNG",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:11:46.733634+00:00",
+    "_fetched_at": "2026-06-03T22:14:28.708489+00:00",
     "_warnings": []
   },
   "Uber": {
@@ -21747,7 +21686,7 @@
     "_cik": "0001543151",
     "_ticker": "UBER",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:11:47.086424+00:00",
+    "_fetched_at": "2026-06-03T22:14:29.162121+00:00",
     "_warnings": []
   },
   "Delta": {
@@ -22426,7 +22365,7 @@
     "_cik": "0000027904",
     "_ticker": "DAL",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:11:47.550908+00:00",
+    "_fetched_at": "2026-06-03T22:14:29.621450+00:00",
     "_warnings": []
   },
   "Carnival": {
@@ -22968,11 +22907,6 @@
           "period_end": "2023-08-31",
           "value": 2842000000,
           "form": "10-Q"
-        },
-        {
-          "period_end": "2023-05-31",
-          "value": 4468000000,
-          "form": "10-Q"
         }
       ],
       "lt_debt": [
@@ -23029,11 +22963,6 @@
         {
           "period_end": "2023-08-31",
           "value": 29516000000,
-          "form": "10-Q"
-        },
-        {
-          "period_end": "2023-05-31",
-          "value": 31921000000,
           "form": "10-Q"
         }
       ],
@@ -23092,11 +23021,6 @@
           "period_end": "2023-08-31",
           "value": 1780000000,
           "form": "10-Q"
-        },
-        {
-          "period_end": "2023-05-31",
-          "value": 1789000000,
-          "form": "10-Q"
         }
       ],
       "revenue_backlog": []
@@ -23105,7 +23029,7 @@
     "_cik": "0000815097",
     "_ticker": "CCL",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:11:47.995292+00:00",
+    "_fetched_at": "2026-06-03T22:14:30.336334+00:00",
     "_warnings": []
   },
   "Royal Caribbean": {
@@ -23784,7 +23708,7 @@
     "_cik": "0000884887",
     "_ticker": "RCL",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:11:48.432274+00:00",
+    "_fetched_at": "2026-06-03T22:14:31.188132+00:00",
     "_warnings": []
   },
   "Norwegian Cruise Line": {
@@ -24524,7 +24448,7 @@
     "_cik": "0001513761",
     "_ticker": "NCLH",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:11:48.813999+00:00",
+    "_fetched_at": "2026-06-03T22:14:31.740120+00:00",
     "_warnings": []
   },
   "General Motors": {
@@ -25081,7 +25005,7 @@
     "_cik": "0001467858",
     "_ticker": "GM",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:11:49.252785+00:00",
+    "_fetched_at": "2026-06-03T22:14:32.254677+00:00",
     "_warnings": [
       "Total debt not found in SEC tags"
     ]
@@ -25823,7 +25747,7 @@
     "_cik": "0001318605",
     "_ticker": "TSLA",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:11:49.678550+00:00",
+    "_fetched_at": "2026-06-03T22:14:32.773778+00:00",
     "_warnings": []
   },
   "Ford": {
@@ -26315,10 +26239,10 @@
     "_cik": "0000037996",
     "_ticker": "F",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:11:50.128329+00:00",
+    "_fetched_at": "2026-06-03T22:14:33.317901+00:00",
     "_warnings": [
       "Total debt not found in SEC tags",
-      "Period end 2024-12-31 is 513 days old (stale)"
+      "Period end 2024-12-31 is 519 days old (stale)"
     ]
   },
   "Toyota": {
@@ -26379,7 +26303,7 @@
     "_cik": "0001094517",
     "_ticker": "TM",
     "_filer_type": "20-F",
-    "_fetched_at": "2026-05-28T18:11:50.496627+00:00",
+    "_fetched_at": "2026-06-03T22:14:33.754560+00:00",
     "_warnings": [
       "Revenue LTM not found in SEC tags",
       "EBITDA could not be constructed (missing op_income or D&A)",
@@ -27218,7 +27142,7 @@
     "_cik": "0000012927",
     "_ticker": "BA",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:11:51.050496+00:00",
+    "_fetched_at": "2026-06-03T22:14:34.524984+00:00",
     "_warnings": []
   },
   "GE Aerospace": {
@@ -27913,30 +27837,30 @@
     "_cik": "0000040545",
     "_ticker": "GE",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:11:51.588585+00:00",
+    "_fetched_at": "2026-06-03T22:14:35.361691+00:00",
     "_warnings": []
   },
   "Walmart": {
-    "revenue_ltm": 713.2,
-    "op_income_ltm": 29.8,
-    "da_ltm": 14.2,
+    "revenue_ltm": 700.3,
+    "op_income_ltm": 28.6,
+    "da_ltm": 14.3,
     "ocf_ltm": 41.6,
     "capex_ltm": 26.6,
-    "ebitda_ltm": 44.0,
+    "ebitda_ltm": 42.9,
     "fcf_ltm": 14.9,
     "cash": 10.7,
-    "lt_debt": 34.6,
-    "st_debt": 3.5,
-    "total_debt": 38.2,
-    "net_debt": 27.4,
-    "nd_ebitda": 0.6,
-    "ebitda_margin": 6.2,
-    "op_margin": 4.2,
-    "revenue_yoy_pct": null,
+    "lt_debt": 36.9,
+    "st_debt": 3.9,
+    "total_debt": 40.8,
+    "net_debt": 30.1,
+    "nd_ebitda": 0.7,
+    "ebitda_margin": 6.1,
+    "op_margin": 4.1,
+    "revenue_yoy_pct": 5.9,
     "interest_expense_ltm": 2.3,
-    "interest_coverage": 19.0,
-    "_period_end": "2026-01-31",
-    "_filing_form": "10-K",
+    "interest_coverage": 18.6,
+    "_period_end": "2026-04-30",
+    "_filing_form": "10-Q",
     "_tags_used": {
       "revenue": "Revenues",
       "op_income": "OperatingIncomeLoss",
@@ -27950,6 +27874,11 @@
     },
     "_history": {
       "revenue": [
+        {
+          "period_end": "2026-04-30",
+          "value": 177751000000,
+          "form": "10-Q"
+        },
         {
           "period_end": "2026-01-31",
           "value": 190656000000,
@@ -28004,14 +27933,14 @@
           "period_end": "2023-07-31",
           "value": 161632000000,
           "form": "10-Q"
-        },
-        {
-          "period_end": "2023-04-30",
-          "value": 152301000000,
-          "form": "10-Q"
         }
       ],
       "op_income": [
+        {
+          "period_end": "2026-04-30",
+          "value": 7493000000,
+          "form": "10-Q"
+        },
         {
           "period_end": "2026-01-31",
           "value": 8708000000,
@@ -28066,14 +27995,14 @@
           "period_end": "2023-07-31",
           "value": 7316000000,
           "form": "10-Q"
-        },
-        {
-          "period_end": "2023-04-30",
-          "value": 6240000000,
-          "form": "10-Q"
         }
       ],
       "da": [
+        {
+          "period_end": "2026-04-30",
+          "value": 3821000000,
+          "form": "10-Q"
+        },
         {
           "period_end": "2026-01-31",
           "value": 3741000000,
@@ -28128,14 +28057,14 @@
           "period_end": "2023-07-31",
           "value": 2905000000,
           "form": "10-Q"
-        },
-        {
-          "period_end": "2023-04-30",
-          "value": 2845000000,
-          "form": "10-Q"
         }
       ],
       "ocf": [
+        {
+          "period_end": "2026-04-30",
+          "value": 4738000000,
+          "form": "10-Q"
+        },
         {
           "period_end": "2026-01-31",
           "value": 14113000000,
@@ -28190,14 +28119,14 @@
           "period_end": "2023-07-31",
           "value": 13568000000,
           "form": "10-Q"
-        },
-        {
-          "period_end": "2023-04-30",
-          "value": 4633000000,
-          "form": "10-Q"
         }
       ],
       "capex": [
+        {
+          "period_end": "2026-04-30",
+          "value": 6684000000,
+          "form": "10-Q"
+        },
         {
           "period_end": "2026-01-31",
           "value": 8015000000,
@@ -28252,14 +28181,14 @@
           "period_end": "2023-07-31",
           "value": 4787000000,
           "form": "10-Q"
-        },
-        {
-          "period_end": "2023-04-30",
-          "value": 4429000000,
-          "form": "10-Q"
         }
       ],
       "interest_expense": [
+        {
+          "period_end": "2026-04-30",
+          "value": 574000000,
+          "form": "10-Q"
+        },
         {
           "period_end": "2026-01-31",
           "value": 585000000,
@@ -28313,11 +28242,6 @@
         {
           "period_end": "2023-07-31",
           "value": 543000000,
-          "form": "10-Q"
-        },
-        {
-          "period_end": "2023-04-30",
-          "value": 568000000,
           "form": "10-Q"
         }
       ]
@@ -28489,9 +28413,14 @@
     "_balance_history": {
       "cash": [
         {
+          "period_end": "2026-04-30",
+          "value": 10729000000,
+          "form": "10-Q"
+        },
+        {
           "period_end": "2026-01-31",
           "value": 10727000000,
-          "form": "10-K"
+          "form": "10-Q"
         },
         {
           "period_end": "2025-10-31",
@@ -28546,9 +28475,14 @@
       ],
       "lt_debt": [
         {
+          "period_end": "2026-04-30",
+          "value": 36887000000,
+          "form": "10-Q"
+        },
+        {
           "period_end": "2026-01-31",
           "value": 34624000000,
-          "form": "10-K"
+          "form": "10-Q"
         },
         {
           "period_end": "2025-10-31",
@@ -28603,9 +28537,14 @@
       ],
       "st_debt": [
         {
+          "period_end": "2026-04-30",
+          "value": 3896000000,
+          "form": "10-Q"
+        },
+        {
           "period_end": "2026-01-31",
           "value": 3542000000,
-          "form": "10-K"
+          "form": "10-Q"
         },
         {
           "period_end": "2025-10-31",
@@ -28664,7 +28603,7 @@
     "_cik": "0000104169",
     "_ticker": "WMT",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:11:52.116865+00:00",
+    "_fetched_at": "2026-06-03T22:14:35.988609+00:00",
     "_warnings": []
   },
   "AutoZone": {
@@ -29152,7 +29091,7 @@
     "_cik": "0000866787",
     "_ticker": "AZO",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:11:52.597549+00:00",
+    "_fetched_at": "2026-06-03T22:14:36.660304+00:00",
     "_warnings": []
   },
   "Genuine Parts": {
@@ -29831,7 +29770,7 @@
     "_cik": "0000040987",
     "_ticker": "GPC",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:11:52.995039+00:00",
+    "_fetched_at": "2026-06-03T22:14:37.391320+00:00",
     "_warnings": []
   },
   "Coca-Cola": {
@@ -30567,7 +30506,7 @@
     "_cik": "0000021344",
     "_ticker": "KO",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:11:53.616341+00:00",
+    "_fetched_at": "2026-06-03T22:14:38.150365+00:00",
     "_warnings": []
   },
   "Anheuser-Busch InBev": {
@@ -30628,7 +30567,7 @@
     "_cik": "0001668717",
     "_ticker": "BUD",
     "_filer_type": "20-F",
-    "_fetched_at": "2026-05-28T18:11:53.979065+00:00",
+    "_fetched_at": "2026-06-03T22:14:38.541504+00:00",
     "_warnings": [
       "Revenue LTM not found in SEC tags",
       "EBITDA could not be constructed (missing op_income or D&A)",
@@ -31297,7 +31236,7 @@
     "_cik": "0001413329",
     "_ticker": "PM",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:11:54.511297+00:00",
+    "_fetched_at": "2026-06-03T22:14:39.152943+00:00",
     "_warnings": []
   },
   "Altria": {
@@ -31976,7 +31915,7 @@
     "_cik": "0000764180",
     "_ticker": "MO",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:11:55.013776+00:00",
+    "_fetched_at": "2026-06-03T22:14:39.802568+00:00",
     "_warnings": []
   },
   "Imperial Brands": {
@@ -31990,17 +31929,17 @@
     "revenue_ltm": 3.1,
     "op_income_ltm": 0.3,
     "da_ltm": 0.1,
-    "ocf_ltm": 0.3,
-    "capex_ltm": 0.1,
+    "ocf_ltm": 0.1,
+    "capex_ltm": 0.0,
     "ebitda_ltm": 0.3,
-    "fcf_ltm": 0.3,
+    "fcf_ltm": 0.1,
     "cash": 0.1,
     "lt_debt": 0.6,
     "st_debt": 0.0,
     "total_debt": 0.6,
-    "net_debt": 0.5,
-    "nd_ebitda": 1.5,
-    "ebitda_margin": 11.1,
+    "net_debt": 0.6,
+    "nd_ebitda": 1.6,
+    "ebitda_margin": 10.9,
     "op_margin": 9.2,
     "revenue_yoy_pct": 13.4,
     "interest_expense_ltm": 0.1,
@@ -32020,6 +31959,11 @@
     },
     "_history": {
       "revenue": [
+        {
+          "period_end": "2026-03-31",
+          "value": 689854000,
+          "form": "10-K"
+        },
         {
           "period_end": "2025-12-31",
           "value": 853155000,
@@ -32074,14 +32018,14 @@
           "period_end": "2023-06-30",
           "value": 516370000,
           "form": "10-Q"
-        },
-        {
-          "period_end": "2023-03-31",
-          "value": 680549000,
-          "form": "10-K"
         }
       ],
       "op_income": [
+        {
+          "period_end": "2026-03-31",
+          "value": -14961000,
+          "form": "10-K"
+        },
         {
           "period_end": "2025-12-31",
           "value": 81950000,
@@ -32136,14 +32080,14 @@
           "period_end": "2023-06-30",
           "value": 11035000,
           "form": "10-Q"
-        },
-        {
-          "period_end": "2023-03-31",
-          "value": 52394000,
-          "form": "10-K"
         }
       ],
       "da": [
+        {
+          "period_end": "2026-03-31",
+          "value": 13231000,
+          "form": "10-K"
+        },
         {
           "period_end": "2025-12-31",
           "value": 13008000,
@@ -32198,14 +32142,14 @@
           "period_end": "2023-06-30",
           "value": 14754000,
           "form": "10-Q"
-        },
-        {
-          "period_end": "2023-03-31",
-          "value": 14456000,
-          "form": "10-K"
         }
       ],
       "ocf": [
+        {
+          "period_end": "2026-03-31",
+          "value": 187139000,
+          "form": "10-K"
+        },
         {
           "period_end": "2025-12-31",
           "value": 114319000,
@@ -32260,14 +32204,14 @@
           "period_end": "2023-06-30",
           "value": -103891000,
           "form": "10-Q"
-        },
-        {
-          "period_end": "2023-03-31",
-          "value": 173293000,
-          "form": "10-K"
         }
       ],
       "capex": [
+        {
+          "period_end": "2026-03-31",
+          "value": 8526000,
+          "form": "10-K"
+        },
         {
           "period_end": "2025-12-31",
           "value": 19204000,
@@ -32322,14 +32266,14 @@
           "period_end": "2023-06-30",
           "value": 17960000,
           "form": "10-Q"
-        },
-        {
-          "period_end": "2023-03-31",
-          "value": 15244000,
-          "form": "10-K"
         }
       ],
       "interest_expense": [
+        {
+          "period_end": "2026-03-31",
+          "value": 18565000,
+          "form": "10-K"
+        },
         {
           "period_end": "2025-12-31",
           "value": 17260000,
@@ -32384,16 +32328,16 @@
           "period_end": "2023-06-30",
           "value": 15543000,
           "form": "10-Q"
-        },
-        {
-          "period_end": "2023-03-31",
-          "value": 16041000,
-          "form": "10-K"
         }
       ]
     },
     "_history_annual": {
       "revenue": [
+        {
+          "period_end": "2026-03-31",
+          "value": 2885078000,
+          "form": "10-K"
+        },
         {
           "period_end": "2025-03-31",
           "value": 2922924000,
@@ -32417,6 +32361,11 @@
       ],
       "op_income": [
         {
+          "period_end": "2026-03-31",
+          "value": 168451000,
+          "form": "10-K"
+        },
+        {
           "period_end": "2025-03-31",
           "value": 232797000,
           "form": "10-K"
@@ -32438,6 +32387,11 @@
         }
       ],
       "da": [
+        {
+          "period_end": "2026-03-31",
+          "value": 53437000,
+          "form": "10-K"
+        },
         {
           "period_end": "2025-03-31",
           "value": 59773000,
@@ -32461,6 +32415,11 @@
       ],
       "ocf": [
         {
+          "period_end": "2026-03-31",
+          "value": 129100000,
+          "form": "10-K"
+        },
+        {
           "period_end": "2025-03-31",
           "value": 326974000,
           "form": "10-K"
@@ -32483,6 +32442,11 @@
       ],
       "capex": [
         {
+          "period_end": "2026-03-31",
+          "value": 48829000,
+          "form": "10-K"
+        },
+        {
           "period_end": "2025-03-31",
           "value": 62601000,
           "form": "10-K"
@@ -32504,6 +32468,11 @@
         }
       ],
       "interest_expense": [
+        {
+          "period_end": "2026-03-31",
+          "value": 74040000,
+          "form": "10-K"
+        },
         {
           "period_end": "2025-03-31",
           "value": 79636000,
@@ -32529,6 +32498,11 @@
     "_balance_history": {
       "cash": [
         {
+          "period_end": "2026-03-31",
+          "value": 62178000,
+          "form": "10-K"
+        },
+        {
           "period_end": "2025-12-31",
           "value": 85227000,
           "form": "10-Q"
@@ -32546,7 +32520,7 @@
         {
           "period_end": "2025-03-31",
           "value": 260115000,
-          "form": "10-Q"
+          "form": "10-K"
         },
         {
           "period_end": "2024-12-31",
@@ -32586,6 +32560,11 @@
       ],
       "lt_debt": [
         {
+          "period_end": "2026-03-31",
+          "value": 616727000,
+          "form": "10-K"
+        },
+        {
           "period_end": "2025-12-31",
           "value": 616585000,
           "form": "10-Q"
@@ -32603,7 +32582,7 @@
         {
           "period_end": "2025-03-31",
           "value": 617918000,
-          "form": "10-Q"
+          "form": "10-K"
         },
         {
           "period_end": "2024-12-31",
@@ -32643,6 +32622,11 @@
       ],
       "st_debt": [
         {
+          "period_end": "2026-03-31",
+          "value": 0,
+          "form": "10-K"
+        },
+        {
           "period_end": "2025-12-31",
           "value": 0,
           "form": "10-Q"
@@ -32660,7 +32644,7 @@
         {
           "period_end": "2025-03-31",
           "value": 0,
-          "form": "10-Q"
+          "form": "10-K"
         },
         {
           "period_end": "2024-12-31",
@@ -32704,7 +32688,7 @@
     "_cik": "0000102037",
     "_ticker": "UVV",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:11:55.560533+00:00",
+    "_fetched_at": "2026-06-03T22:14:40.383690+00:00",
     "_warnings": []
   },
   "Nike": {
@@ -33048,11 +33032,6 @@
           "period_end": "2022-05-31",
           "value": 46710000000,
           "form": "10-K"
-        },
-        {
-          "period_end": "2021-05-31",
-          "value": 44538000000,
-          "form": "10-K"
         }
       ],
       "op_income": [
@@ -33074,11 +33053,6 @@
         {
           "period_end": "2022-05-31",
           "value": 6651000000,
-          "form": "10-K"
-        },
-        {
-          "period_end": "2021-05-31",
-          "value": 6661000000,
           "form": "10-K"
         }
       ],
@@ -33119,11 +33093,6 @@
           "period_end": "2022-05-31",
           "value": 5188000000,
           "form": "10-K"
-        },
-        {
-          "period_end": "2021-05-31",
-          "value": 6657000000,
-          "form": "10-K"
         }
       ],
       "capex": [
@@ -33145,11 +33114,6 @@
         {
           "period_end": "2022-05-31",
           "value": 758000000,
-          "form": "10-K"
-        },
-        {
-          "period_end": "2021-05-31",
-          "value": 695000000,
           "form": "10-K"
         }
       ],
@@ -33211,11 +33175,6 @@
           "period_end": "2023-08-31",
           "value": 6178000000,
           "form": "10-Q"
-        },
-        {
-          "period_end": "2023-05-31",
-          "value": 7441000000,
-          "form": "10-K"
         }
       ],
       "lt_debt": [
@@ -33273,11 +33232,6 @@
           "period_end": "2023-08-31",
           "value": 8929000000,
           "form": "10-Q"
-        },
-        {
-          "period_end": "2023-05-31",
-          "value": 8927000000,
-          "form": "10-K"
         }
       ],
       "st_debt": [
@@ -33330,11 +33284,6 @@
           "period_end": "2023-08-31",
           "value": 0,
           "form": "10-Q"
-        },
-        {
-          "period_end": "2023-05-31",
-          "value": 0,
-          "form": "10-K"
         }
       ],
       "revenue_backlog": []
@@ -33343,7 +33292,7 @@
     "_cik": "0000320187",
     "_ticker": "NKE",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:11:56.133511+00:00",
+    "_fetched_at": "2026-06-03T22:14:40.911474+00:00",
     "_warnings": []
   },
   "Kimberly-Clark": {
@@ -34109,7 +34058,7 @@
     "_cik": "0000055785",
     "_ticker": "KMB",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:11:56.750540+00:00",
+    "_fetched_at": "2026-06-03T22:14:41.502740+00:00",
     "_warnings": []
   },
   "Whirlpool": {
@@ -34788,7 +34737,7 @@
     "_cik": "0000106640",
     "_ticker": "WHR",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:11:57.244977+00:00",
+    "_fetched_at": "2026-06-03T22:14:42.007176+00:00",
     "_warnings": []
   },
   "Mondelez": {
@@ -35554,7 +35503,7 @@
     "_cik": "0001103982",
     "_ticker": "MDLZ",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:11:57.871144+00:00",
+    "_fetched_at": "2026-06-03T22:14:42.585164+00:00",
     "_warnings": []
   },
   "Ball Corp": {
@@ -36290,7 +36239,7 @@
     "_cik": "0000009389",
     "_ticker": "BALL",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:11:58.371164+00:00",
+    "_fetched_at": "2026-06-03T22:14:43.238537+00:00",
     "_warnings": []
   },
   "Crown Holdings": {
@@ -37011,7 +36960,7 @@
     "_cik": "0001219601",
     "_ticker": "CCK",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:11:59.135616+00:00",
+    "_fetched_at": "2026-06-03T22:14:44.024797+00:00",
     "_warnings": []
   },
   "International Paper": {
@@ -37687,7 +37636,7 @@
     "_cik": "0000051434",
     "_ticker": "IP",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:11:59.990263+00:00",
+    "_fetched_at": "2026-06-03T22:14:44.589959+00:00",
     "_warnings": []
   },
   "Chevron": {
@@ -38363,7 +38312,7 @@
     "_cik": "0000093410",
     "_ticker": "CVX",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:12:00.607436+00:00",
+    "_fetched_at": "2026-06-03T22:14:45.192701+00:00",
     "_warnings": []
   },
   "BP": {
@@ -38424,7 +38373,7 @@
     "_cik": "0000313807",
     "_ticker": "BP",
     "_filer_type": "20-F",
-    "_fetched_at": "2026-05-28T18:12:00.924986+00:00",
+    "_fetched_at": "2026-06-03T22:14:45.863212+00:00",
     "_warnings": [
       "Revenue LTM not found in SEC tags",
       "EBITDA could not be constructed (missing op_income or D&A)",
@@ -39150,7 +39099,7 @@
     "_cik": "0000034088",
     "_ticker": "XOM",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:12:01.405179+00:00",
+    "_fetched_at": "2026-06-03T22:14:46.455794+00:00",
     "_warnings": []
   },
   "NextEra Energy": {
@@ -39742,7 +39691,7 @@
     "_cik": "0000753308",
     "_ticker": "NEE",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:12:01.888345+00:00",
+    "_fetched_at": "2026-06-03T22:14:46.958304+00:00",
     "_warnings": []
   },
   "Duke Energy": {
@@ -40488,7 +40437,7 @@
     "_cik": "0001326160",
     "_ticker": "DUK",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:12:02.520657+00:00",
+    "_fetched_at": "2026-06-03T22:14:47.946829+00:00",
     "_warnings": []
   },
   "Sempra Energy": {
@@ -41213,7 +41162,7 @@
     "_cik": "0001032208",
     "_ticker": "SRE",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:12:03.006945+00:00",
+    "_fetched_at": "2026-06-03T22:14:48.815674+00:00",
     "_warnings": []
   },
   "Caterpillar": {
@@ -41863,7 +41812,7 @@
     "_cik": "0000018230",
     "_ticker": "CAT",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:12:03.689333+00:00",
+    "_fetched_at": "2026-06-03T22:14:49.489324+00:00",
     "_warnings": []
   },
   "Deere": {
@@ -42690,7 +42639,7 @@
     "_cik": "0000315189",
     "_ticker": "DE",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:12:04.237694+00:00",
+    "_fetched_at": "2026-06-03T22:14:50.148150+00:00",
     "_warnings": []
   },
   "Danaher": {
@@ -43430,7 +43379,7 @@
     "_cik": "0000313616",
     "_ticker": "DHR",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:12:04.684422+00:00",
+    "_fetched_at": "2026-06-03T22:14:50.855694+00:00",
     "_warnings": []
   },
   "GE Vernova": {
@@ -44035,7 +43984,7 @@
     "_cik": "0001996810",
     "_ticker": "GEV",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:12:04.953289+00:00",
+    "_fetched_at": "2026-06-03T22:14:51.267102+00:00",
     "_warnings": []
   },
   "Honeywell": {
@@ -44842,7 +44791,7 @@
     "_cik": "0000773840",
     "_ticker": "HON",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:12:05.635135+00:00",
+    "_fetched_at": "2026-06-03T22:14:51.819752+00:00",
     "_warnings": []
   },
   "Otis": {
@@ -45669,7 +45618,7 @@
     "_cik": "0001781335",
     "_ticker": "OTIS",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:12:06.073413+00:00",
+    "_fetched_at": "2026-06-03T22:14:52.230788+00:00",
     "_warnings": []
   },
   "Air Products": {
@@ -46293,7 +46242,7 @@
     "_cik": "0000002969",
     "_ticker": "APD",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:12:06.776486+00:00",
+    "_fetched_at": "2026-06-03T22:14:52.906682+00:00",
     "_warnings": [
       "Total debt not found in SEC tags"
     ]
@@ -47122,7 +47071,7 @@
     "_cik": "0001755672",
     "_ticker": "CTVA",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:12:07.173310+00:00",
+    "_fetched_at": "2026-06-03T22:14:53.600879+00:00",
     "_warnings": []
   },
   "DuPont": {
@@ -47843,7 +47792,7 @@
     "_cik": "0001666700",
     "_ticker": "DD",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:12:07.622013+00:00",
+    "_fetched_at": "2026-06-03T22:14:54.063404+00:00",
     "_warnings": []
   },
   "Apple": {
@@ -48522,18 +48471,18 @@
     "_cik": "0000320193",
     "_ticker": "AAPL",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:12:08.080170+00:00",
+    "_fetched_at": "2026-06-03T22:14:54.571125+00:00",
     "_warnings": []
   },
   "Nutanix": {
     "revenue_ltm": 2.7,
-    "op_income_ltm": 0.2,
+    "op_income_ltm": 0.3,
     "da_ltm": 0.1,
     "ocf_ltm": 0.8,
     "capex_ltm": 0.1,
     "ebitda_ltm": 0.3,
     "fcf_ltm": 0.8,
-    "cash": 0.6,
+    "cash": 0.7,
     "lt_debt": null,
     "st_debt": 0.0,
     "total_debt": null,
@@ -48541,10 +48490,10 @@
     "nd_ebitda": null,
     "ebitda_margin": 11.9,
     "op_margin": 9.2,
-    "revenue_yoy_pct": 22.6,
+    "revenue_yoy_pct": 17.1,
     "interest_expense_ltm": null,
     "interest_coverage": null,
-    "_period_end": "2026-01-31",
+    "_period_end": "2026-04-30",
     "_filing_form": "10-Q",
     "_tags_used": {
       "revenue": "RevenueFromContractWithCustomerExcludingAssessedTax",
@@ -48559,6 +48508,11 @@
     },
     "_history": {
       "revenue": [
+        {
+          "period_end": "2026-04-30",
+          "value": 703066000,
+          "form": "10-Q"
+        },
         {
           "period_end": "2026-01-31",
           "value": 722825000,
@@ -48613,14 +48567,14 @@
           "period_end": "2023-07-31",
           "value": 494210000,
           "form": "10-K"
-        },
-        {
-          "period_end": "2023-04-30",
-          "value": 448581000,
-          "form": "10-Q"
         }
       ],
       "op_income": [
+        {
+          "period_end": "2026-04-30",
+          "value": 70509000,
+          "form": "10-Q"
+        },
         {
           "period_end": "2026-01-31",
           "value": 84137000,
@@ -48675,14 +48629,14 @@
           "period_end": "2023-07-31",
           "value": -11347000,
           "form": "10-K"
-        },
-        {
-          "period_end": "2023-04-30",
-          "value": -58640000,
-          "form": "10-Q"
         }
       ],
       "da": [
+        {
+          "period_end": "2026-04-30",
+          "value": 17159000,
+          "form": "10-Q"
+        },
         {
           "period_end": "2026-01-31",
           "value": 18048000,
@@ -48737,14 +48691,14 @@
           "period_end": "2023-07-31",
           "value": 17310000,
           "form": "10-K"
-        },
-        {
-          "period_end": "2023-04-30",
-          "value": 19599000,
-          "form": "10-Q"
         }
       ],
       "ocf": [
+        {
+          "period_end": "2026-04-30",
+          "value": 207504000,
+          "form": "10-Q"
+        },
         {
           "period_end": "2026-01-31",
           "value": 197346000,
@@ -48799,14 +48753,14 @@
           "period_end": "2023-07-31",
           "value": 58309000,
           "form": "10-K"
-        },
-        {
-          "period_end": "2023-04-30",
-          "value": 74497000,
-          "form": "10-Q"
         }
       ],
       "capex": [
+        {
+          "period_end": "2026-04-30",
+          "value": 10323000,
+          "form": "10-Q"
+        },
         {
           "period_end": "2026-01-31",
           "value": 5928000,
@@ -48861,11 +48815,6 @@
           "period_end": "2023-07-31",
           "value": 12801000,
           "form": "10-K"
-        },
-        {
-          "period_end": "2023-04-30",
-          "value": 21831000,
-          "form": "10-Q"
         }
       ],
       "interest_expense": []
@@ -49011,6 +48960,11 @@
     "_balance_history": {
       "cash": [
         {
+          "period_end": "2026-04-30",
+          "value": 718812000,
+          "form": "10-Q"
+        },
+        {
           "period_end": "2026-01-31",
           "value": 603402000,
           "form": "10-Q"
@@ -49074,7 +49028,7 @@
     "_cik": "0001618732",
     "_ticker": "NTNX",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:12:08.522715+00:00",
+    "_fetched_at": "2026-06-03T22:14:55.001288+00:00",
     "_warnings": [
       "Total debt not found in SEC tags"
     ]
@@ -49771,7 +49725,7 @@
     "_cik": "0001141391",
     "_ticker": "MA",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:12:09.040629+00:00",
+    "_fetched_at": "2026-06-03T22:14:55.534395+00:00",
     "_warnings": []
   },
   "Visa": {
@@ -50496,7 +50450,7 @@
     "_cik": "0001403161",
     "_ticker": "V",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:12:09.529632+00:00",
+    "_fetched_at": "2026-06-03T22:14:55.956289+00:00",
     "_warnings": []
   },
   "Avnet": {
@@ -51175,7 +51129,7 @@
     "_cik": "0000008858",
     "_ticker": "AVT",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:12:10.117118+00:00",
+    "_fetched_at": "2026-06-03T22:14:56.469439+00:00",
     "_warnings": []
   },
   "CDW": {
@@ -51854,7 +51808,7 @@
     "_cik": "0001402057",
     "_ticker": "CDW",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:12:10.541534+00:00",
+    "_fetched_at": "2026-06-03T22:14:56.973347+00:00",
     "_warnings": []
   },
   "Amrize": {
@@ -52311,7 +52265,7 @@
     "_cik": "0002035989",
     "_ticker": "AMRZ",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:12:10.839925+00:00",
+    "_fetched_at": "2026-06-03T22:14:57.290117+00:00",
     "_warnings": []
   },
   "CEMEX": {
@@ -52372,7 +52326,7 @@
     "_cik": "0001076378",
     "_ticker": "CX",
     "_filer_type": "20-F",
-    "_fetched_at": "2026-05-28T18:12:11.145147+00:00",
+    "_fetched_at": "2026-06-03T22:14:57.594678+00:00",
     "_warnings": [
       "Revenue LTM not found in SEC tags",
       "EBITDA could not be constructed (missing op_income or D&A)",
@@ -53143,7 +53097,7 @@
     "_cik": "0000007084",
     "_ticker": "ADM",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:12:11.693239+00:00",
+    "_fetched_at": "2026-06-03T22:14:58.115225+00:00",
     "_warnings": []
   },
   "Bunge": {
@@ -53889,7 +53843,7 @@
     "_cik": "0001996862",
     "_ticker": "BG",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:12:12.030551+00:00",
+    "_fetched_at": "2026-06-03T22:14:58.501573+00:00",
     "_warnings": [
       "Revenue YoY = 56.9% (unusual; verify)"
     ]
@@ -54570,7 +54524,7 @@
     "_cik": "0001046257",
     "_ticker": "INGR",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:12:12.629786+00:00",
+    "_fetched_at": "2026-06-03T22:14:59.010849+00:00",
     "_warnings": []
   },
   "Colgate-Palmolive": {
@@ -55234,7 +55188,7 @@
     "_cik": "0000021665",
     "_ticker": "CL",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:12:13.222275+00:00",
+    "_fetched_at": "2026-06-03T22:14:59.444495+00:00",
     "_warnings": []
   },
   "Kenvue": {
@@ -55929,7 +55883,7 @@
     "_cik": "0001944048",
     "_ticker": "KVUE",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:12:13.571240+00:00",
+    "_fetched_at": "2026-06-03T22:14:59.849136+00:00",
     "_warnings": [
       "Total debt not found in SEC tags"
     ]
@@ -56585,7 +56539,7 @@
     "_cik": "0001024305",
     "_ticker": "COTY",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:12:14.117024+00:00",
+    "_fetched_at": "2026-06-03T22:15:00.355271+00:00",
     "_warnings": []
   },
   "AES": {
@@ -57290,7 +57244,7 @@
     "_cik": "0000874761",
     "_ticker": "AES",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:12:14.797482+00:00",
+    "_fetched_at": "2026-06-03T22:15:00.904819+00:00",
     "_warnings": [
       "Total debt not found in SEC tags"
     ]
@@ -57932,7 +57886,7 @@
     "_cik": "0000715957",
     "_ticker": "D",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:12:15.449428+00:00",
+    "_fetched_at": "2026-06-03T22:15:01.516019+00:00",
     "_warnings": []
   },
   "Edison International": {
@@ -58611,7 +58565,7 @@
     "_cik": "0000827052",
     "_ticker": "EIX",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:12:16.090635+00:00",
+    "_fetched_at": "2026-06-03T22:15:02.057376+00:00",
     "_warnings": []
   },
   "Constellation Energy": {
@@ -59311,7 +59265,7 @@
     "_cik": "0001868275",
     "_ticker": "CEG",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:12:16.393914+00:00",
+    "_fetched_at": "2026-06-03T22:15:02.396304+00:00",
     "_warnings": []
   },
   "Southern Company": {
@@ -60077,7 +60031,7 @@
     "_cik": "0000092122",
     "_ticker": "SO",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:12:16.916332+00:00",
+    "_fetched_at": "2026-06-03T22:15:02.903103+00:00",
     "_warnings": []
   },
   "PPL Corporation": {
@@ -60843,7 +60797,7 @@
     "_cik": "0000922224",
     "_ticker": "PPL",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:12:17.594740+00:00",
+    "_fetched_at": "2026-06-03T22:15:03.476464+00:00",
     "_warnings": []
   },
   "NRG Energy": {
@@ -61522,7 +61476,7 @@
     "_cik": "0001013871",
     "_ticker": "NRG",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:12:18.105313+00:00",
+    "_fetched_at": "2026-06-03T22:15:03.954487+00:00",
     "_warnings": []
   },
   "RWE": {
@@ -62316,7 +62270,7 @@
     "_cik": "0001567683",
     "_ticker": "CWEN",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:12:18.558212+00:00",
+    "_fetched_at": "2026-06-03T22:15:04.383408+00:00",
     "_warnings": []
   },
   "Brookfield Renewable Partners": {
@@ -62377,7 +62331,7 @@
     "_cik": "0001533232",
     "_ticker": "BEP",
     "_filer_type": "20-F",
-    "_fetched_at": "2026-05-28T18:12:18.905557+00:00",
+    "_fetched_at": "2026-06-03T22:15:04.723742+00:00",
     "_warnings": [
       "Revenue LTM not found in SEC tags",
       "EBITDA could not be constructed (missing op_income or D&A)",
@@ -63057,7 +63011,7 @@
     "_cik": "0001868941",
     "_ticker": "FLNC",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:12:19.306858+00:00",
+    "_fetched_at": "2026-06-03T22:15:05.135797+00:00",
     "_warnings": [
       "Total debt not found in SEC tags"
     ]
@@ -63738,7 +63692,7 @@
     "_cik": "0000003570",
     "_ticker": "LNG",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:12:19.904232+00:00",
+    "_fetched_at": "2026-06-03T22:15:05.643143+00:00",
     "_warnings": []
   },
   "Enbridge": {
@@ -63799,7 +63753,7 @@
     "_cik": "0000895728",
     "_ticker": "ENB",
     "_filer_type": "40-F",
-    "_fetched_at": "2026-05-28T18:12:20.361576+00:00",
+    "_fetched_at": "2026-06-03T22:15:06.064201+00:00",
     "_warnings": [
       "Revenue LTM not found in SEC tags",
       "EBITDA could not be constructed (missing op_income or D&A)",
@@ -64378,7 +64332,7 @@
     "_cik": "0000045012",
     "_ticker": "HAL",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:12:20.835759+00:00",
+    "_fetched_at": "2026-06-03T22:15:06.614430+00:00",
     "_warnings": []
   },
   "SLB": {
@@ -65083,7 +65037,7 @@
     "_cik": "0000087347",
     "_ticker": "SLB",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:12:21.645333+00:00",
+    "_fetched_at": "2026-06-03T22:15:07.073187+00:00",
     "_warnings": []
   },
   "Baker Hughes": {
@@ -65813,7 +65767,7 @@
     "_cik": "0001701605",
     "_ticker": "BKR",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:12:22.046119+00:00",
+    "_fetched_at": "2026-06-03T22:15:07.453990+00:00",
     "_warnings": []
   },
   "TechnipFMC": {
@@ -66503,7 +66457,7 @@
     "_cik": "0001681459",
     "_ticker": "FTI",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:12:22.521963+00:00",
+    "_fetched_at": "2026-06-03T22:15:08.008542+00:00",
     "_warnings": []
   },
   "Phillips 66": {
@@ -67095,7 +67049,7 @@
     "_cik": "0001534701",
     "_ticker": "PSX",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:12:23.054790+00:00",
+    "_fetched_at": "2026-06-03T22:15:08.502362+00:00",
     "_warnings": [
       "EBITDA could not be constructed (missing op_income or D&A)"
     ]
@@ -67165,7 +67119,7 @@
     "_cik": "0001140625",
     "_ticker": "EQNR",
     "_filer_type": "20-F",
-    "_fetched_at": "2026-05-28T18:12:23.399342+00:00",
+    "_fetched_at": "2026-06-03T22:15:08.925855+00:00",
     "_warnings": [
       "Revenue LTM not found in SEC tags",
       "EBITDA could not be constructed (missing op_income or D&A)",
@@ -67231,7 +67185,7 @@
     "_cik": "0001306965",
     "_ticker": "SHEL",
     "_filer_type": "20-F",
-    "_fetched_at": "2026-05-28T18:12:23.700304+00:00",
+    "_fetched_at": "2026-06-03T22:15:09.271566+00:00",
     "_warnings": [
       "Revenue LTM not found in SEC tags",
       "EBITDA could not be constructed (missing op_income or D&A)",
@@ -67297,7 +67251,7 @@
     "_cik": "0000879764",
     "_ticker": "TTE",
     "_filer_type": "20-F",
-    "_fetched_at": "2026-05-28T18:12:24.161756+00:00",
+    "_fetched_at": "2026-06-03T22:15:09.666939+00:00",
     "_warnings": [
       "Revenue LTM not found in SEC tags",
       "EBITDA could not be constructed (missing op_income or D&A)",
@@ -68114,7 +68068,7 @@
     "_cik": "0001751788",
     "_ticker": "DOW",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:12:24.683035+00:00",
+    "_fetched_at": "2026-06-03T22:15:10.075080+00:00",
     "_warnings": []
   },
   "LyondellBasell": {
@@ -68793,7 +68747,7 @@
     "_cik": "0001489393",
     "_ticker": "LYB",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:12:25.132655+00:00",
+    "_fetched_at": "2026-06-03T22:15:10.550559+00:00",
     "_warnings": []
   },
   "Olin Corporation": {
@@ -69509,7 +69463,7 @@
     "_cik": "0000074303",
     "_ticker": "OLN",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:12:25.797477+00:00",
+    "_fetched_at": "2026-06-03T22:15:11.099590+00:00",
     "_warnings": []
   },
   "Albemarle": {
@@ -70275,7 +70229,7 @@
     "_cik": "0000915913",
     "_ticker": "ALB",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:12:26.508819+00:00",
+    "_fetched_at": "2026-06-03T22:15:11.629468+00:00",
     "_warnings": []
   },
   "Linde": {
@@ -71041,7 +70995,7 @@
     "_cik": "0001707925",
     "_ticker": "LIN",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:12:26.919579+00:00",
+    "_fetched_at": "2026-06-03T22:15:12.049624+00:00",
     "_warnings": []
   },
   "FMC Corporation": {
@@ -71720,7 +71674,7 @@
     "_cik": "0000037785",
     "_ticker": "FMC",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:12:27.485160+00:00",
+    "_fetched_at": "2026-06-03T22:15:12.778841+00:00",
     "_warnings": []
   },
   "Ecolab": {
@@ -72547,7 +72501,7 @@
     "_cik": "0000031462",
     "_ticker": "ECL",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:12:28.163575+00:00",
+    "_fetched_at": "2026-06-03T22:15:13.327599+00:00",
     "_warnings": []
   },
   "Nutrien": {
@@ -73255,7 +73209,7 @@
     "_cik": "0000079879",
     "_ticker": "PPG",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:12:28.914615+00:00",
+    "_fetched_at": "2026-06-03T22:15:13.927667+00:00",
     "_warnings": []
   },
   "Braskem": {
@@ -73316,7 +73270,7 @@
     "_cik": "0001071438",
     "_ticker": "BAK",
     "_filer_type": "20-F",
-    "_fetched_at": "2026-05-28T18:12:29.220288+00:00",
+    "_fetched_at": "2026-06-03T22:15:14.287898+00:00",
     "_warnings": [
       "Revenue LTM not found in SEC tags",
       "EBITDA could not be constructed (missing op_income or D&A)",
@@ -74039,7 +73993,7 @@
     "_cik": "0001551152",
     "_ticker": "ABBV",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:12:29.807800+00:00",
+    "_fetched_at": "2026-06-03T22:15:14.762224+00:00",
     "_warnings": []
   },
   "Eli Lilly": {
@@ -74631,7 +74585,7 @@
     "_cik": "0000059478",
     "_ticker": "LLY",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:12:30.472573+00:00",
+    "_fetched_at": "2026-06-03T22:15:15.279963+00:00",
     "_warnings": [
       "Revenue YoY = 60.2% (unusual; verify)"
     ]
@@ -75267,7 +75221,7 @@
     "_cik": "0000200406",
     "_ticker": "JNJ",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:12:30.964594+00:00",
+    "_fetched_at": "2026-06-03T22:15:15.727541+00:00",
     "_warnings": []
   },
   "Merck & Co": {
@@ -75896,7 +75850,7 @@
     "_cik": "0000310158",
     "_ticker": "MRK",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:12:31.436633+00:00",
+    "_fetched_at": "2026-06-03T22:15:16.254442+00:00",
     "_warnings": []
   },
   "Pfizer": {
@@ -76673,7 +76627,7 @@
     "_cik": "0000078003",
     "_ticker": "PFE",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:12:32.101533+00:00",
+    "_fetched_at": "2026-06-03T22:15:16.769942+00:00",
     "_warnings": []
   },
   "AstraZeneca": {
@@ -76734,7 +76688,7 @@
     "_cik": "0000901832",
     "_ticker": "AZN",
     "_filer_type": "20-F",
-    "_fetched_at": "2026-05-28T18:12:32.568562+00:00",
+    "_fetched_at": "2026-06-03T22:15:17.105260+00:00",
     "_warnings": [
       "Revenue LTM not found in SEC tags",
       "EBITDA could not be constructed (missing op_income or D&A)",
@@ -76800,7 +76754,7 @@
     "_cik": "0001131399",
     "_ticker": "GSK",
     "_filer_type": "20-F",
-    "_fetched_at": "2026-05-28T18:12:32.902098+00:00",
+    "_fetched_at": "2026-06-03T22:15:17.463177+00:00",
     "_warnings": [
       "Revenue LTM not found in SEC tags",
       "EBITDA could not be constructed (missing op_income or D&A)",
@@ -77570,7 +77524,7 @@
     "_cik": "0000721371",
     "_ticker": "CAH",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:12:33.458162+00:00",
+    "_fetched_at": "2026-06-03T22:15:17.993068+00:00",
     "_warnings": []
   },
   "Cencora": {
@@ -78209,7 +78163,7 @@
     "_cik": "0001140859",
     "_ticker": "COR",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:12:34.120514+00:00",
+    "_fetched_at": "2026-06-03T22:15:18.489511+00:00",
     "_warnings": []
   },
   "McKesson": {
@@ -78827,7 +78781,7 @@
     "_cik": "0000927653",
     "_ticker": "MCK",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:12:34.904124+00:00",
+    "_fetched_at": "2026-06-03T22:15:19.002133+00:00",
     "_warnings": []
   },
   "Blackstone": {
@@ -79471,7 +79425,7 @@
     "_cik": "0001393818",
     "_ticker": "BX",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:12:35.409624+00:00",
+    "_fetched_at": "2026-06-03T22:15:19.502463+00:00",
     "_warnings": []
   },
   "KKR": {
@@ -79941,7 +79895,7 @@
     "_cik": "0001404912",
     "_ticker": "KKR",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:12:35.830588+00:00",
+    "_fetched_at": "2026-06-03T22:15:19.927310+00:00",
     "_warnings": [
       "Total debt not found in SEC tags"
     ]
@@ -80561,7 +80515,7 @@
     "_cik": "0001858681",
     "_ticker": "APO",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:12:36.191009+00:00",
+    "_fetched_at": "2026-06-03T22:15:20.321423+00:00",
     "_warnings": []
   },
   "Brookfield Infrastructure Partners": {
@@ -80622,7 +80576,7 @@
     "_cik": "0001406234",
     "_ticker": "BIP",
     "_filer_type": "20-F",
-    "_fetched_at": "2026-05-28T18:12:36.460571+00:00",
+    "_fetched_at": "2026-06-03T22:15:20.654793+00:00",
     "_warnings": [
       "Revenue LTM not found in SEC tags",
       "EBITDA could not be constructed (missing op_income or D&A)",
@@ -81306,7 +81260,7 @@
     "_cik": "0000726728",
     "_ticker": "O",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:12:36.929518+00:00",
+    "_fetched_at": "2026-06-03T22:15:21.133638+00:00",
     "_warnings": []
   },
   "Simon Property Group": {
@@ -82011,7 +81965,7 @@
     "_cik": "0001063761",
     "_ticker": "SPG",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:12:37.503457+00:00",
+    "_fetched_at": "2026-06-03T22:15:21.689688+00:00",
     "_warnings": []
   },
   "Barrick Gold": {
@@ -82767,7 +82721,7 @@
     "_cik": "0001591588",
     "_ticker": "GOLD",
     "_filer_type": "40-F",
-    "_fetched_at": "2026-05-28T18:12:38.142942+00:00",
+    "_fetched_at": "2026-06-03T22:15:22.265161+00:00",
     "_warnings": [
       "Revenue YoY = 131.8% (unusual; verify)"
     ]
@@ -83433,7 +83387,7 @@
     "_cik": "0001164727",
     "_ticker": "NEM",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:12:38.700715+00:00",
+    "_fetched_at": "2026-06-03T22:15:22.810809+00:00",
     "_warnings": []
   },
   "Teck Resources": {
@@ -83494,7 +83448,7 @@
     "_cik": "0000886986",
     "_ticker": "TECK",
     "_filer_type": "40-F",
-    "_fetched_at": "2026-05-28T18:12:38.962794+00:00",
+    "_fetched_at": "2026-06-03T22:15:23.140341+00:00",
     "_warnings": [
       "Revenue LTM not found in SEC tags",
       "EBITDA could not be constructed (missing op_income or D&A)",
@@ -84002,7 +83956,7 @@
     "_cik": "0000075362",
     "_ticker": "PCAR",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:12:39.389232+00:00",
+    "_fetched_at": "2026-06-03T22:15:23.597341+00:00",
     "_warnings": [
       "Cash not found in SEC tags",
       "Total debt not found in SEC tags"
@@ -84822,7 +84776,7 @@
     "_cik": "0000026172",
     "_ticker": "CMI",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:12:40.014738+00:00",
+    "_fetched_at": "2026-06-03T22:15:24.149707+00:00",
     "_warnings": []
   },
   "Wabtec": {
@@ -85501,7 +85455,7 @@
     "_cik": "0000943452",
     "_ticker": "WAB",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:12:40.532914+00:00",
+    "_fetched_at": "2026-06-03T22:15:24.666047+00:00",
     "_warnings": []
   },
   "CNH Industrial": {
@@ -85961,7 +85915,7 @@
     "_cik": "0001567094",
     "_ticker": "CNH",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:12:41.097739+00:00",
+    "_fetched_at": "2026-06-03T22:15:25.216172+00:00",
     "_warnings": [
       "Total debt not found in SEC tags"
     ]
@@ -86764,7 +86718,7 @@
     "_cik": "0000802481",
     "_ticker": "PPC",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:12:41.775593+00:00",
+    "_fetched_at": "2026-06-03T22:15:25.745509+00:00",
     "_warnings": []
   },
   "Kraft Heinz": {
@@ -87530,7 +87484,7 @@
     "_cik": "0001637459",
     "_ticker": "KHC",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:12:42.463372+00:00",
+    "_fetched_at": "2026-06-03T22:15:26.170517+00:00",
     "_warnings": []
   },
   "Grupo Bimbo": {
@@ -88178,7 +88132,7 @@
     "_cik": "0000317540",
     "_ticker": "COKE",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:12:42.988804+00:00",
+    "_fetched_at": "2026-06-03T22:15:26.640868+00:00",
     "_warnings": []
   },
   "Turkish Airlines": {
@@ -89008,7 +88962,7 @@
     "_cik": "0001474735",
     "_ticker": "GNRC",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:12:43.450435+00:00",
+    "_fetched_at": "2026-06-03T22:15:27.163372+00:00",
     "_warnings": []
   },
   "Siemens Energy": {
@@ -89563,7 +89517,7 @@
     "_cik": "0000906163",
     "_ticker": "NVR",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:12:43.808013+00:00",
+    "_fetched_at": "2026-06-03T22:15:27.624779+00:00",
     "_warnings": [
       "EBITDA could not be constructed (missing op_income or D&A)",
       "Total debt not found in SEC tags"
@@ -90277,7 +90231,7 @@
     "_cik": "0000066740",
     "_ticker": "MMM",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:12:44.523258+00:00",
+    "_fetched_at": "2026-06-03T22:15:28.202965+00:00",
     "_warnings": []
   },
   "Parker Hannifin": {
@@ -91002,7 +90956,7 @@
     "_cik": "0000076334",
     "_ticker": "PH",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:12:45.121617+00:00",
+    "_fetched_at": "2026-06-03T22:15:28.792331+00:00",
     "_warnings": []
   },
   "Pentair": {
@@ -91656,7 +91610,7 @@
     "_cik": "0000077360",
     "_ticker": "PNR",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:12:45.758531+00:00",
+    "_fetched_at": "2026-06-03T22:15:29.388378+00:00",
     "_warnings": []
   },
   "Air Lease Corporation": {
@@ -91722,7 +91676,7 @@
     "_cik": "0001073404",
     "_ticker": "GGB",
     "_filer_type": "20-F",
-    "_fetched_at": "2026-05-28T18:12:46.079971+00:00",
+    "_fetched_at": "2026-06-03T22:15:29.706198+00:00",
     "_warnings": [
       "Revenue LTM not found in SEC tags",
       "EBITDA could not be constructed (missing op_income or D&A)",
@@ -92491,28 +92445,28 @@
     "_cik": "0001730168",
     "_ticker": "AVGO",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:12:46.568317+00:00",
+    "_fetched_at": "2026-06-03T22:15:30.170143+00:00",
     "_warnings": []
   },
   "Costco Wholesale": {
     "revenue_ltm": 263.8,
-    "op_income_ltm": 9.9,
+    "op_income_ltm": 10.4,
     "da_ltm": 2.3,
     "ocf_ltm": 13.3,
     "capex_ltm": 5.5,
-    "ebitda_ltm": 12.2,
+    "ebitda_ltm": 12.8,
     "fcf_ltm": 7.8,
-    "cash": 17.4,
+    "cash": 18.9,
     "lt_debt": 5.7,
-    "st_debt": 0.1,
-    "total_debt": 5.8,
-    "net_debt": -11.6,
+    "st_debt": 0.0,
+    "total_debt": 5.7,
+    "net_debt": -13.3,
     "nd_ebitda": -1.0,
-    "ebitda_margin": 4.6,
-    "op_margin": 3.8,
+    "ebitda_margin": 4.8,
+    "op_margin": 3.9,
     "revenue_yoy_pct": 11.4,
     "interest_expense_ltm": 0.1,
-    "interest_coverage": 87.8,
+    "interest_coverage": 94.5,
     "_period_end": "2026-02-15",
     "_filing_form": "10-Q",
     "_tags_used": {
@@ -92591,6 +92545,11 @@
       ],
       "op_income": [
         {
+          "period_end": "2026-05-10",
+          "value": 2815000000,
+          "form": "10-Q"
+        },
+        {
           "period_end": "2026-02-15",
           "value": 2606000000,
           "form": "10-Q"
@@ -92644,14 +92603,14 @@
           "period_end": "2023-09-03",
           "value": 2781000000,
           "form": "10-K"
-        },
-        {
-          "period_end": "2023-05-07",
-          "value": 1679000000,
-          "form": "10-Q"
         }
       ],
       "da": [
+        {
+          "period_end": "2026-05-10",
+          "value": 597000000,
+          "form": "10-Q"
+        },
         {
           "period_end": "2026-02-15",
           "value": 597000000,
@@ -92660,6 +92619,16 @@
         {
           "period_end": "2025-11-23",
           "value": 597000000,
+          "form": "10-Q"
+        },
+        {
+          "period_end": "2025-08-31",
+          "value": 774000000,
+          "form": "10-K"
+        },
+        {
+          "period_end": "2025-05-11",
+          "value": 552000000,
           "form": "10-Q"
         },
         {
@@ -92729,6 +92698,11 @@
       ],
       "interest_expense": [
         {
+          "period_end": "2026-05-10",
+          "value": 32000000,
+          "form": "10-Q"
+        },
+        {
           "period_end": "2026-02-15",
           "value": 33000000,
           "form": "10-Q"
@@ -92782,11 +92756,6 @@
           "period_end": "2023-09-03",
           "value": 56000000,
           "form": "10-K"
-        },
-        {
-          "period_end": "2023-05-07",
-          "value": 36000000,
-          "form": "10-Q"
         }
       ]
     },
@@ -92957,6 +92926,11 @@
     "_balance_history": {
       "cash": [
         {
+          "period_end": "2026-05-10",
+          "value": 18946000000,
+          "form": "10-Q"
+        },
+        {
           "period_end": "2026-02-15",
           "value": 17383000000,
           "form": "10-Q"
@@ -93014,6 +92988,11 @@
       ],
       "lt_debt": [
         {
+          "period_end": "2026-05-10",
+          "value": 5670000000,
+          "form": "10-Q"
+        },
+        {
           "period_end": "2026-02-15",
           "value": 5688000000,
           "form": "10-Q"
@@ -93070,6 +93049,11 @@
         }
       ],
       "st_debt": [
+        {
+          "period_end": "2026-05-10",
+          "value": 0,
+          "form": "10-Q"
+        },
         {
           "period_end": "2026-02-15",
           "value": 72000000,
@@ -93132,7 +93116,7 @@
     "_cik": "0000909832",
     "_ticker": "COST",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:12:47.069784+00:00",
+    "_fetched_at": "2026-06-03T22:15:30.616687+00:00",
     "_warnings": []
   },
   "Home Depot": {
@@ -93827,7 +93811,7 @@
     "_cik": "0000354950",
     "_ticker": "HD",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:12:47.704683+00:00",
+    "_fetched_at": "2026-06-03T22:15:31.127328+00:00",
     "_warnings": []
   },
   "O'Reilly Automotive": {
@@ -94532,7 +94516,7 @@
     "_cik": "0000898173",
     "_ticker": "ORLY",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:12:48.113073+00:00",
+    "_fetched_at": "2026-06-03T22:15:31.546562+00:00",
     "_warnings": []
   },
   "WH Smith": {
@@ -94614,7 +94598,7 @@
     "_cik": "0000930157",
     "_ticker": "RTO",
     "_filer_type": "20-F",
-    "_fetched_at": "2026-05-28T18:12:48.444845+00:00",
+    "_fetched_at": "2026-06-03T22:15:31.851596+00:00",
     "_warnings": [
       "Revenue LTM not found in SEC tags",
       "EBITDA could not be constructed (missing op_income or D&A)",
@@ -95288,7 +95272,7 @@
     "_cik": "0000078890",
     "_ticker": "BCO",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:12:49.016275+00:00",
+    "_fetched_at": "2026-06-03T22:15:32.379834+00:00",
     "_warnings": []
   },
   "Krispy Kreme": {
@@ -95988,9 +95972,9 @@
     "_cik": "0001857154",
     "_ticker": "DNUT",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-05-28T18:12:49.348799+00:00",
+    "_fetched_at": "2026-06-03T22:15:32.789650+00:00",
     "_warnings": []
   },
-  "_last_full_refresh": "2026-05-28",
-  "_full_refresh_at": "2026-05-28T18:12:49.348844+00:00"
+  "_last_full_refresh": "2026-06-03",
+  "_full_refresh_at": "2026-06-03T22:15:32.789698+00:00"
 }
