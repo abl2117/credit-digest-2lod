@@ -1,12 +1,24 @@
 {
   "fed_funds": {
     "value": 3.62,
-    "as_of": "2026-06-05",
+    "as_of": "2026-06-08",
     "prior_value": 3.62,
-    "prior_as_of": "2026-06-04",
+    "prior_as_of": "2026-06-07",
     "change": 0.0,
     "change_pct": 0.0,
     "history": [
+      {
+        "date": "2026-06-08",
+        "value": 3.62
+      },
+      {
+        "date": "2026-06-07",
+        "value": 3.62
+      },
+      {
+        "date": "2026-06-06",
+        "value": 3.62
+      },
       {
         "date": "2026-06-05",
         "value": 3.62
@@ -114,18 +126,6 @@
       {
         "date": "2026-05-10",
         "value": 3.63
-      },
-      {
-        "date": "2026-05-09",
-        "value": 3.63
-      },
-      {
-        "date": "2026-05-08",
-        "value": 3.63
-      },
-      {
-        "date": "2026-05-07",
-        "value": 3.63
       }
     ],
     "_series_id": "DFF",
@@ -134,16 +134,20 @@
     "_title": "Federal Funds Effective Rate",
     "_label": "Fed Funds Effective Rate",
     "_category": "rates",
-    "_fetched_at": "2026-06-09T19:39:57.729868+00:00"
+    "_fetched_at": "2026-06-10T16:03:10.844810+00:00"
   },
   "ust_3m": {
-    "value": 3.78,
-    "as_of": "2026-06-05",
+    "value": 3.8,
+    "as_of": "2026-06-08",
     "prior_value": 3.78,
-    "prior_as_of": "2026-06-04",
-    "change": 0.0,
-    "change_pct": 0.0,
+    "prior_as_of": "2026-06-05",
+    "change": 0.02,
+    "change_pct": 0.53,
     "history": [
+      {
+        "date": "2026-06-08",
+        "value": 3.8
+      },
       {
         "date": "2026-06-05",
         "value": 3.78
@@ -259,10 +263,6 @@
       {
         "date": "2026-04-27",
         "value": 3.68
-      },
-      {
-        "date": "2026-04-24",
-        "value": 3.69
       }
     ],
     "_series_id": "DGS3MO",
@@ -271,16 +271,20 @@
     "_title": "Market Yield on U.S. Treasury Securities at 3-Month Constant Maturity, Quoted on an Investment Basis",
     "_label": "3-Month Treasury Yield",
     "_category": "rates",
-    "_fetched_at": "2026-06-09T19:39:58.488583+00:00"
+    "_fetched_at": "2026-06-10T16:03:11.401303+00:00"
   },
   "ust_2y": {
-    "value": 4.17,
-    "as_of": "2026-06-05",
-    "prior_value": 4.05,
-    "prior_as_of": "2026-06-04",
-    "change": 0.12,
-    "change_pct": 2.96,
+    "value": 4.15,
+    "as_of": "2026-06-08",
+    "prior_value": 4.17,
+    "prior_as_of": "2026-06-05",
+    "change": -0.02,
+    "change_pct": -0.48,
     "history": [
+      {
+        "date": "2026-06-08",
+        "value": 4.15
+      },
       {
         "date": "2026-06-05",
         "value": 4.17
@@ -396,10 +400,6 @@
       {
         "date": "2026-04-27",
         "value": 3.78
-      },
-      {
-        "date": "2026-04-24",
-        "value": 3.78
       }
     ],
     "_series_id": "DGS2",
@@ -408,16 +408,20 @@
     "_title": "Market Yield on U.S. Treasury Securities at 2-Year Constant Maturity, Quoted on an Investment Basis",
     "_label": "2-Year Treasury Yield",
     "_category": "rates",
-    "_fetched_at": "2026-06-09T19:39:59.281014+00:00"
+    "_fetched_at": "2026-06-10T16:03:11.888407+00:00"
   },
   "ust_10y": {
-    "value": 4.55,
-    "as_of": "2026-06-05",
-    "prior_value": 4.47,
-    "prior_as_of": "2026-06-04",
-    "change": 0.08,
-    "change_pct": 1.79,
+    "value": 4.56,
+    "as_of": "2026-06-08",
+    "prior_value": 4.55,
+    "prior_as_of": "2026-06-05",
+    "change": 0.01,
+    "change_pct": 0.22,
     "history": [
+      {
+        "date": "2026-06-08",
+        "value": 4.56
+      },
       {
         "date": "2026-06-05",
         "value": 4.55
@@ -773,10 +777,6 @@
       {
         "date": "2026-01-30",
         "value": 4.26
-      },
-      {
-        "date": "2026-01-29",
-        "value": 4.24
       }
     ],
     "_series_id": "DGS10",
@@ -785,16 +785,20 @@
     "_title": "Market Yield on U.S. Treasury Securities at 10-Year Constant Maturity, Quoted on an Investment Basis",
     "_label": "10-Year Treasury Yield",
     "_category": "rates",
-    "_fetched_at": "2026-06-09T19:39:59.935306+00:00"
+    "_fetched_at": "2026-06-10T16:03:12.373989+00:00"
   },
   "ust_30y": {
-    "value": 5.01,
-    "as_of": "2026-06-05",
-    "prior_value": 4.97,
-    "prior_as_of": "2026-06-04",
-    "change": 0.04,
-    "change_pct": 0.8,
+    "value": 5.03,
+    "as_of": "2026-06-08",
+    "prior_value": 5.01,
+    "prior_as_of": "2026-06-05",
+    "change": 0.02,
+    "change_pct": 0.4,
     "history": [
+      {
+        "date": "2026-06-08",
+        "value": 5.03
+      },
       {
         "date": "2026-06-05",
         "value": 5.01
@@ -910,10 +914,6 @@
       {
         "date": "2026-04-27",
         "value": 4.94
-      },
-      {
-        "date": "2026-04-24",
-        "value": 4.91
       }
     ],
     "_series_id": "DGS30",
@@ -922,16 +922,20 @@
     "_title": "Market Yield on U.S. Treasury Securities at 30-Year Constant Maturity, Quoted on an Investment Basis",
     "_label": "30-Year Treasury Yield",
     "_category": "rates",
-    "_fetched_at": "2026-06-09T19:40:02.886819+00:00"
+    "_fetched_at": "2026-06-10T16:03:13.161786+00:00"
   },
   "ust_10y_2y": {
-    "value": 0.41,
-    "as_of": "2026-06-08",
-    "prior_value": 0.38,
-    "prior_as_of": "2026-06-05",
-    "change": 0.03,
-    "change_pct": 7.89,
+    "value": 0.4,
+    "as_of": "2026-06-09",
+    "prior_value": 0.41,
+    "prior_as_of": "2026-06-08",
+    "change": -0.01,
+    "change_pct": -2.44,
     "history": [
+      {
+        "date": "2026-06-09",
+        "value": 0.4
+      },
       {
         "date": "2026-06-08",
         "value": 0.41
@@ -1287,10 +1291,6 @@
       {
         "date": "2026-02-02",
         "value": 0.72
-      },
-      {
-        "date": "2026-01-30",
-        "value": 0.74
       }
     ],
     "_series_id": "T10Y2Y",
@@ -1299,16 +1299,20 @@
     "_title": "10-Year Treasury Constant Maturity Minus 2-Year Treasury Constant Maturity",
     "_label": "10Y-2Y Treasury Spread",
     "_category": "rates",
-    "_fetched_at": "2026-06-09T19:40:03.644926+00:00"
+    "_fetched_at": "2026-06-10T16:03:13.842271+00:00"
   },
   "ig_oas": {
     "value": 0.75,
-    "as_of": "2026-06-08",
-    "prior_value": 0.74,
-    "prior_as_of": "2026-06-05",
-    "change": 0.01,
-    "change_pct": 1.35,
+    "as_of": "2026-06-09",
+    "prior_value": 0.75,
+    "prior_as_of": "2026-06-08",
+    "change": 0.0,
+    "change_pct": 0.0,
     "history": [
+      {
+        "date": "2026-06-09",
+        "value": 0.75
+      },
       {
         "date": "2026-06-08",
         "value": 0.75
@@ -1664,10 +1668,6 @@
       {
         "date": "2026-02-06",
         "value": 0.76
-      },
-      {
-        "date": "2026-02-05",
-        "value": 0.76
       }
     ],
     "_series_id": "BAMLC0A0CM",
@@ -1676,16 +1676,20 @@
     "_title": "ICE BofA US Corporate Index Option-Adjusted Spread",
     "_label": "IG Corporate OAS Spread",
     "_category": "spreads",
-    "_fetched_at": "2026-06-09T19:40:04.216685+00:00"
+    "_fetched_at": "2026-06-10T16:03:14.344889+00:00"
   },
   "bbb_oas": {
     "value": 0.93,
-    "as_of": "2026-06-08",
+    "as_of": "2026-06-09",
     "prior_value": 0.93,
-    "prior_as_of": "2026-06-05",
+    "prior_as_of": "2026-06-08",
     "change": 0.0,
     "change_pct": 0.0,
     "history": [
+      {
+        "date": "2026-06-09",
+        "value": 0.93
+      },
       {
         "date": "2026-06-08",
         "value": 0.93
@@ -2041,10 +2045,6 @@
       {
         "date": "2026-02-06",
         "value": 0.96
-      },
-      {
-        "date": "2026-02-05",
-        "value": 0.96
       }
     ],
     "_series_id": "BAMLC0A4CBBB",
@@ -2053,16 +2053,20 @@
     "_title": "ICE BofA BBB US Corporate Index Option-Adjusted Spread",
     "_label": "BBB Corporate OAS Spread",
     "_category": "spreads",
-    "_fetched_at": "2026-06-09T19:40:04.934160+00:00"
+    "_fetched_at": "2026-06-10T16:03:14.959485+00:00"
   },
   "hy_oas": {
-    "value": 2.75,
-    "as_of": "2026-06-08",
-    "prior_value": 2.76,
-    "prior_as_of": "2026-06-05",
-    "change": -0.01,
-    "change_pct": -0.36,
+    "value": 2.78,
+    "as_of": "2026-06-09",
+    "prior_value": 2.75,
+    "prior_as_of": "2026-06-08",
+    "change": 0.03,
+    "change_pct": 1.09,
     "history": [
+      {
+        "date": "2026-06-09",
+        "value": 2.78
+      },
       {
         "date": "2026-06-08",
         "value": 2.75
@@ -2418,10 +2422,6 @@
       {
         "date": "2026-02-06",
         "value": 2.87
-      },
-      {
-        "date": "2026-02-05",
-        "value": 2.97
       }
     ],
     "_series_id": "BAMLH0A0HYM2",
@@ -2430,16 +2430,20 @@
     "_title": "ICE BofA US High Yield Index Option-Adjusted Spread",
     "_label": "High Yield OAS Spread",
     "_category": "spreads",
-    "_fetched_at": "2026-06-09T19:40:05.772519+00:00"
+    "_fetched_at": "2026-06-10T16:03:15.685794+00:00"
   },
   "ccc_oas": {
-    "value": 9.49,
-    "as_of": "2026-06-08",
-    "prior_value": 9.52,
-    "prior_as_of": "2026-06-05",
-    "change": -0.03,
-    "change_pct": -0.32,
+    "value": 9.51,
+    "as_of": "2026-06-09",
+    "prior_value": 9.49,
+    "prior_as_of": "2026-06-08",
+    "change": 0.02,
+    "change_pct": 0.21,
     "history": [
+      {
+        "date": "2026-06-09",
+        "value": 9.51
+      },
       {
         "date": "2026-06-08",
         "value": 9.49
@@ -2795,10 +2799,6 @@
       {
         "date": "2026-02-06",
         "value": 8.92
-      },
-      {
-        "date": "2026-02-05",
-        "value": 9.0
       }
     ],
     "_series_id": "BAMLH0A3HYC",
@@ -2807,16 +2807,20 @@
     "_title": "ICE BofA CCC & Lower US High Yield Index Option-Adjusted Spread",
     "_label": "CCC & Lower OAS Spread",
     "_category": "spreads",
-    "_fetched_at": "2026-06-09T19:40:06.456212+00:00"
+    "_fetched_at": "2026-06-10T16:03:16.291448+00:00"
   },
   "cpi_yoy": {
-    "value": 3.8,
-    "as_of": "2026-04-01",
+    "value": 4.2,
+    "as_of": "2026-05-01",
     "prior_value": null,
-    "prior_as_of": "2025-04-01",
+    "prior_as_of": "2025-05-01",
     "change": null,
     "change_pct": null,
     "history": [
+      {
+        "date": "2026-05-01",
+        "value": 333.979
+      },
       {
         "date": "2026-04-01",
         "value": 332.407
@@ -2916,16 +2920,20 @@
     "_title": "Consumer Price Index for All Urban Consumers: All Items in U.S. City Average",
     "_label": "CPI All Items",
     "_category": "inflation",
-    "_fetched_at": "2026-06-09T19:40:07.167073+00:00"
+    "_fetched_at": "2026-06-10T16:03:16.776642+00:00"
   },
   "core_cpi_yoy": {
-    "value": 2.7,
-    "as_of": "2026-04-01",
+    "value": 2.8,
+    "as_of": "2026-05-01",
     "prior_value": null,
-    "prior_as_of": "2025-04-01",
+    "prior_as_of": "2025-05-01",
     "change": null,
     "change_pct": null,
     "history": [
+      {
+        "date": "2026-05-01",
+        "value": 336.121
+      },
       {
         "date": "2026-04-01",
         "value": 335.423
@@ -3025,7 +3033,7 @@
     "_title": "Consumer Price Index for All Urban Consumers: All Items Less Food and Energy in U.S. City Average",
     "_label": "Core CPI",
     "_category": "inflation",
-    "_fetched_at": "2026-06-09T19:40:07.902317+00:00"
+    "_fetched_at": "2026-06-10T16:03:17.247223+00:00"
   },
   "pce_yoy": {
     "value": 3.8,
@@ -3138,7 +3146,7 @@
     "_title": "Personal Consumption Expenditures: Chain-type Price Index",
     "_label": "PCE Price Index",
     "_category": "inflation",
-    "_fetched_at": "2026-06-09T19:40:08.557693+00:00"
+    "_fetched_at": "2026-06-10T16:03:17.729453+00:00"
   },
   "unemployment": {
     "value": 4.3,
@@ -3251,7 +3259,7 @@
     "_title": "Unemployment Rate",
     "_label": "Unemployment Rate",
     "_category": "labor",
-    "_fetched_at": "2026-06-09T19:40:09.255081+00:00"
+    "_fetched_at": "2026-06-10T16:03:18.269407+00:00"
   },
   "jobless_claims": {
     "value": 225000.0,
@@ -3316,7 +3324,7 @@
     "_title": "Initial Claims",
     "_label": "Initial Jobless Claims",
     "_category": "labor",
-    "_fetched_at": "2026-06-09T19:40:09.879383+00:00"
+    "_fetched_at": "2026-06-10T16:03:18.897770+00:00"
   },
   "nonfarm_payrolls": {
     "value": 159001.0,
@@ -3381,7 +3389,7 @@
     "_title": "All Employees, Total Nonfarm",
     "_label": "Nonfarm Payrolls",
     "_category": "labor",
-    "_fetched_at": "2026-06-09T19:40:10.850775+00:00"
+    "_fetched_at": "2026-06-10T16:03:19.490882+00:00"
   },
   "ism_mfg": {
     "value": 12605.0,
@@ -3446,7 +3454,7 @@
     "_title": "All Employees, Manufacturing",
     "_label": "Manufacturing Employment",
     "_category": "activity",
-    "_fetched_at": "2026-06-09T19:40:11.478175+00:00"
+    "_fetched_at": "2026-06-10T16:03:20.551681+00:00"
   },
   "retail_sales": {
     "value": 656115.0,
@@ -3511,7 +3519,7 @@
     "_title": "Advance Retail Sales: Retail Trade",
     "_label": "Retail Sales ex-Food Services",
     "_category": "activity",
-    "_fetched_at": "2026-06-09T19:40:12.094502+00:00"
+    "_fetched_at": "2026-06-10T16:03:21.206683+00:00"
   },
   "industrial_production": {
     "value": 102.4963,
@@ -3576,8 +3584,8 @@
     "_title": "Industrial Production: Total Index",
     "_label": "Industrial Production",
     "_category": "activity",
-    "_fetched_at": "2026-06-09T19:40:12.713220+00:00"
+    "_fetched_at": "2026-06-10T16:03:21.757508+00:00"
   },
-  "_fetched_at": "2026-06-09T19:40:12.713245+00:00",
-  "_last_full_refresh": "2026-06-09"
+  "_fetched_at": "2026-06-10T16:03:21.757570+00:00",
+  "_last_full_refresh": "2026-06-10"
 }
