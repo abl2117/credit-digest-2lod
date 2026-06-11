@@ -3,91 +3,6 @@
   "_keep_last": 60,
   "runs": [
     {
-      "run_id": "2026-05-16-2122",
-      "run_started": "2026-05-17T01:22:44.651676+00:00",
-      "run_completed": "2026-05-17T01:27:55.713011+00:00",
-      "duration_seconds": 311,
-      "data_sources": {
-        "anthropic_claude": {
-          "model": "claude-sonnet-4-6",
-          "calls": 2,
-          "batches_succeeded": 2
-        },
-        "sec_edgar": {
-          "from_cache": true,
-          "names_attempted": 73,
-          "names_succeeded": 68,
-          "names_failed": [],
-          "names_no_sec_filer": [],
-          "total_warnings": 40
-        },
-        "yfinance": {
-          "market_data_companies": 73,
-          "commodities_indices": 6
-        },
-        "fred": {
-          "from_cache": false,
-          "series_attempted": 19,
-          "series_succeeded": 19,
-          "series_failed": [],
-          "warnings": []
-        }
-      },
-      "overrides_applied": {
-        "ratings_override": 4
-      },
-      "validation_warnings": [
-        "Verizon: Total debt not found in SEC tags",
-        "Comcast: Total debt not found in SEC tags",
-        "Oracle: Total debt not found in SEC tags",
-        "Oracle: Period end 2025-05-31 is 350 days old (stale)",
-        "Nextracker: Total debt not found in SEC tags",
-        "TD Synnex: Total debt not found in SEC tags",
-        "Digital Realty: Total debt not found in SEC tags",
-        "American Tower: Total debt not found in SEC tags",
-        "Royal Caribbean: Total debt not found in SEC tags",
-        "Norwegian Cruise Line: Total debt not found in SEC tags",
-        "General Motors: Total debt not found in SEC tags",
-        "Ford: Total debt not found in SEC tags",
-        "Ford: Period end 2024-12-31 is 501 days old (stale)",
-        "Toyota: Revenue LTM not found in SEC tags",
-        "Toyota: EBITDA could not be constructed (missing op_income or D&A)",
-        "Toyota: Cash not found in SEC tags",
-        "Toyota: Total debt not found in SEC tags",
-        "Nissan: Not an SEC filer",
-        "Coca-Cola: Total debt not found in SEC tags",
-        "Anheuser-Busch InBev: Revenue LTM not found in SEC tags",
-        "Anheuser-Busch InBev: EBITDA could not be constructed (missing op_income or D&A)",
-        "Anheuser-Busch InBev: Cash not found in SEC tags",
-        "Anheuser-Busch InBev: Total debt not found in SEC tags",
-        "Philip Morris: Total debt not found in SEC tags",
-        "Imperial Brands: Not an SEC filer",
-        "Kimberly-Clark: Total debt not found in SEC tags",
-        "Mondelez: Total debt not found in SEC tags",
-        "Ball Corp: Total debt not found in SEC tags",
-        "Chevron: Total debt not found in SEC tags",
-        "BP: Revenue LTM not found in SEC tags",
-        "BP: EBITDA could not be constructed (missing op_income or D&A)",
-        "BP: Cash not found in SEC tags",
-        "BP: Total debt not found in SEC tags",
-        "Exxon: Total debt not found in SEC tags",
-        "Sempra Energy: Total debt not found in SEC tags",
-        "Deere: Total debt not found in SEC tags",
-        "GE Vernova: Total debt not found in SEC tags",
-        "Air Products: Total debt not found in SEC tags",
-        "Corteva: Total debt not found in SEC tags",
-        "DuPont: Total debt not found in SEC tags"
-      ],
-      "output": {
-        "total_rows": 73,
-        "red_count": 11,
-        "amber_count": 19,
-        "green_count": 43,
-        "html_bytes": 615582
-      },
-      "logged_at": "2026-05-17T01:27:55.713102+00:00"
-    },
-    {
       "run_id": "2026-05-17-0749",
       "run_started": "2026-05-17T11:49:26.483161+00:00",
       "run_completed": "2026-05-17T11:55:28.173173+00:00",
@@ -5447,6 +5362,107 @@
         "html_bytes": 2301024
       },
       "logged_at": "2026-06-10T16:47:21.028896+00:00"
+    },
+    {
+      "run_id": "2026-06-11-1218",
+      "run_started": "2026-06-11T16:18:20.290989+00:00",
+      "run_completed": "2026-06-11T16:20:05.732048+00:00",
+      "duration_seconds": 105,
+      "data_sources": {
+        "anthropic_claude": {
+          "model": "claude-sonnet-4-6",
+          "calls": 1,
+          "run_mode": "cheap",
+          "batches_succeeded": "n/a (cheap mode, cache reused)"
+        },
+        "sec_edgar": {
+          "from_cache": true,
+          "names_attempted": 185,
+          "names_succeeded": 137,
+          "names_failed": [],
+          "names_no_sec_filer": [],
+          "total_warnings": 117
+        },
+        "yfinance": {
+          "market_data_companies": 180,
+          "commodities_indices": 6
+        },
+        "fred": {
+          "from_cache": false,
+          "series_attempted": 19,
+          "series_succeeded": 19,
+          "series_failed": [],
+          "warnings": []
+        },
+        "census": {
+          "from_cache": false,
+          "rows_returned": 145,
+          "warnings": []
+        }
+      },
+      "overrides_applied": {
+        "ratings_override": 4
+      },
+      "validation_warnings": [
+        "Oracle: Total debt not found in SEC tags",
+        "Oracle: Period end 2025-05-31 is 374 days old (stale)",
+        "Nextracker: Total debt not found in SEC tags",
+        "General Motors: Total debt not found in SEC tags",
+        "Ford: Total debt not found in SEC tags",
+        "Ford: Period end 2024-12-31 is 525 days old (stale)",
+        "Toyota: Revenue LTM not found in SEC tags",
+        "Toyota: EBITDA could not be constructed (missing op_income or D&A)",
+        "Toyota: Cash not found in SEC tags",
+        "Toyota: Total debt not found in SEC tags",
+        "Nissan: Not an SEC filer",
+        "Anheuser-Busch InBev: Revenue LTM not found in SEC tags",
+        "Anheuser-Busch InBev: EBITDA could not be constructed (missing op_income or D&A)",
+        "Anheuser-Busch InBev: Cash not found in SEC tags",
+        "Anheuser-Busch InBev: Total debt not found in SEC tags",
+        "Imperial Brands: Not an SEC filer",
+        "BP: Revenue LTM not found in SEC tags",
+        "BP: EBITDA could not be constructed (missing op_income or D&A)",
+        "BP: Cash not found in SEC tags",
+        "BP: Total debt not found in SEC tags",
+        "Air Products: Total debt not found in SEC tags",
+        "Nutanix: Total debt not found in SEC tags",
+        "CEMEX: Revenue LTM not found in SEC tags",
+        "CEMEX: EBITDA could not be constructed (missing op_income or D&A)",
+        "CEMEX: Cash not found in SEC tags",
+        "CEMEX: Total debt not found in SEC tags",
+        "Bunge: Revenue YoY = 56.9% (unusual; verify)",
+        "Kenvue: Total debt not found in SEC tags",
+        "AES: Total debt not found in SEC tags",
+        "RWE: Not an SEC filer",
+        "Uniper: Not an SEC filer",
+        "Engie: Not an SEC filer",
+        "Enel: Not an SEC filer",
+        "Brookfield Renewable Partners: Revenue LTM not found in SEC tags",
+        "Brookfield Renewable Partners: EBITDA could not be constructed (missing op_income or D&A)",
+        "Brookfield Renewable Partners: Cash not found in SEC tags",
+        "Brookfield Renewable Partners: Total debt not found in SEC tags",
+        "Fluence Energy: Total debt not found in SEC tags",
+        "Enbridge: Revenue LTM not found in SEC tags",
+        "Enbridge: EBITDA could not be constructed (missing op_income or D&A)",
+        "Enbridge: Cash not found in SEC tags",
+        "Enbridge: Total debt not found in SEC tags",
+        "Phillips 66: EBITDA could not be constructed (missing op_income or D&A)",
+        "Woodside Energy: Not an SEC filer",
+        "Equinor: Revenue LTM not found in SEC tags",
+        "Equinor: EBITDA could not be constructed (missing op_income or D&A)",
+        "Equinor: Cash not found in SEC tags",
+        "Equinor: Total debt not found in SEC tags",
+        "Shell: Revenue LTM not found in SEC tags",
+        "Shell: EBITDA could not be constructed (missing op_income or D&A)"
+      ],
+      "output": {
+        "total_rows": 185,
+        "red_count": 14,
+        "amber_count": 60,
+        "green_count": 111,
+        "html_bytes": 2301174
+      },
+      "logged_at": "2026-06-11T16:20:05.732207+00:00"
     }
   ]
 }
