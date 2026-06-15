@@ -686,7 +686,7 @@
     "_cik": "0000732717",
     "_ticker": "T",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:37:04.773266+00:00",
+    "_fetched_at": "2026-06-15T17:26:14.316776+00:00",
     "_warnings": []
   },
   "Verizon": {
@@ -1365,7 +1365,7 @@
     "_cik": "0000732712",
     "_ticker": "VZ",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:37:05.341464+00:00",
+    "_fetched_at": "2026-06-15T17:26:15.694037+00:00",
     "_warnings": []
   },
   "Comcast": {
@@ -2039,7 +2039,7 @@
     "_cik": "0001166691",
     "_ticker": "CMCSA",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:37:05.879559+00:00",
+    "_fetched_at": "2026-06-15T17:26:16.278383+00:00",
     "_warnings": []
   },
   "Disney": {
@@ -2856,7 +2856,7 @@
     "_cik": "0001744489",
     "_ticker": "DIS",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:37:06.468789+00:00",
+    "_fetched_at": "2026-06-15T17:26:16.689324+00:00",
     "_warnings": []
   },
   "Warner Bros. Discovery": {
@@ -3546,7 +3546,7 @@
     "_cik": "0001437107",
     "_ticker": "WBD",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:37:07.236200+00:00",
+    "_fetched_at": "2026-06-15T17:26:17.340933+00:00",
     "_warnings": []
   },
   "Netflix": {
@@ -4225,7 +4225,7 @@
     "_cik": "0001065280",
     "_ticker": "NFLX",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:37:07.856895+00:00",
+    "_fetched_at": "2026-06-15T17:26:17.911935+00:00",
     "_warnings": []
   },
   "Amazon": {
@@ -4904,7 +4904,7 @@
     "_cik": "0001018724",
     "_ticker": "AMZN",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:37:08.540542+00:00",
+    "_fetched_at": "2026-06-15T17:26:18.434883+00:00",
     "_warnings": []
   },
   "Alphabet": {
@@ -5594,7 +5594,7 @@
     "_cik": "0001652044",
     "_ticker": "GOOGL",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:37:09.232002+00:00",
+    "_fetched_at": "2026-06-15T17:26:18.858358+00:00",
     "_warnings": []
   },
   "Microsoft": {
@@ -6309,7 +6309,7 @@
     "_cik": "0000789019",
     "_ticker": "MSFT",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:37:09.936479+00:00",
+    "_fetched_at": "2026-06-15T17:26:19.452957+00:00",
     "_warnings": []
   },
   "Oracle": {
@@ -6969,10 +6969,10 @@
     "_cik": "0001341439",
     "_ticker": "ORCL",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:37:10.591382+00:00",
+    "_fetched_at": "2026-06-15T17:26:20.015870+00:00",
     "_warnings": [
       "Total debt not found in SEC tags",
-      "Period end 2025-05-31 is 374 days old (stale)"
+      "Period end 2025-05-31 is 380 days old (stale)"
     ]
   },
   "Salesforce": {
@@ -7718,7 +7718,7 @@
     "_cik": "0001108524",
     "_ticker": "CRM",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:37:11.232854+00:00",
+    "_fetched_at": "2026-06-15T17:26:20.565534+00:00",
     "_warnings": []
   },
   "IBM": {
@@ -8545,7 +8545,7 @@
     "_cik": "0000051143",
     "_ticker": "IBM",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:37:12.062366+00:00",
+    "_fetched_at": "2026-06-15T17:26:21.174676+00:00",
     "_warnings": []
   },
   "HP Inc": {
@@ -9372,7 +9372,7 @@
     "_cik": "0000047217",
     "_ticker": "HPQ",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:37:12.713254+00:00",
+    "_fetched_at": "2026-06-15T17:26:21.973791+00:00",
     "_warnings": []
   },
   "HPE": {
@@ -10128,30 +10128,30 @@
     "_cik": "0001645590",
     "_ticker": "HPE",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:37:13.168817+00:00",
+    "_fetched_at": "2026-06-15T17:26:22.543411+00:00",
     "_warnings": []
   },
   "Dell": {
-    "revenue_ltm": 113.5,
-    "op_income_ltm": 8.1,
+    "revenue_ltm": 124.0,
+    "op_income_ltm": 8.7,
     "da_ltm": 3.0,
     "ocf_ltm": 11.2,
     "capex_ltm": 2.6,
-    "ebitda_ltm": 11.2,
+    "ebitda_ltm": 11.7,
     "fcf_ltm": 8.6,
-    "cash": 11.5,
-    "lt_debt": 23.5,
-    "st_debt": 8.0,
-    "total_debt": 31.5,
-    "net_debt": 20.0,
-    "nd_ebitda": 1.8,
-    "ebitda_margin": 9.8,
-    "op_margin": 7.2,
-    "revenue_yoy_pct": null,
+    "cash": 11.6,
+    "lt_debt": 23.6,
+    "st_debt": 7.5,
+    "total_debt": 31.2,
+    "net_debt": 19.6,
+    "nd_ebitda": 1.7,
+    "ebitda_margin": 9.5,
+    "op_margin": 7.0,
+    "revenue_yoy_pct": 29.8,
     "interest_expense_ltm": null,
     "interest_coverage": null,
-    "_period_end": "2026-01-30",
-    "_filing_form": "10-K",
+    "_period_end": "2026-05-01",
+    "_filing_form": "10-Q",
     "_tags_used": {
       "revenue": "Revenues",
       "op_income": "OperatingIncomeLoss",
@@ -10165,6 +10165,11 @@
     },
     "_history": {
       "revenue": [
+        {
+          "period_end": "2026-05-01",
+          "value": 43842000000,
+          "form": "10-Q"
+        },
         {
           "period_end": "2026-01-30",
           "value": 33379000000,
@@ -10219,14 +10224,14 @@
           "period_end": "2023-08-04",
           "value": 22934000000,
           "form": "10-K"
-        },
-        {
-          "period_end": "2023-05-05",
-          "value": 20922000000,
-          "form": "10-K"
         }
       ],
       "op_income": [
+        {
+          "period_end": "2026-05-01",
+          "value": 3656000000,
+          "form": "10-Q"
+        },
         {
           "period_end": "2026-01-30",
           "value": 3092000000,
@@ -10281,14 +10286,14 @@
           "period_end": "2023-08-04",
           "value": 1194000000,
           "form": "10-K"
-        },
-        {
-          "period_end": "2023-05-05",
-          "value": 1131000000,
-          "form": "10-K"
         }
       ],
       "da": [
+        {
+          "period_end": "2026-05-01",
+          "value": 758000000,
+          "form": "10-Q"
+        },
         {
           "period_end": "2026-01-30",
           "value": 773000000,
@@ -10343,14 +10348,14 @@
           "period_end": "2023-08-04",
           "value": 831000000,
           "form": "10-Q"
-        },
-        {
-          "period_end": "2023-05-05",
-          "value": 809000000,
-          "form": "10-Q"
         }
       ],
       "ocf": [
+        {
+          "period_end": "2026-05-01",
+          "value": 4081000000,
+          "form": "10-Q"
+        },
         {
           "period_end": "2026-01-30",
           "value": 4674000000,
@@ -10405,14 +10410,14 @@
           "period_end": "2023-08-04",
           "value": 3214000000,
           "form": "10-Q"
-        },
-        {
-          "period_end": "2023-05-05",
-          "value": 1777000000,
-          "form": "10-Q"
         }
       ],
       "capex": [
+        {
+          "period_end": "2026-05-01",
+          "value": 963000000,
+          "form": "10-Q"
+        },
         {
           "period_end": "2026-01-30",
           "value": 721000000,
@@ -10466,11 +10471,6 @@
         {
           "period_end": "2023-08-04",
           "value": 624000000,
-          "form": "10-Q"
-        },
-        {
-          "period_end": "2023-05-05",
-          "value": 701000000,
           "form": "10-Q"
         }
       ],
@@ -10617,9 +10617,14 @@
     "_balance_history": {
       "cash": [
         {
+          "period_end": "2026-05-01",
+          "value": 11578000000,
+          "form": "10-Q"
+        },
+        {
           "period_end": "2026-01-30",
           "value": 11528000000,
-          "form": "10-K"
+          "form": "10-Q"
         },
         {
           "period_end": "2025-10-31",
@@ -10674,9 +10679,14 @@
       ],
       "lt_debt": [
         {
+          "period_end": "2026-05-01",
+          "value": 23611000000,
+          "form": "10-Q"
+        },
+        {
           "period_end": "2026-01-30",
           "value": 23513000000,
-          "form": "10-K"
+          "form": "10-Q"
         },
         {
           "period_end": "2025-10-31",
@@ -10731,9 +10741,14 @@
       ],
       "st_debt": [
         {
+          "period_end": "2026-05-01",
+          "value": 7550000000,
+          "form": "10-Q"
+        },
+        {
           "period_end": "2026-01-30",
           "value": 7990000000,
-          "form": "10-K"
+          "form": "10-Q"
         },
         {
           "period_end": "2025-10-31",
@@ -10787,6 +10802,11 @@
         }
       ],
       "revenue_backlog": [
+        {
+          "period_end": "2026-05-01",
+          "value": 97000000000,
+          "form": "10-Q"
+        },
         {
           "period_end": "2026-01-30",
           "value": 82000000000,
@@ -10848,7 +10868,7 @@
     "_cik": "0001571996",
     "_ticker": "DELL",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:37:13.723348+00:00",
+    "_fetched_at": "2026-06-15T17:26:23.028259+00:00",
     "_warnings": []
   },
   "Nextracker": {
@@ -11466,7 +11486,7 @@
     "_cik": "0001852131",
     "_ticker": "NXT",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:37:14.126109+00:00",
+    "_fetched_at": "2026-06-15T17:26:23.415941+00:00",
     "_warnings": [
       "Total debt not found in SEC tags"
     ]
@@ -12147,7 +12167,7 @@
     "_cik": "0000897723",
     "_ticker": "SANM",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:37:14.670832+00:00",
+    "_fetched_at": "2026-06-15T17:26:23.959495+00:00",
     "_warnings": []
   },
   "Flex Ltd": {
@@ -12893,7 +12913,7 @@
     "_cik": "0000866374",
     "_ticker": "FLEX",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:37:15.388357+00:00",
+    "_fetched_at": "2026-06-15T17:26:24.413096+00:00",
     "_warnings": []
   },
   "Jabil": {
@@ -13557,7 +13577,7 @@
     "_cik": "0000898293",
     "_ticker": "JBL",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:37:16.110192+00:00",
+    "_fetched_at": "2026-06-15T17:26:24.974005+00:00",
     "_warnings": []
   },
   "Arrow Electronics": {
@@ -14231,7 +14251,7 @@
     "_cik": "0000007536",
     "_ticker": "ARW",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:37:16.817724+00:00",
+    "_fetched_at": "2026-06-15T17:26:25.413392+00:00",
     "_warnings": []
   },
   "TD Synnex": {
@@ -14895,7 +14915,7 @@
     "_cik": "0001177394",
     "_ticker": "SNX",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:37:17.580151+00:00",
+    "_fetched_at": "2026-06-15T17:26:25.993242+00:00",
     "_warnings": []
   },
   "Ingram Micro": {
@@ -15464,7 +15484,7 @@
     "_cik": "0001897762",
     "_ticker": "INGM",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:37:17.930037+00:00",
+    "_fetched_at": "2026-06-15T17:26:26.334664+00:00",
     "_warnings": []
   },
   "Kyndryl": {
@@ -16241,7 +16261,7 @@
     "_cik": "0001867072",
     "_ticker": "KD",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:37:18.403194+00:00",
+    "_fetched_at": "2026-06-15T17:26:26.768140+00:00",
     "_warnings": []
   },
   "Cognizant": {
@@ -16981,7 +17001,7 @@
     "_cik": "0001058290",
     "_ticker": "CTSH",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:37:19.063889+00:00",
+    "_fetched_at": "2026-06-15T17:26:27.268373+00:00",
     "_warnings": []
   },
   "Equinix": {
@@ -17671,7 +17691,7 @@
     "_cik": "0001101239",
     "_ticker": "EQIX",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:37:19.695340+00:00",
+    "_fetched_at": "2026-06-15T17:26:27.812411+00:00",
     "_warnings": []
   },
   "Digital Realty": {
@@ -18289,7 +18309,7 @@
     "_cik": "0001297996",
     "_ticker": "DLR",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:37:20.453428+00:00",
+    "_fetched_at": "2026-06-15T17:26:28.718442+00:00",
     "_warnings": []
   },
   "American Tower": {
@@ -18968,7 +18988,7 @@
     "_cik": "0001053507",
     "_ticker": "AMT",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:37:21.145801+00:00",
+    "_fetched_at": "2026-06-15T17:26:29.237947+00:00",
     "_warnings": []
   },
   "PayPal": {
@@ -19586,7 +19606,7 @@
     "_cik": "0001633917",
     "_ticker": "PYPL",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:37:21.696059+00:00",
+    "_fetched_at": "2026-06-15T17:26:29.635575+00:00",
     "_warnings": []
   },
   "Corpay": {
@@ -20240,7 +20260,7 @@
     "_cik": "0001175454",
     "_ticker": "CPAY",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:37:22.291597+00:00",
+    "_fetched_at": "2026-06-15T17:26:30.136973+00:00",
     "_warnings": []
   },
   "Booking Holdings": {
@@ -20919,7 +20939,7 @@
     "_cik": "0001075531",
     "_ticker": "BKNG",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:37:22.734117+00:00",
+    "_fetched_at": "2026-06-15T17:26:30.669855+00:00",
     "_warnings": []
   },
   "Uber": {
@@ -21686,7 +21706,7 @@
     "_cik": "0001543151",
     "_ticker": "UBER",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:37:23.127738+00:00",
+    "_fetched_at": "2026-06-15T17:26:31.051903+00:00",
     "_warnings": []
   },
   "Delta": {
@@ -22365,7 +22385,7 @@
     "_cik": "0000027904",
     "_ticker": "DAL",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:37:23.902424+00:00",
+    "_fetched_at": "2026-06-15T17:26:31.543135+00:00",
     "_warnings": []
   },
   "Carnival": {
@@ -23029,7 +23049,7 @@
     "_cik": "0000815097",
     "_ticker": "CCL",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:37:24.339115+00:00",
+    "_fetched_at": "2026-06-15T17:26:32.003562+00:00",
     "_warnings": []
   },
   "Royal Caribbean": {
@@ -23708,7 +23728,7 @@
     "_cik": "0000884887",
     "_ticker": "RCL",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:37:24.888247+00:00",
+    "_fetched_at": "2026-06-15T17:26:32.451002+00:00",
     "_warnings": []
   },
   "Norwegian Cruise Line": {
@@ -24448,7 +24468,7 @@
     "_cik": "0001513761",
     "_ticker": "NCLH",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:37:25.477591+00:00",
+    "_fetched_at": "2026-06-15T17:26:32.953996+00:00",
     "_warnings": []
   },
   "General Motors": {
@@ -25005,7 +25025,7 @@
     "_cik": "0001467858",
     "_ticker": "GM",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:37:26.080789+00:00",
+    "_fetched_at": "2026-06-15T17:26:33.436413+00:00",
     "_warnings": [
       "Total debt not found in SEC tags"
     ]
@@ -25747,7 +25767,7 @@
     "_cik": "0001318605",
     "_ticker": "TSLA",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:37:26.588190+00:00",
+    "_fetched_at": "2026-06-15T17:26:33.988188+00:00",
     "_warnings": []
   },
   "Ford": {
@@ -26239,10 +26259,10 @@
     "_cik": "0000037996",
     "_ticker": "F",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:37:27.361018+00:00",
+    "_fetched_at": "2026-06-15T17:26:34.727639+00:00",
     "_warnings": [
       "Total debt not found in SEC tags",
-      "Period end 2024-12-31 is 525 days old (stale)"
+      "Period end 2024-12-31 is 531 days old (stale)"
     ]
   },
   "Toyota": {
@@ -26303,7 +26323,7 @@
     "_cik": "0001094517",
     "_ticker": "TM",
     "_filer_type": "20-F",
-    "_fetched_at": "2026-06-09T19:37:27.922545+00:00",
+    "_fetched_at": "2026-06-15T17:26:35.203394+00:00",
     "_warnings": [
       "Revenue LTM not found in SEC tags",
       "EBITDA could not be constructed (missing op_income or D&A)",
@@ -27142,7 +27162,7 @@
     "_cik": "0000012927",
     "_ticker": "BA",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:37:28.706339+00:00",
+    "_fetched_at": "2026-06-15T17:26:35.851955+00:00",
     "_warnings": []
   },
   "GE Aerospace": {
@@ -27837,7 +27857,7 @@
     "_cik": "0000040545",
     "_ticker": "GE",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:37:29.466536+00:00",
+    "_fetched_at": "2026-06-15T17:26:36.449365+00:00",
     "_warnings": []
   },
   "Walmart": {
@@ -28603,29 +28623,29 @@
     "_cik": "0000104169",
     "_ticker": "WMT",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:37:30.160412+00:00",
+    "_fetched_at": "2026-06-15T17:26:36.937982+00:00",
     "_warnings": []
   },
   "AutoZone": {
-    "revenue_ltm": 17.3,
-    "op_income_ltm": 3.1,
+    "revenue_ltm": 18.2,
+    "op_income_ltm": 3.3,
     "da_ltm": 0.6,
     "ocf_ltm": 3.1,
     "capex_ltm": 1.3,
-    "ebitda_ltm": 3.7,
+    "ebitda_ltm": 3.9,
     "fcf_ltm": 1.8,
     "cash": 0.3,
-    "lt_debt": 8.9,
+    "lt_debt": 9.0,
     "st_debt": 0.0,
-    "total_debt": 8.9,
-    "net_debt": 8.6,
+    "total_debt": 9.0,
+    "net_debt": 8.8,
     "nd_ebitda": 2.3,
-    "ebitda_margin": 21.2,
-    "op_margin": 17.6,
-    "revenue_yoy_pct": 4.6,
+    "ebitda_margin": 21.3,
+    "op_margin": 18.0,
+    "revenue_yoy_pct": 11.5,
     "interest_expense_ltm": null,
     "interest_coverage": null,
-    "_period_end": "2026-02-14",
+    "_period_end": "2026-05-09",
     "_filing_form": "10-Q",
     "_tags_used": {
       "revenue": "Revenues",
@@ -28640,6 +28660,11 @@
     },
     "_history": {
       "revenue": [
+        {
+          "period_end": "2026-05-09",
+          "value": 4840950000,
+          "form": "10-Q"
+        },
         {
           "period_end": "2026-02-14",
           "value": 4274098000,
@@ -28694,14 +28719,14 @@
           "period_end": "2023-08-26",
           "value": 5690619000,
           "form": "10-K"
-        },
-        {
-          "period_end": "2023-05-06",
-          "value": 4090541000,
-          "form": "10-Q"
         }
       ],
       "op_income": [
+        {
+          "period_end": "2026-05-09",
+          "value": 923756000,
+          "form": "10-Q"
+        },
         {
           "period_end": "2026-02-14",
           "value": 698456000,
@@ -28756,11 +28781,6 @@
           "period_end": "2023-08-26",
           "value": 1222495000,
           "form": "10-K"
-        },
-        {
-          "period_end": "2023-05-06",
-          "value": 858481000,
-          "form": "10-Q"
         }
       ],
       "da": [
@@ -28972,6 +28992,11 @@
     "_balance_history": {
       "cash": [
         {
+          "period_end": "2026-05-09",
+          "value": 253729000,
+          "form": "10-Q"
+        },
+        {
           "period_end": "2026-02-14",
           "value": 285492000,
           "form": "10-Q"
@@ -29028,6 +29053,11 @@
         }
       ],
       "lt_debt": [
+        {
+          "period_end": "2026-05-09",
+          "value": 9016477000,
+          "form": "10-Q"
+        },
         {
           "period_end": "2026-02-14",
           "value": 8907052000,
@@ -29091,7 +29121,7 @@
     "_cik": "0000866787",
     "_ticker": "AZO",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:37:30.815635+00:00",
+    "_fetched_at": "2026-06-15T17:26:37.436301+00:00",
     "_warnings": []
   },
   "Genuine Parts": {
@@ -29770,7 +29800,7 @@
     "_cik": "0000040987",
     "_ticker": "GPC",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:37:31.494092+00:00",
+    "_fetched_at": "2026-06-15T17:26:37.896450+00:00",
     "_warnings": []
   },
   "Coca-Cola": {
@@ -30506,7 +30536,7 @@
     "_cik": "0000021344",
     "_ticker": "KO",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:37:32.171906+00:00",
+    "_fetched_at": "2026-06-15T17:26:38.441433+00:00",
     "_warnings": []
   },
   "Anheuser-Busch InBev": {
@@ -30567,7 +30597,7 @@
     "_cik": "0001668717",
     "_ticker": "BUD",
     "_filer_type": "20-F",
-    "_fetched_at": "2026-06-09T19:37:32.765093+00:00",
+    "_fetched_at": "2026-06-15T17:26:38.763451+00:00",
     "_warnings": [
       "Revenue LTM not found in SEC tags",
       "EBITDA could not be constructed (missing op_income or D&A)",
@@ -31236,7 +31266,7 @@
     "_cik": "0001413329",
     "_ticker": "PM",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:37:33.586915+00:00",
+    "_fetched_at": "2026-06-15T17:26:39.316170+00:00",
     "_warnings": []
   },
   "Altria": {
@@ -31915,7 +31945,7 @@
     "_cik": "0000764180",
     "_ticker": "MO",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:37:34.373573+00:00",
+    "_fetched_at": "2026-06-15T17:26:39.733160+00:00",
     "_warnings": []
   },
   "Imperial Brands": {
@@ -32688,7 +32718,7 @@
     "_cik": "0000102037",
     "_ticker": "UVV",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:37:34.943564+00:00",
+    "_fetched_at": "2026-06-15T17:26:40.332060+00:00",
     "_warnings": []
   },
   "Nike": {
@@ -33292,7 +33322,7 @@
     "_cik": "0000320187",
     "_ticker": "NKE",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:37:35.439398+00:00",
+    "_fetched_at": "2026-06-15T17:26:40.864053+00:00",
     "_warnings": []
   },
   "Kimberly-Clark": {
@@ -34058,7 +34088,7 @@
     "_cik": "0000055785",
     "_ticker": "KMB",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:37:36.190643+00:00",
+    "_fetched_at": "2026-06-15T17:26:41.351306+00:00",
     "_warnings": []
   },
   "Whirlpool": {
@@ -34737,7 +34767,7 @@
     "_cik": "0000106640",
     "_ticker": "WHR",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:37:36.662450+00:00",
+    "_fetched_at": "2026-06-15T17:26:41.890610+00:00",
     "_warnings": []
   },
   "Mondelez": {
@@ -35503,7 +35533,7 @@
     "_cik": "0001103982",
     "_ticker": "MDLZ",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:37:37.236847+00:00",
+    "_fetched_at": "2026-06-15T17:26:42.579591+00:00",
     "_warnings": []
   },
   "Ball Corp": {
@@ -36239,7 +36269,7 @@
     "_cik": "0000009389",
     "_ticker": "BALL",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:37:37.822309+00:00",
+    "_fetched_at": "2026-06-15T17:26:43.108429+00:00",
     "_warnings": []
   },
   "Crown Holdings": {
@@ -36960,7 +36990,7 @@
     "_cik": "0001219601",
     "_ticker": "CCK",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:37:38.533568+00:00",
+    "_fetched_at": "2026-06-15T17:26:43.684092+00:00",
     "_warnings": []
   },
   "International Paper": {
@@ -37636,7 +37666,7 @@
     "_cik": "0000051434",
     "_ticker": "IP",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:37:39.268688+00:00",
+    "_fetched_at": "2026-06-15T17:26:44.229239+00:00",
     "_warnings": []
   },
   "Chevron": {
@@ -38312,7 +38342,7 @@
     "_cik": "0000093410",
     "_ticker": "CVX",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:37:39.917002+00:00",
+    "_fetched_at": "2026-06-15T17:26:44.752492+00:00",
     "_warnings": []
   },
   "BP": {
@@ -38373,7 +38403,7 @@
     "_cik": "0000313807",
     "_ticker": "BP",
     "_filer_type": "20-F",
-    "_fetched_at": "2026-06-09T19:37:40.313813+00:00",
+    "_fetched_at": "2026-06-15T17:26:45.139001+00:00",
     "_warnings": [
       "Revenue LTM not found in SEC tags",
       "EBITDA could not be constructed (missing op_income or D&A)",
@@ -39099,7 +39129,7 @@
     "_cik": "0000034088",
     "_ticker": "XOM",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:37:40.920002+00:00",
+    "_fetched_at": "2026-06-15T17:26:45.757388+00:00",
     "_warnings": []
   },
   "NextEra Energy": {
@@ -39691,7 +39721,7 @@
     "_cik": "0000753308",
     "_ticker": "NEE",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:37:41.830868+00:00",
+    "_fetched_at": "2026-06-15T17:26:46.298973+00:00",
     "_warnings": []
   },
   "Duke Energy": {
@@ -40437,7 +40467,7 @@
     "_cik": "0001326160",
     "_ticker": "DUK",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:37:42.656486+00:00",
+    "_fetched_at": "2026-06-15T17:26:46.904192+00:00",
     "_warnings": []
   },
   "Sempra Energy": {
@@ -41162,7 +41192,7 @@
     "_cik": "0001032208",
     "_ticker": "SRE",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:37:43.271060+00:00",
+    "_fetched_at": "2026-06-15T17:26:47.524818+00:00",
     "_warnings": []
   },
   "Caterpillar": {
@@ -41812,7 +41842,7 @@
     "_cik": "0000018230",
     "_ticker": "CAT",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:37:43.849044+00:00",
+    "_fetched_at": "2026-06-15T17:26:48.128377+00:00",
     "_warnings": []
   },
   "Deere": {
@@ -42639,7 +42669,7 @@
     "_cik": "0000315189",
     "_ticker": "DE",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:37:44.632058+00:00",
+    "_fetched_at": "2026-06-15T17:26:48.676958+00:00",
     "_warnings": []
   },
   "Danaher": {
@@ -43379,7 +43409,7 @@
     "_cik": "0000313616",
     "_ticker": "DHR",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:37:45.685636+00:00",
+    "_fetched_at": "2026-06-15T17:26:49.313991+00:00",
     "_warnings": []
   },
   "GE Vernova": {
@@ -43984,7 +44014,7 @@
     "_cik": "0001996810",
     "_ticker": "GEV",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:37:46.123012+00:00",
+    "_fetched_at": "2026-06-15T17:26:49.696041+00:00",
     "_warnings": []
   },
   "Honeywell": {
@@ -44791,7 +44821,7 @@
     "_cik": "0000773840",
     "_ticker": "HON",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:37:46.680213+00:00",
+    "_fetched_at": "2026-06-15T17:26:50.156601+00:00",
     "_warnings": []
   },
   "Otis": {
@@ -45618,7 +45648,7 @@
     "_cik": "0001781335",
     "_ticker": "OTIS",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:37:47.125485+00:00",
+    "_fetched_at": "2026-06-15T17:26:50.521387+00:00",
     "_warnings": []
   },
   "Air Products": {
@@ -46242,7 +46272,7 @@
     "_cik": "0000002969",
     "_ticker": "APD",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:37:47.678309+00:00",
+    "_fetched_at": "2026-06-15T17:26:51.197302+00:00",
     "_warnings": [
       "Total debt not found in SEC tags"
     ]
@@ -47071,7 +47101,7 @@
     "_cik": "0001755672",
     "_ticker": "CTVA",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:37:48.200120+00:00",
+    "_fetched_at": "2026-06-15T17:26:51.600502+00:00",
     "_warnings": []
   },
   "DuPont": {
@@ -47792,7 +47822,7 @@
     "_cik": "0001666700",
     "_ticker": "DD",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:37:48.896090+00:00",
+    "_fetched_at": "2026-06-15T17:26:52.115529+00:00",
     "_warnings": []
   },
   "Apple": {
@@ -48471,7 +48501,7 @@
     "_cik": "0000320193",
     "_ticker": "AAPL",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:37:49.418338+00:00",
+    "_fetched_at": "2026-06-15T17:26:52.741171+00:00",
     "_warnings": []
   },
   "Nutanix": {
@@ -49028,7 +49058,7 @@
     "_cik": "0001618732",
     "_ticker": "NTNX",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:37:50.040155+00:00",
+    "_fetched_at": "2026-06-15T17:26:53.178525+00:00",
     "_warnings": [
       "Total debt not found in SEC tags"
     ]
@@ -49725,7 +49755,7 @@
     "_cik": "0001141391",
     "_ticker": "MA",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:37:50.698285+00:00",
+    "_fetched_at": "2026-06-15T17:26:53.728305+00:00",
     "_warnings": []
   },
   "Visa": {
@@ -50450,7 +50480,7 @@
     "_cik": "0001403161",
     "_ticker": "V",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:37:51.227155+00:00",
+    "_fetched_at": "2026-06-15T17:26:54.243867+00:00",
     "_warnings": []
   },
   "Avnet": {
@@ -51129,7 +51159,7 @@
     "_cik": "0000008858",
     "_ticker": "AVT",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:37:51.754735+00:00",
+    "_fetched_at": "2026-06-15T17:26:54.801141+00:00",
     "_warnings": []
   },
   "CDW": {
@@ -51808,7 +51838,7 @@
     "_cik": "0001402057",
     "_ticker": "CDW",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:37:52.212850+00:00",
+    "_fetched_at": "2026-06-15T17:26:55.369637+00:00",
     "_warnings": []
   },
   "Amrize": {
@@ -52265,7 +52295,7 @@
     "_cik": "0002035989",
     "_ticker": "AMRZ",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:37:52.633825+00:00",
+    "_fetched_at": "2026-06-15T17:26:55.706286+00:00",
     "_warnings": []
   },
   "CEMEX": {
@@ -52326,7 +52356,7 @@
     "_cik": "0001076378",
     "_ticker": "CX",
     "_filer_type": "20-F",
-    "_fetched_at": "2026-06-09T19:37:52.998298+00:00",
+    "_fetched_at": "2026-06-15T17:26:56.037474+00:00",
     "_warnings": [
       "Revenue LTM not found in SEC tags",
       "EBITDA could not be constructed (missing op_income or D&A)",
@@ -53097,7 +53127,7 @@
     "_cik": "0000007084",
     "_ticker": "ADM",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:37:53.828605+00:00",
+    "_fetched_at": "2026-06-15T17:26:56.512082+00:00",
     "_warnings": []
   },
   "Bunge": {
@@ -53843,7 +53873,7 @@
     "_cik": "0001996862",
     "_ticker": "BG",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:37:54.316701+00:00",
+    "_fetched_at": "2026-06-15T17:26:56.900228+00:00",
     "_warnings": [
       "Revenue YoY = 56.9% (unusual; verify)"
     ]
@@ -54524,7 +54554,7 @@
     "_cik": "0001046257",
     "_ticker": "INGR",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:37:55.002108+00:00",
+    "_fetched_at": "2026-06-15T17:26:57.518155+00:00",
     "_warnings": []
   },
   "Colgate-Palmolive": {
@@ -55188,7 +55218,7 @@
     "_cik": "0000021665",
     "_ticker": "CL",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:37:55.748455+00:00",
+    "_fetched_at": "2026-06-15T17:26:58.386834+00:00",
     "_warnings": []
   },
   "Kenvue": {
@@ -55883,7 +55913,7 @@
     "_cik": "0001944048",
     "_ticker": "KVUE",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:37:56.127919+00:00",
+    "_fetched_at": "2026-06-15T17:26:58.747105+00:00",
     "_warnings": [
       "Total debt not found in SEC tags"
     ]
@@ -56539,7 +56569,7 @@
     "_cik": "0001024305",
     "_ticker": "COTY",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:37:56.761657+00:00",
+    "_fetched_at": "2026-06-15T17:26:59.310347+00:00",
     "_warnings": []
   },
   "AES": {
@@ -57244,7 +57274,7 @@
     "_cik": "0000874761",
     "_ticker": "AES",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:37:57.684895+00:00",
+    "_fetched_at": "2026-06-15T17:26:59.885608+00:00",
     "_warnings": [
       "Total debt not found in SEC tags"
     ]
@@ -57886,7 +57916,7 @@
     "_cik": "0000715957",
     "_ticker": "D",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:37:58.600280+00:00",
+    "_fetched_at": "2026-06-15T17:27:00.451058+00:00",
     "_warnings": []
   },
   "Edison International": {
@@ -58565,7 +58595,7 @@
     "_cik": "0000827052",
     "_ticker": "EIX",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:37:59.331772+00:00",
+    "_fetched_at": "2026-06-15T17:27:01.070268+00:00",
     "_warnings": []
   },
   "Constellation Energy": {
@@ -59265,7 +59295,7 @@
     "_cik": "0001868275",
     "_ticker": "CEG",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:37:59.784019+00:00",
+    "_fetched_at": "2026-06-15T17:27:01.713240+00:00",
     "_warnings": []
   },
   "Southern Company": {
@@ -60031,7 +60061,7 @@
     "_cik": "0000092122",
     "_ticker": "SO",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:38:00.333543+00:00",
+    "_fetched_at": "2026-06-15T17:27:02.261447+00:00",
     "_warnings": []
   },
   "PPL Corporation": {
@@ -60797,7 +60827,7 @@
     "_cik": "0000922224",
     "_ticker": "PPL",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:38:01.008206+00:00",
+    "_fetched_at": "2026-06-15T17:27:02.951544+00:00",
     "_warnings": []
   },
   "NRG Energy": {
@@ -61476,7 +61506,7 @@
     "_cik": "0001013871",
     "_ticker": "NRG",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:38:01.693181+00:00",
+    "_fetched_at": "2026-06-15T17:27:03.459044+00:00",
     "_warnings": []
   },
   "RWE": {
@@ -62270,7 +62300,7 @@
     "_cik": "0001567683",
     "_ticker": "CWEN",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:38:02.299416+00:00",
+    "_fetched_at": "2026-06-15T17:27:04.066291+00:00",
     "_warnings": []
   },
   "Brookfield Renewable Partners": {
@@ -62331,7 +62361,7 @@
     "_cik": "0001533232",
     "_ticker": "BEP",
     "_filer_type": "20-F",
-    "_fetched_at": "2026-06-09T19:38:02.632234+00:00",
+    "_fetched_at": "2026-06-15T17:27:04.413019+00:00",
     "_warnings": [
       "Revenue LTM not found in SEC tags",
       "EBITDA could not be constructed (missing op_income or D&A)",
@@ -63011,7 +63041,7 @@
     "_cik": "0001868941",
     "_ticker": "FLNC",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:38:03.083621+00:00",
+    "_fetched_at": "2026-06-15T17:27:04.787337+00:00",
     "_warnings": [
       "Total debt not found in SEC tags"
     ]
@@ -63692,7 +63722,7 @@
     "_cik": "0000003570",
     "_ticker": "LNG",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:38:03.559960+00:00",
+    "_fetched_at": "2026-06-15T17:27:05.614551+00:00",
     "_warnings": []
   },
   "Enbridge": {
@@ -63753,7 +63783,7 @@
     "_cik": "0000895728",
     "_ticker": "ENB",
     "_filer_type": "40-F",
-    "_fetched_at": "2026-06-09T19:38:04.336551+00:00",
+    "_fetched_at": "2026-06-15T17:27:06.033258+00:00",
     "_warnings": [
       "Revenue LTM not found in SEC tags",
       "EBITDA could not be constructed (missing op_income or D&A)",
@@ -64332,7 +64362,7 @@
     "_cik": "0000045012",
     "_ticker": "HAL",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:38:04.804819+00:00",
+    "_fetched_at": "2026-06-15T17:27:06.533351+00:00",
     "_warnings": []
   },
   "SLB": {
@@ -65037,7 +65067,7 @@
     "_cik": "0000087347",
     "_ticker": "SLB",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:38:05.500711+00:00",
+    "_fetched_at": "2026-06-15T17:27:06.977946+00:00",
     "_warnings": []
   },
   "Baker Hughes": {
@@ -65767,7 +65797,7 @@
     "_cik": "0001701605",
     "_ticker": "BKR",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:38:06.007519+00:00",
+    "_fetched_at": "2026-06-15T17:27:07.421750+00:00",
     "_warnings": []
   },
   "TechnipFMC": {
@@ -66457,7 +66487,7 @@
     "_cik": "0001681459",
     "_ticker": "FTI",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:38:06.758244+00:00",
+    "_fetched_at": "2026-06-15T17:27:07.959513+00:00",
     "_warnings": []
   },
   "Phillips 66": {
@@ -67049,7 +67079,7 @@
     "_cik": "0001534701",
     "_ticker": "PSX",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:38:07.292405+00:00",
+    "_fetched_at": "2026-06-15T17:27:08.471555+00:00",
     "_warnings": [
       "EBITDA could not be constructed (missing op_income or D&A)"
     ]
@@ -67119,7 +67149,7 @@
     "_cik": "0001140625",
     "_ticker": "EQNR",
     "_filer_type": "20-F",
-    "_fetched_at": "2026-06-09T19:38:07.717831+00:00",
+    "_fetched_at": "2026-06-15T17:27:08.944842+00:00",
     "_warnings": [
       "Revenue LTM not found in SEC tags",
       "EBITDA could not be constructed (missing op_income or D&A)",
@@ -67185,7 +67215,7 @@
     "_cik": "0001306965",
     "_ticker": "SHEL",
     "_filer_type": "20-F",
-    "_fetched_at": "2026-06-09T19:38:08.056410+00:00",
+    "_fetched_at": "2026-06-15T17:27:09.359811+00:00",
     "_warnings": [
       "Revenue LTM not found in SEC tags",
       "EBITDA could not be constructed (missing op_income or D&A)",
@@ -67251,7 +67281,7 @@
     "_cik": "0000879764",
     "_ticker": "TTE",
     "_filer_type": "20-F",
-    "_fetched_at": "2026-06-09T19:38:08.416232+00:00",
+    "_fetched_at": "2026-06-15T17:27:09.773055+00:00",
     "_warnings": [
       "Revenue LTM not found in SEC tags",
       "EBITDA could not be constructed (missing op_income or D&A)",
@@ -68068,7 +68098,7 @@
     "_cik": "0001751788",
     "_ticker": "DOW",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:38:09.020367+00:00",
+    "_fetched_at": "2026-06-15T17:27:10.314566+00:00",
     "_warnings": []
   },
   "LyondellBasell": {
@@ -68747,7 +68777,7 @@
     "_cik": "0001489393",
     "_ticker": "LYB",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:38:09.700621+00:00",
+    "_fetched_at": "2026-06-15T17:27:10.768879+00:00",
     "_warnings": []
   },
   "Olin Corporation": {
@@ -69463,7 +69493,7 @@
     "_cik": "0000074303",
     "_ticker": "OLN",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:38:10.438173+00:00",
+    "_fetched_at": "2026-06-15T17:27:11.398222+00:00",
     "_warnings": []
   },
   "Albemarle": {
@@ -70229,7 +70259,7 @@
     "_cik": "0000915913",
     "_ticker": "ALB",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:38:11.032285+00:00",
+    "_fetched_at": "2026-06-15T17:27:12.019332+00:00",
     "_warnings": []
   },
   "Linde": {
@@ -70995,7 +71025,7 @@
     "_cik": "0001707925",
     "_ticker": "LIN",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:38:11.662734+00:00",
+    "_fetched_at": "2026-06-15T17:27:12.594989+00:00",
     "_warnings": []
   },
   "FMC Corporation": {
@@ -71674,7 +71704,7 @@
     "_cik": "0000037785",
     "_ticker": "FMC",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:38:12.412795+00:00",
+    "_fetched_at": "2026-06-15T17:27:13.203609+00:00",
     "_warnings": []
   },
   "Ecolab": {
@@ -72501,7 +72531,7 @@
     "_cik": "0000031462",
     "_ticker": "ECL",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:38:13.119129+00:00",
+    "_fetched_at": "2026-06-15T17:27:13.769600+00:00",
     "_warnings": []
   },
   "Nutrien": {
@@ -73209,7 +73239,7 @@
     "_cik": "0000079879",
     "_ticker": "PPG",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:38:13.853401+00:00",
+    "_fetched_at": "2026-06-15T17:27:14.338532+00:00",
     "_warnings": []
   },
   "Braskem": {
@@ -73270,7 +73300,7 @@
     "_cik": "0001071438",
     "_ticker": "BAK",
     "_filer_type": "20-F",
-    "_fetched_at": "2026-06-09T19:38:14.218813+00:00",
+    "_fetched_at": "2026-06-15T17:27:14.734407+00:00",
     "_warnings": [
       "Revenue LTM not found in SEC tags",
       "EBITDA could not be constructed (missing op_income or D&A)",
@@ -73993,7 +74023,7 @@
     "_cik": "0001551152",
     "_ticker": "ABBV",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:38:14.689470+00:00",
+    "_fetched_at": "2026-06-15T17:27:15.213248+00:00",
     "_warnings": []
   },
   "Eli Lilly": {
@@ -74585,7 +74615,7 @@
     "_cik": "0000059478",
     "_ticker": "LLY",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:38:15.350153+00:00",
+    "_fetched_at": "2026-06-15T17:27:15.711564+00:00",
     "_warnings": [
       "Revenue YoY = 60.2% (unusual; verify)"
     ]
@@ -75221,7 +75251,7 @@
     "_cik": "0000200406",
     "_ticker": "JNJ",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:38:15.993031+00:00",
+    "_fetched_at": "2026-06-15T17:27:16.220414+00:00",
     "_warnings": []
   },
   "Merck & Co": {
@@ -75850,7 +75880,7 @@
     "_cik": "0000310158",
     "_ticker": "MRK",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:38:16.582777+00:00",
+    "_fetched_at": "2026-06-15T17:27:16.700627+00:00",
     "_warnings": []
   },
   "Pfizer": {
@@ -76627,7 +76657,7 @@
     "_cik": "0000078003",
     "_ticker": "PFE",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:38:17.234872+00:00",
+    "_fetched_at": "2026-06-15T17:27:17.229679+00:00",
     "_warnings": []
   },
   "AstraZeneca": {
@@ -76688,7 +76718,7 @@
     "_cik": "0000901832",
     "_ticker": "AZN",
     "_filer_type": "20-F",
-    "_fetched_at": "2026-06-09T19:38:17.626808+00:00",
+    "_fetched_at": "2026-06-15T17:27:17.627809+00:00",
     "_warnings": [
       "Revenue LTM not found in SEC tags",
       "EBITDA could not be constructed (missing op_income or D&A)",
@@ -76754,7 +76784,7 @@
     "_cik": "0001131399",
     "_ticker": "GSK",
     "_filer_type": "20-F",
-    "_fetched_at": "2026-06-09T19:38:18.117785+00:00",
+    "_fetched_at": "2026-06-15T17:27:18.323336+00:00",
     "_warnings": [
       "Revenue LTM not found in SEC tags",
       "EBITDA could not be constructed (missing op_income or D&A)",
@@ -77524,7 +77554,7 @@
     "_cik": "0000721371",
     "_ticker": "CAH",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:38:18.798590+00:00",
+    "_fetched_at": "2026-06-15T17:27:19.012999+00:00",
     "_warnings": []
   },
   "Cencora": {
@@ -78163,7 +78193,7 @@
     "_cik": "0001140859",
     "_ticker": "COR",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:38:19.338367+00:00",
+    "_fetched_at": "2026-06-15T17:27:19.541779+00:00",
     "_warnings": []
   },
   "McKesson": {
@@ -78781,7 +78811,7 @@
     "_cik": "0000927653",
     "_ticker": "MCK",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:38:20.040364+00:00",
+    "_fetched_at": "2026-06-15T17:27:20.419533+00:00",
     "_warnings": []
   },
   "Blackstone": {
@@ -79425,7 +79455,7 @@
     "_cik": "0001393818",
     "_ticker": "BX",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:38:20.711967+00:00",
+    "_fetched_at": "2026-06-15T17:27:20.926242+00:00",
     "_warnings": []
   },
   "KKR": {
@@ -79895,7 +79925,7 @@
     "_cik": "0001404912",
     "_ticker": "KKR",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:38:21.329990+00:00",
+    "_fetched_at": "2026-06-15T17:27:21.400982+00:00",
     "_warnings": [
       "Total debt not found in SEC tags"
     ]
@@ -80515,7 +80545,7 @@
     "_cik": "0001858681",
     "_ticker": "APO",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:38:21.781991+00:00",
+    "_fetched_at": "2026-06-15T17:27:21.913485+00:00",
     "_warnings": []
   },
   "Brookfield Infrastructure Partners": {
@@ -80576,7 +80606,7 @@
     "_cik": "0001406234",
     "_ticker": "BIP",
     "_filer_type": "20-F",
-    "_fetched_at": "2026-06-09T19:38:22.236124+00:00",
+    "_fetched_at": "2026-06-15T17:27:22.298123+00:00",
     "_warnings": [
       "Revenue LTM not found in SEC tags",
       "EBITDA could not be constructed (missing op_income or D&A)",
@@ -81260,7 +81290,7 @@
     "_cik": "0000726728",
     "_ticker": "O",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:38:22.801146+00:00",
+    "_fetched_at": "2026-06-15T17:27:22.786637+00:00",
     "_warnings": []
   },
   "Simon Property Group": {
@@ -81965,7 +81995,7 @@
     "_cik": "0001063761",
     "_ticker": "SPG",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:38:23.363494+00:00",
+    "_fetched_at": "2026-06-15T17:27:23.328705+00:00",
     "_warnings": []
   },
   "Barrick Gold": {
@@ -82721,7 +82751,7 @@
     "_cik": "0001591588",
     "_ticker": "GOLD",
     "_filer_type": "40-F",
-    "_fetched_at": "2026-06-09T19:38:24.137834+00:00",
+    "_fetched_at": "2026-06-15T17:27:23.930144+00:00",
     "_warnings": [
       "Revenue YoY = 131.8% (unusual; verify)"
     ]
@@ -83387,7 +83417,7 @@
     "_cik": "0001164727",
     "_ticker": "NEM",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:38:24.803657+00:00",
+    "_fetched_at": "2026-06-15T17:27:24.486042+00:00",
     "_warnings": []
   },
   "Teck Resources": {
@@ -83448,7 +83478,7 @@
     "_cik": "0000886986",
     "_ticker": "TECK",
     "_filer_type": "40-F",
-    "_fetched_at": "2026-06-09T19:38:25.130925+00:00",
+    "_fetched_at": "2026-06-15T17:27:24.840947+00:00",
     "_warnings": [
       "Revenue LTM not found in SEC tags",
       "EBITDA could not be constructed (missing op_income or D&A)",
@@ -83956,7 +83986,7 @@
     "_cik": "0000075362",
     "_ticker": "PCAR",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:38:25.621415+00:00",
+    "_fetched_at": "2026-06-15T17:27:25.260053+00:00",
     "_warnings": [
       "Cash not found in SEC tags",
       "Total debt not found in SEC tags"
@@ -84776,7 +84806,7 @@
     "_cik": "0000026172",
     "_ticker": "CMI",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:38:26.188343+00:00",
+    "_fetched_at": "2026-06-15T17:27:25.835234+00:00",
     "_warnings": []
   },
   "Wabtec": {
@@ -85455,7 +85485,7 @@
     "_cik": "0000943452",
     "_ticker": "WAB",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:38:26.713830+00:00",
+    "_fetched_at": "2026-06-15T17:27:26.387249+00:00",
     "_warnings": []
   },
   "CNH Industrial": {
@@ -85915,7 +85945,7 @@
     "_cik": "0001567094",
     "_ticker": "CNH",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:38:27.300043+00:00",
+    "_fetched_at": "2026-06-15T17:27:27.009719+00:00",
     "_warnings": [
       "Total debt not found in SEC tags"
     ]
@@ -86718,7 +86748,7 @@
     "_cik": "0000802481",
     "_ticker": "PPC",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:38:27.876959+00:00",
+    "_fetched_at": "2026-06-15T17:27:27.721878+00:00",
     "_warnings": []
   },
   "Kraft Heinz": {
@@ -87484,7 +87514,7 @@
     "_cik": "0001637459",
     "_ticker": "KHC",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:38:28.325088+00:00",
+    "_fetched_at": "2026-06-15T17:27:28.245542+00:00",
     "_warnings": []
   },
   "Grupo Bimbo": {
@@ -88132,7 +88162,7 @@
     "_cik": "0000317540",
     "_ticker": "COKE",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:38:29.050931+00:00",
+    "_fetched_at": "2026-06-15T17:27:28.736976+00:00",
     "_warnings": []
   },
   "Turkish Airlines": {
@@ -88962,7 +88992,7 @@
     "_cik": "0001474735",
     "_ticker": "GNRC",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:38:29.573170+00:00",
+    "_fetched_at": "2026-06-15T17:27:29.351780+00:00",
     "_warnings": []
   },
   "Siemens Energy": {
@@ -89517,7 +89547,7 @@
     "_cik": "0000906163",
     "_ticker": "NVR",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:38:30.013197+00:00",
+    "_fetched_at": "2026-06-15T17:27:29.799805+00:00",
     "_warnings": [
       "EBITDA could not be constructed (missing op_income or D&A)",
       "Total debt not found in SEC tags"
@@ -90231,7 +90261,7 @@
     "_cik": "0000066740",
     "_ticker": "MMM",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:38:30.566327+00:00",
+    "_fetched_at": "2026-06-15T17:27:30.364695+00:00",
     "_warnings": []
   },
   "Parker Hannifin": {
@@ -90956,7 +90986,7 @@
     "_cik": "0000076334",
     "_ticker": "PH",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:38:31.069423+00:00",
+    "_fetched_at": "2026-06-15T17:27:30.868791+00:00",
     "_warnings": []
   },
   "Pentair": {
@@ -91610,7 +91640,7 @@
     "_cik": "0000077360",
     "_ticker": "PNR",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:38:31.569241+00:00",
+    "_fetched_at": "2026-06-15T17:27:31.437698+00:00",
     "_warnings": []
   },
   "Air Lease Corporation": {
@@ -91676,7 +91706,7 @@
     "_cik": "0001073404",
     "_ticker": "GGB",
     "_filer_type": "20-F",
-    "_fetched_at": "2026-06-09T19:38:31.897425+00:00",
+    "_fetched_at": "2026-06-15T17:27:31.741407+00:00",
     "_warnings": [
       "Revenue LTM not found in SEC tags",
       "EBITDA could not be constructed (missing op_income or D&A)",
@@ -92465,7 +92495,7 @@
     "_cik": "0001730168",
     "_ticker": "AVGO",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:38:32.318915+00:00",
+    "_fetched_at": "2026-06-15T17:27:32.206347+00:00",
     "_warnings": []
   },
   "Costco Wholesale": {
@@ -93136,7 +93166,7 @@
     "_cik": "0000909832",
     "_ticker": "COST",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:38:32.985456+00:00",
+    "_fetched_at": "2026-06-15T17:27:32.887817+00:00",
     "_warnings": []
   },
   "Home Depot": {
@@ -93831,7 +93861,7 @@
     "_cik": "0000354950",
     "_ticker": "HD",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:38:33.564007+00:00",
+    "_fetched_at": "2026-06-15T17:27:33.700765+00:00",
     "_warnings": []
   },
   "O'Reilly Automotive": {
@@ -94536,7 +94566,7 @@
     "_cik": "0000898173",
     "_ticker": "ORLY",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:38:34.049336+00:00",
+    "_fetched_at": "2026-06-15T17:27:34.323003+00:00",
     "_warnings": []
   },
   "WH Smith": {
@@ -94618,7 +94648,7 @@
     "_cik": "0000930157",
     "_ticker": "RTO",
     "_filer_type": "20-F",
-    "_fetched_at": "2026-06-09T19:38:34.345629+00:00",
+    "_fetched_at": "2026-06-15T17:27:34.769747+00:00",
     "_warnings": [
       "Revenue LTM not found in SEC tags",
       "EBITDA could not be constructed (missing op_income or D&A)",
@@ -95292,7 +95322,7 @@
     "_cik": "0000078890",
     "_ticker": "BCO",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:38:34.929365+00:00",
+    "_fetched_at": "2026-06-15T17:27:35.506378+00:00",
     "_warnings": []
   },
   "Krispy Kreme": {
@@ -95992,9 +96022,9 @@
     "_cik": "0001857154",
     "_ticker": "DNUT",
     "_filer_type": "10-K",
-    "_fetched_at": "2026-06-09T19:38:35.414473+00:00",
+    "_fetched_at": "2026-06-15T17:27:35.900339+00:00",
     "_warnings": []
   },
-  "_last_full_refresh": "2026-06-09",
-  "_full_refresh_at": "2026-06-09T19:38:35.414522+00:00"
+  "_last_full_refresh": "2026-06-15",
+  "_full_refresh_at": "2026-06-15T17:27:35.900392+00:00"
 }
